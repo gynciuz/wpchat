@@ -1,10 +1,11 @@
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { Mic, MicOff, Send, Loader2, ExternalLink, LogOut, ChevronDown } from "lucide-react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Card } from "@/components/ui/card";
 
 interface Boot {
   restUrl: string;
@@ -176,13 +177,7 @@ export function Chat({ boot }: { boot?: Boot }) {
         )}
       </header>
 
-      <Card
-        className="flex flex-1 flex-col gap-3 overflow-hidden p-4 shadow-[0_0_0_1px_rgba(255,255,255,0.06),0_1px_2px_-1px_rgba(0,0,0,0.4),0_2px_4px_0_rgba(0,0,0,0.3)]"
-        style={{
-          /* concentric radius: card 14, inner bubble 10, gap 4 → 14 = 10 + 4 */
-          borderRadius: 14,
-        }}
-      >
+      <div className="flex flex-1 flex-col gap-3 overflow-hidden">
         {messages.length === 0 && (
           <EmptyState />
         )}
@@ -198,17 +193,16 @@ export function Chat({ boot }: { boot?: Boot }) {
               transition={{ type: "spring", duration: 0.42, bounce: 0 }}
               className="flex flex-col gap-2"
             >
-              <div
-                className={
-                  "max-w-[88%] whitespace-pre-wrap px-3.5 py-2.5 text-sm leading-relaxed tabular-nums " +
-                  (m.role === "user"
-                    ? "self-end bg-primary text-primary-foreground"
-                    : "self-start bg-secondary text-secondary-foreground")
-                }
-                style={{ borderRadius: 10 }}
-              >
-                {m.text}
-              </div>
+              {m.role === "user" ? (
+                <div
+                  className="max-w-[88%] self-end whitespace-pre-wrap bg-primary px-3.5 py-2.5 text-sm leading-relaxed text-primary-foreground tabular-nums"
+                  style={{ borderRadius: 10 }}
+                >
+                  {m.text}
+                </div>
+              ) : (
+                <AssistantBubble text={m.text} />
+              )}
               {m.toolCalls && m.toolCalls.length > 0 && (
                 <ToolCallDisclosure calls={m.toolCalls} />
               )}
@@ -243,7 +237,7 @@ export function Chat({ boot }: { boot?: Boot }) {
         )}
 
         <div ref={endRef} />
-      </Card>
+      </div>
 
       <form onSubmit={handleSend} className="flex items-center gap-2">
         <Button
@@ -337,6 +331,74 @@ export function Chat({ boot }: { boot?: Boot }) {
           Settings <ExternalLink className="size-3" />
         </a>
       </footer>
+    </div>
+  );
+}
+
+function AssistantBubble({ text }: { text: string }) {
+  return (
+    <div
+      className="max-w-[92%] self-start bg-secondary/70 px-3.5 py-2.5 text-sm leading-relaxed text-secondary-foreground tabular-nums"
+      style={{ borderRadius: 10 }}
+    >
+      <ReactMarkdown
+        remarkPlugins={[remarkGfm]}
+        components={{
+          p: ({ children }: { children?: ReactNode }) => (
+            <p className="my-1 first:mt-0 last:mb-0">{children}</p>
+          ),
+          ul: ({ children }: { children?: ReactNode }) => (
+            <ul className="my-2 ml-4 list-disc space-y-1">{children}</ul>
+          ),
+          ol: ({ children }: { children?: ReactNode }) => (
+            <ol className="my-2 ml-4 list-decimal space-y-1">{children}</ol>
+          ),
+          strong: ({ children }: { children?: ReactNode }) => (
+            <strong className="font-semibold text-foreground">{children}</strong>
+          ),
+          code: ({ children, ...props }: { children?: ReactNode; className?: string }) => {
+            const isBlock = (props.className ?? "").includes("language-");
+            return isBlock ? (
+              <pre className="my-2 overflow-x-auto rounded bg-background/60 p-2 text-xs">
+                <code>{children}</code>
+              </pre>
+            ) : (
+              <code className="rounded bg-background/60 px-1 py-0.5 text-[0.85em]">
+                {children}
+              </code>
+            );
+          },
+          table: ({ children }: { children?: ReactNode }) => (
+            <div className="my-2 overflow-x-auto">
+              <table className="w-full border-collapse text-xs">{children}</table>
+            </div>
+          ),
+          thead: ({ children }: { children?: ReactNode }) => (
+            <thead className="bg-background/40">{children}</thead>
+          ),
+          th: ({ children }: { children?: ReactNode }) => (
+            <th className="border border-border/60 px-2 py-1.5 text-left font-semibold">
+              {children}
+            </th>
+          ),
+          td: ({ children }: { children?: ReactNode }) => (
+            <td className="border border-border/40 px-2 py-1.5 align-top">{children}</td>
+          ),
+          a: ({ children, href }: { children?: ReactNode; href?: string }) => (
+            <a
+              href={href}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-primary underline-offset-2 hover:underline"
+            >
+              {children}
+            </a>
+          ),
+          hr: () => <hr className="my-3 border-border/40" />,
+        }}
+      >
+        {text}
+      </ReactMarkdown>
     </div>
   );
 }

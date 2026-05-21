@@ -4,7 +4,7 @@ Tags: woocommerce, chat, ai, claude, orders
 Requires at least: 6.5
 Tested up to: 6.6
 Requires PHP: 8.1
-Stable tag: 0.3.3
+Stable tag: 0.3.4
 License: MIT
 License URI: https://opensource.org/licenses/MIT
 
@@ -34,6 +34,10 @@ Bring your own Anthropic API key.
 4. WPChat → Chat → type.
 
 == Changelog ==
+
+= 0.3.4 =
+* Transparent chat container — drop the surrounding card bg/border so the dark page background shows through; keep the structure and message bubbles.
+* Markdown rendering for assistant replies — tables, lists, code, bold, links all rendered properly (react-markdown + remark-gfm).
 
 = 0.3.3 =
 * Fix tool dispatch crash when invoking no-arg tools (list_team_members): cast stdClass back to array before calling tool function.
