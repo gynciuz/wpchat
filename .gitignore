@@ -1,0 +1,25 @@
+# dependencies
+node_modules/
+.pnpm-store/
+
+# build outputs
+# NOTE: /build is committed (it's what ships in the WP plugin ZIP).
+#       /app/dist is the per-app intermediate build dir if any.
+app/dist/
+*.tsbuildinfo
+
+# editor / OS
+.DS_Store
+.vscode/
+.idea/
+
+# env / secrets
+.env*
+!.env.example
+
+# PHP
+vendor/
+composer.lock
+
+# pnpm
+pnpm-debug.log*
