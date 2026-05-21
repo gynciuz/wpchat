@@ -4,7 +4,7 @@ Tags: woocommerce, chat, ai, claude, orders
 Requires at least: 6.5
 Tested up to: 6.6
 Requires PHP: 8.1
-Stable tag: 0.3.2
+Stable tag: 0.3.3
 License: MIT
 License URI: https://opensource.org/licenses/MIT
 
@@ -34,6 +34,10 @@ Bring your own Anthropic API key.
 4. WPChat → Chat → type.
 
 == Changelog ==
+
+= 0.3.3 =
+* Fix tool dispatch crash when invoking no-arg tools (list_team_members): cast stdClass back to array before calling tool function.
+* Better voice-error message guiding users to grant microphone permission.
 
 = 0.3.2 =
 * Fix Anthropic API error "tool_use.input: Input should be an object" when calling tools with no arguments (list_team_members). Empty PHP arrays now correctly re-serialize as JSON `{}` instead of `[]`.

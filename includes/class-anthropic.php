@@ -119,6 +119,12 @@ class Anthropic {
             foreach ($tool_uses as $use) {
                 $name = $use['name'] ?? '';
                 $args = $use['input'] ?? [];
+                // Tool implementations declare `array $args`. If we coerced
+                // an empty-object input to stdClass above (for Anthropic's
+                // sake), cast it back to an array here for PHP's type check.
+                if ($args instanceof \stdClass) {
+                    $args = (array) $args;
+                }
                 $impl = $tool_impls[$name] ?? null;
                 if (!is_callable($impl)) {
                     $output = ['error' => "Unknown tool: $name"];

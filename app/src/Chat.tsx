@@ -96,9 +96,16 @@ export function Chat({ boot }: { boot?: Boot }) {
     rec.onend = () => setListening(false);
     rec.onerror = (ev) => {
       setListening(false);
-      if (ev.error !== "no-speech" && ev.error !== "aborted") {
-        setError(`Voice error: ${ev.error}`);
+      if (ev.error === "no-speech" || ev.error === "aborted") {
+        return;
       }
+      if (ev.error === "not-allowed" || ev.error === "service-not-allowed") {
+        setError(
+          "Microphone access denied. Click the lock/site-info icon in your browser address bar, set Microphone to Allow, then reload."
+        );
+        return;
+      }
+      setError(`Voice error: ${ev.error}`);
     };
     rec.start();
   }
