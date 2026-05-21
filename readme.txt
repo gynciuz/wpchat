@@ -4,7 +4,7 @@ Tags: woocommerce, chat, ai, claude, orders
 Requires at least: 6.5
 Tested up to: 6.6
 Requires PHP: 8.1
-Stable tag: 0.2.0
+Stable tag: 0.3.0
 License: MIT
 License URI: https://opensource.org/licenses/MIT
 
@@ -34,6 +34,14 @@ Bring your own Anthropic API key.
 4. WPChat → Chat → type.
 
 == Changelog ==
+
+= 0.3.0 =
+* Public /wpchat URL — full-screen chat for editors + admins (no wp-admin chrome).
+* Dark theme by default (shadcn/ui radix-nova).
+* Browser voice input (Web Speech API) — Russian / Lithuanian / English picked from user locale.
+* Multilingual system prompt — Vlad can write in Russian; replies in Russian; stored content in Lithuanian.
+* Design polish (text-wrap balance, tabular nums, concentric radii, staggered enter, subtle exit, icon swap animations, antialiased text).
+* Two-step team-page-edit tool definitions ready (preview + apply with confirmation gate). Tool implementations still pending — see plan.
 
 = 0.2.0 =
 * Live chat backend: /wp-json/wpchat/v1/chat wired to Claude with tool-use loop.

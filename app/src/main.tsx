@@ -16,6 +16,8 @@ declare global {
 
 const container = document.getElementById("wpchat-root");
 if (container) {
+  // Default WPChat to dark theme (per product direction).
+  container.classList.add("dark");
   createRoot(container).render(
     <StrictMode>
       <Chat boot={window.WPCHAT_BOOT} />

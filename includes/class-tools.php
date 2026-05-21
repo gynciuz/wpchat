@@ -80,6 +80,39 @@ class Tools {
                     'required' => ['query'],
                 ],
             ],
+            [
+                'name'        => 'list_team_members',
+                'description' => 'List team members (barbers) across ALL static pages where they appear (the homepage AND the dedicated /musu-meistrai page). Returns each occurrence with file path, name, and current role/subtitle. Read-only.',
+                'input_schema' => [
+                    'type'       => 'object',
+                    'properties' => new \stdClass(),
+                ],
+            ],
+            [
+                'name'        => 'preview_team_member_role_change',
+                'description' => 'PREVIEW (no write) a change to a team member\'s role/subtitle. Searches BOTH the homepage and the team page; returns every file/occurrence that would change. ALWAYS call this BEFORE apply_team_member_role_change. Use Lithuanian for the new role (the website is Lithuanian).',
+                'input_schema' => [
+                    'type'       => 'object',
+                    'properties' => [
+                        'name'     => ['type' => 'string', 'description' => 'Full or partial name of the team member.'],
+                        'new_role' => ['type' => 'string', 'description' => 'The proposed new role/subtitle text in Lithuanian.'],
+                    ],
+                    'required' => ['name', 'new_role'],
+                ],
+            ],
+            [
+                'name'        => 'apply_team_member_role_change',
+                'description' => 'APPLY the role change. Updates ALL matching occurrences across the static pages (homepage + team page). REQUIRES explicit user confirmation: pass the confirmation phrase the user typed into `confirmation`. Only "yes", "confirm", "apply", "do it", "taip", "patvirtinu", "да", "tak", "ok" (case-insensitive) are accepted. If the user has NOT confirmed in the chat, call preview first instead.',
+                'input_schema' => [
+                    'type'       => 'object',
+                    'properties' => [
+                        'name'         => ['type' => 'string'],
+                        'new_role'     => ['type' => 'string'],
+                        'confirmation' => ['type' => 'string', 'description' => 'Verbatim confirmation phrase from the user.'],
+                    ],
+                    'required' => ['name', 'new_role', 'confirmation'],
+                ],
+            ],
         ];
     }
 

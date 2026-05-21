@@ -1,0 +1,100 @@
+<?php
+/**
+ * Public-facing /wpchat route — full-screen chat (no wp-admin chrome).
+ *
+ * @package WPChat
+ */
+
+namespace WPChat;
+
+if (!defined('ABSPATH')) {
+    exit;
+}
+
+class Frontend {
+
+    const URL_PATH = '/wpchat';
+
+    public function __construct() {
+        add_action('template_redirect', [$this, 'maybe_render']);
+    }
+
+    public function maybe_render(): void {
+        $path = trim(parse_url($_SERVER['REQUEST_URI'] ?? '', PHP_URL_PATH), '/');
+        if ($path !== 'wpchat') {
+            return;
+        }
+
+        if (!is_user_logged_in()) {
+            wp_redirect(wp_login_url(home_url(self::URL_PATH)));
+            exit;
+        }
+
+        if (!current_user_can('edit_posts')) {
+            status_header(403);
+            wp_die(
+                esc_html__('Reikalingos redaktoriaus arba administratoriaus teisės. (Editor or administrator role required.)', 'wpchat'),
+                esc_html__('WPChat — Access denied', 'wpchat'),
+                ['response' => 403]
+            );
+        }
+
+        $this->render();
+        exit;
+    }
+
+    private function render(): void {
+        $manifest_path = WPCHAT_DIR . 'build/manifest.json';
+        if (!file_exists($manifest_path)) {
+            wp_die('WPChat build assets are missing. Run pnpm build in the plugin\'s app/ directory.', 'WPChat', ['response' => 500]);
+        }
+
+        $manifest = json_decode(file_get_contents($manifest_path), true);
+        $entry    = $manifest['src/main.tsx'] ?? null;
+        $build_url = WPCHAT_URL . 'build/';
+
+        $css_tags = '';
+        if (!empty($entry['css'])) {
+            foreach ($entry['css'] as $css) {
+                $css_tags .= sprintf('<link rel="stylesheet" href="%s">', esc_url($build_url . $css));
+            }
+        }
+        $js_src = esc_url($build_url . ($entry['file'] ?? ''));
+
+        $boot = [
+            'restUrl'  => rest_url('wpchat/v1/'),
+            'nonce'    => wp_create_nonce('wp_rest'),
+            'userId'   => get_current_user_id(),
+            'userName' => wp_get_current_user()->display_name,
+            'locale'   => substr(get_user_locale(), 0, 2),
+            'siteName' => get_bloginfo('name'),
+            'logoutUrl' => wp_logout_url(home_url(self::URL_PATH)),
+        ];
+        $boot_json = wp_json_encode($boot);
+
+        $title = sprintf('%s — %s', esc_html__('WPChat', 'wpchat'), esc_html(get_bloginfo('name')));
+
+        echo <<<HTML
+<!DOCTYPE html>
+<html lang="lt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>{$title}</title>
+{$css_tags}
+<style>
+  html, body { margin: 0; padding: 0; background: #f9fafb; height: 100%; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+  #wpchat-root { min-height: 100vh; }
+</style>
+</head>
+<body>
+<div id="wpchat-root"></div>
+<script>window.WPCHAT_BOOT = {$boot_json};</script>
+<script type="module" src="{$js_src}"></script>
+</body>
+</html>
+HTML;
+    }
+}

@@ -1,10 +1,19 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
+import { AnimatePresence, motion } from "motion/react";
+import { Mic, MicOff, Send, Loader2, ExternalLink, LogOut, ChevronDown } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { Card } from "@/components/ui/card";
 
 interface Boot {
   restUrl: string;
   nonce: string;
   userId: number;
+  userName?: string;
   locale: string;
+  siteName?: string;
+  logoutUrl?: string;
 }
 
 interface ToolCall {
@@ -19,10 +28,34 @@ interface ChatMessage {
   toolCalls?: ToolCall[];
 }
 
-/** Wire-format message sent to the API (just role + plain text content). */
 interface WireMessage {
   role: "user" | "assistant";
   content: string;
+}
+
+/** Minimal browser SpeechRecognition typing — supports Safari/Chrome on iOS + macOS. */
+type SpeechRecognition = {
+  lang: string;
+  continuous: boolean;
+  interimResults: boolean;
+  start: () => void;
+  stop: () => void;
+  abort: () => void;
+  onresult: ((ev: { results: ArrayLike<{ 0: { transcript: string }; isFinal: boolean }> }) => void) | null;
+  onend: (() => void) | null;
+  onerror: ((ev: { error: string }) => void) | null;
+};
+
+function getRecognition(lang: string): SpeechRecognition | null {
+  const Ctor =
+    (window as unknown as { SpeechRecognition?: new () => SpeechRecognition }).SpeechRecognition ??
+    (window as unknown as { webkitSpeechRecognition?: new () => SpeechRecognition }).webkitSpeechRecognition;
+  if (!Ctor) return null;
+  const r = new Ctor();
+  r.lang = lang;
+  r.continuous = false;
+  r.interimResults = true;
+  return r;
 }
 
 export function Chat({ boot }: { boot?: Boot }) {
@@ -30,16 +63,51 @@ export function Chat({ boot }: { boot?: Boot }) {
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [listening, setListening] = useState(false);
+  const recRef = useRef<SpeechRecognition | null>(null);
   const endRef = useRef<HTMLDivElement>(null);
+
+  // Speech recognition language preference. Vlad/wife → ru-RU; otherwise system locale.
+  const speechLang = (boot?.locale === "lt" ? "lt-LT" : boot?.locale === "ru" ? "ru-RU" : "en-US");
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, busy]);
 
+  function toggleVoice() {
+    if (listening) {
+      recRef.current?.stop();
+      return;
+    }
+    const rec = getRecognition(speechLang);
+    if (!rec) {
+      setError("Voice input not supported in this browser.");
+      return;
+    }
+    recRef.current = rec;
+    setListening(true);
+    rec.onresult = (ev) => {
+      let txt = "";
+      for (let i = 0; i < ev.results.length; i++) {
+        txt += ev.results[i][0].transcript;
+      }
+      setInput(txt);
+    };
+    rec.onend = () => setListening(false);
+    rec.onerror = (ev) => {
+      setListening(false);
+      if (ev.error !== "no-speech" && ev.error !== "aborted") {
+        setError(`Voice error: ${ev.error}`);
+      }
+    };
+    rec.start();
+  }
+
   async function handleSend(e: FormEvent) {
     e.preventDefault();
     const text = input.trim();
     if (!text || busy || !boot) return;
+    if (listening) recRef.current?.stop();
 
     const newUser: ChatMessage = { role: "user", text };
     const history: WireMessage[] = [...messages, newUser].map((m) => ({
@@ -55,129 +123,266 @@ export function Chat({ boot }: { boot?: Boot }) {
     try {
       const res = await fetch(`${boot.restUrl}chat`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-WP-Nonce": boot.nonce,
-        },
+        headers: { "Content-Type": "application/json", "X-WP-Nonce": boot.nonce },
         credentials: "same-origin",
         body: JSON.stringify({ messages: history }),
       });
-
       const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data?.error || `HTTP ${res.status}`);
-      }
+      if (!res.ok) throw new Error(data?.error || `HTTP ${res.status}`);
 
-      const assistant: ChatMessage = {
-        role: "assistant",
-        text: data.text ?? "(no response)",
-        toolCalls: data.tool_calls ?? [],
-      };
-      setMessages((m) => [...m, assistant]);
+      setMessages((m) => [
+        ...m,
+        {
+          role: "assistant",
+          text: data.text ?? "(no response)",
+          toolCalls: data.tool_calls ?? [],
+        },
+      ]);
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Request failed.";
-      setError(message);
+      setError(err instanceof Error ? err.message : "Request failed.");
     } finally {
       setBusy(false);
     }
   }
 
   return (
-    <div className="mx-auto flex max-w-3xl flex-col gap-4 px-4 py-6">
+    <div className="mx-auto flex min-h-screen max-w-3xl flex-col gap-4 px-4 py-6 sm:py-8">
       <header className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold tracking-tight">WPChat</h1>
-        <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-800">
-          v0.2
-        </span>
+        <div className="flex items-center gap-3">
+          <h1 className="text-2xl font-semibold tracking-tight">WPChat</h1>
+          <Badge variant="secondary" className="hidden sm:inline-flex">
+            v0.3
+          </Badge>
+          {boot?.siteName && (
+            <span className="hidden text-sm text-muted-foreground sm:inline">
+              · {boot.siteName}
+            </span>
+          )}
+        </div>
+        {boot?.logoutUrl && (
+          <Button asChild variant="ghost" size="sm" className="text-muted-foreground">
+            <a href={boot.logoutUrl}>
+              <LogOut className="size-4" />
+              <span className="ml-2 hidden sm:inline">Logout</span>
+            </a>
+          </Button>
+        )}
       </header>
 
-      <div className="flex min-h-[500px] flex-col gap-3 rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+      <Card
+        className="flex flex-1 flex-col gap-3 overflow-hidden p-4 shadow-[0_0_0_1px_rgba(255,255,255,0.06),0_1px_2px_-1px_rgba(0,0,0,0.4),0_2px_4px_0_rgba(0,0,0,0.3)]"
+        style={{
+          /* concentric radius: card 14, inner bubble 10, gap 4 → 14 = 10 + 4 */
+          borderRadius: 14,
+        }}
+      >
         {messages.length === 0 && (
-          <div className="my-auto self-center text-center text-sm text-gray-500">
-            <p className="font-medium">Try one of these:</p>
-            <ul className="mt-2 space-y-1 text-xs">
-              <li>"show me 5 most recent orders"</li>
-              <li>"order 2833 panaudotas, dalinai 30 eur, liko 20"</li>
-              <li>"find orders from petras@example.com"</li>
-            </ul>
-          </div>
+          <EmptyState />
         )}
 
-        {messages.map((m, i) => (
-          <div key={i} className="flex flex-col gap-2">
-            <div
-              className={
-                "max-w-[85%] whitespace-pre-wrap rounded-lg px-3 py-2 text-sm leading-relaxed " +
-                (m.role === "user"
-                  ? "self-end bg-blue-600 text-white"
-                  : "self-start bg-gray-100 text-gray-900")
-              }
+        <AnimatePresence initial={false}>
+          {messages.map((m, i) => (
+            <motion.div
+              key={i}
+              layout
+              initial={{ opacity: 0, y: 8, filter: "blur(5px)" }}
+              animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+              exit={{ opacity: 0, y: -12, filter: "blur(4px)" }}
+              transition={{ type: "spring", duration: 0.42, bounce: 0 }}
+              className="flex flex-col gap-2"
             >
-              {m.text}
-            </div>
-            {m.toolCalls && m.toolCalls.length > 0 && (
-              <details className="self-start max-w-[85%] rounded-md border border-gray-200 bg-gray-50 px-3 py-2 text-xs">
-                <summary className="cursor-pointer text-gray-600">
-                  {m.toolCalls.length} tool call{m.toolCalls.length > 1 ? "s" : ""}
-                </summary>
-                <div className="mt-2 space-y-2">
-                  {m.toolCalls.map((tc, j) => (
-                    <div key={j} className="rounded bg-white p-2 font-mono">
-                      <div className="font-semibold text-gray-700">{tc.name}</div>
-                      <div className="text-gray-500">input: {JSON.stringify(tc.input)}</div>
-                      <div className="mt-1 max-h-40 overflow-auto text-gray-500">
-                        output: {JSON.stringify(tc.output, null, 2)}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </details>
-            )}
-          </div>
-        ))}
+              <div
+                className={
+                  "max-w-[88%] whitespace-pre-wrap px-3.5 py-2.5 text-sm leading-relaxed tabular-nums " +
+                  (m.role === "user"
+                    ? "self-end bg-primary text-primary-foreground"
+                    : "self-start bg-secondary text-secondary-foreground")
+                }
+                style={{ borderRadius: 10 }}
+              >
+                {m.text}
+              </div>
+              {m.toolCalls && m.toolCalls.length > 0 && (
+                <ToolCallDisclosure calls={m.toolCalls} />
+              )}
+            </motion.div>
+          ))}
+        </AnimatePresence>
 
-        {busy && (
-          <div className="self-start rounded-lg bg-gray-100 px-3 py-2 text-sm text-gray-600">
-            <span className="inline-block animate-pulse">Thinking…</span>
-          </div>
-        )}
+        <AnimatePresence>
+          {busy && (
+            <motion.div
+              key="thinking"
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -12 }}
+              transition={{ type: "spring", duration: 0.42, bounce: 0 }}
+              className="flex items-center gap-2 self-start bg-secondary px-3 py-2 text-sm text-muted-foreground"
+              style={{ borderRadius: 10 }}
+            >
+              <Loader2 className="size-3.5 animate-spin" />
+              <span>Thinking…</span>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {error && (
-          <div className="self-stretch rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">
+          <div
+            className="self-stretch border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive"
+            style={{ borderRadius: 10 }}
+          >
             {error}
           </div>
         )}
 
         <div ref={endRef} />
-      </div>
+      </Card>
 
-      <form onSubmit={handleSend} className="flex gap-2">
-        <input
+      <form onSubmit={handleSend} className="flex items-center gap-2">
+        <Button
+          type="button"
+          variant={listening ? "destructive" : "secondary"}
+          size="icon"
+          onClick={toggleVoice}
+          disabled={busy}
+          aria-label={listening ? "Stop voice input" : "Start voice input"}
+          className="size-10 shrink-0"
+        >
+          <AnimatePresence mode="wait" initial={false}>
+            {listening ? (
+              <motion.span
+                key="off"
+                initial={{ opacity: 0, scale: 0.6, filter: "blur(4px)" }}
+                animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
+                exit={{ opacity: 0, scale: 0.6, filter: "blur(4px)" }}
+                transition={{ duration: 0.18 }}
+                className="inline-flex"
+              >
+                <MicOff className="size-4" />
+              </motion.span>
+            ) : (
+              <motion.span
+                key="on"
+                initial={{ opacity: 0, scale: 0.6, filter: "blur(4px)" }}
+                animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
+                exit={{ opacity: 0, scale: 0.6, filter: "blur(4px)" }}
+                transition={{ duration: 0.18 }}
+                className="inline-flex"
+              >
+                <Mic className="size-4" />
+              </motion.span>
+            )}
+          </AnimatePresence>
+        </Button>
+
+        <Input
           type="text"
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          placeholder={busy ? "Waiting for assistant…" : "Type a message…"}
+          placeholder={listening ? "Listening…" : busy ? "Waiting for assistant…" : "Type or speak…"}
           disabled={busy}
-          className="flex-1 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:opacity-50"
+          className="flex-1 h-10"
         />
-        <button
+
+        <Button
           type="submit"
-          className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 disabled:opacity-50"
+          size="icon"
           disabled={!input.trim() || busy}
+          className="size-10 shrink-0"
+          aria-label="Send message"
         >
-          Send
-        </button>
+          <AnimatePresence mode="wait" initial={false}>
+            {busy ? (
+              <motion.span
+                key="busy"
+                initial={{ opacity: 0, scale: 0.6, filter: "blur(4px)" }}
+                animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
+                exit={{ opacity: 0, scale: 0.6, filter: "blur(4px)" }}
+                transition={{ duration: 0.18 }}
+                className="inline-flex"
+              >
+                <Loader2 className="size-4 animate-spin" />
+              </motion.span>
+            ) : (
+              <motion.span
+                key="send"
+                initial={{ opacity: 0, scale: 0.6, filter: "blur(4px)" }}
+                animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
+                exit={{ opacity: 0, scale: 0.6, filter: "blur(4px)" }}
+                transition={{ duration: 0.18 }}
+                className="inline-flex"
+              >
+                <Send className="size-4" />
+              </motion.span>
+            )}
+          </AnimatePresence>
+        </Button>
       </form>
 
-      <p className="text-xs text-gray-500">
-        Logged-in user ID: {boot?.userId ?? "?"} · Locale: {boot?.locale ?? "?"} ·{" "}
+      <footer className="flex items-center justify-between text-xs text-muted-foreground">
+        <span>
+          {boot?.userName ? `${boot.userName} · ` : ""}user {boot?.userId ?? "?"} · {speechLang}
+        </span>
         <a
-          href="admin.php?page=wpchat-settings"
-          className="text-blue-600 hover:underline"
+          href="/wp-admin/admin.php?page=wpchat-settings"
+          className="inline-flex items-center gap-1 hover:text-foreground"
         >
-          Settings
+          Settings <ExternalLink className="size-3" />
         </a>
-      </p>
+      </footer>
+    </div>
+  );
+}
+
+function EmptyState() {
+  return (
+    <div className="my-auto flex flex-col items-center gap-3 self-center text-center text-sm text-muted-foreground">
+      <p className="font-medium text-foreground">Pasakyk, ką padaryti</p>
+      <ul className="space-y-1 text-xs">
+        <li>"rodyk 5 paskutinius užsakymus"</li>
+        <li>"užsakymą 2833 panaudotas, dalinai 30 eur, liko 20"</li>
+        <li>"найди заказ номер 2833"</li>
+      </ul>
+    </div>
+  );
+}
+
+function ToolCallDisclosure({ calls }: { calls: ToolCall[] }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div
+      className="self-start max-w-[88%] border bg-muted/40 px-3 py-2 text-xs"
+      style={{ borderRadius: 10 }}
+    >
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="flex w-full items-center gap-1.5 text-muted-foreground hover:text-foreground transition-colors"
+      >
+        <ChevronDown
+          className={"size-3 transition-transform " + (open ? "rotate-0" : "-rotate-90")}
+        />
+        {calls.length} tool call{calls.length > 1 ? "s" : ""}
+      </button>
+      {open && (
+        <motion.div
+          initial={{ opacity: 0, height: 0 }}
+          animate={{ opacity: 1, height: "auto" }}
+          className="mt-2 space-y-2 overflow-hidden"
+        >
+          {calls.map((tc, j) => (
+            <div key={j} className="bg-background/60 p-2 font-mono" style={{ borderRadius: 6 }}>
+              <div className="font-semibold text-foreground">{tc.name}</div>
+              <div className="text-muted-foreground truncate">
+                input: {JSON.stringify(tc.input)}
+              </div>
+              <div className="mt-1 max-h-40 overflow-auto text-muted-foreground tabular-nums">
+                output: {JSON.stringify(tc.output, null, 2)}
+              </div>
+            </div>
+          ))}
+        </motion.div>
+      )}
     </div>
   );
 }
