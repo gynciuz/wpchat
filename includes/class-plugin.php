@@ -25,6 +25,7 @@ final class Plugin {
     public function boot(): void {
         new Admin();
         new Settings();
+        new Rest();
     }
 
     public static function activate(): void {
