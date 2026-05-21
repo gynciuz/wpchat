@@ -4,7 +4,7 @@ Tags: woocommerce, chat, ai, claude, orders
 Requires at least: 6.5
 Tested up to: 6.6
 Requires PHP: 8.1
-Stable tag: 0.3.1
+Stable tag: 0.3.2
 License: MIT
 License URI: https://opensource.org/licenses/MIT
 
@@ -34,6 +34,10 @@ Bring your own Anthropic API key.
 4. WPChat → Chat → type.
 
 == Changelog ==
+
+= 0.3.2 =
+* Fix Anthropic API error "tool_use.input: Input should be an object" when calling tools with no arguments (list_team_members). Empty PHP arrays now correctly re-serialize as JSON `{}` instead of `[]`.
+* Fix light-mode gutter around the /wpchat page — dark class now on `<html>` + `<body>`, dark background matches the chat card.
 
 = 0.3.1 =
 * Team-page edit tools live: list_team_members, preview_team_member_role_change, apply_team_member_role_change. Two-step pattern: preview returns diff for both homepage and team page; apply requires confirmation phrase (yes/taip/да/ok/patvirtinu/...).

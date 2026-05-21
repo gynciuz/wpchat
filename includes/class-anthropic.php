@@ -78,6 +78,22 @@ class Anthropic {
             $stop_reason = $data['stop_reason'] ?? '';
             $content     = $data['content'] ?? [];
 
+            // PHP's json_decode turns empty JSON objects into empty PHP arrays;
+            // when we json_encode them back to send in the next request, they
+            // serialize as `[]` instead of `{}`. Anthropic strictly validates
+            // that tool_use.input is an object, not an array. Force any empty
+            // input back to stdClass so it re-serializes as {}.
+            foreach ($content as &$block) {
+                if (($block['type'] ?? '') === 'tool_use'
+                    && isset($block['input'])
+                    && is_array($block['input'])
+                    && empty($block['input'])
+                ) {
+                    $block['input'] = new \stdClass();
+                }
+            }
+            unset($block);
+
             // Append assistant turn verbatim to history.
             $messages[] = [
                 'role'    => 'assistant',

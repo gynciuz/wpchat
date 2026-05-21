@@ -76,21 +76,24 @@ class Frontend {
 
         echo <<<HTML
 <!DOCTYPE html>
-<html lang="lt">
+<html lang="lt" class="dark">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
 <meta name="robots" content="noindex,nofollow">
+<meta name="color-scheme" content="dark">
 <title>{$title}</title>
 {$css_tags}
 <style>
-  html, body { margin: 0; padding: 0; background: #f9fafb; height: 100%; }
-  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+  /* Match shadcn's dark --background token so there's no light gutter
+     around the chat root on wider viewports. */
+  html, body { margin: 0; padding: 0; height: 100%; background: oklch(0.145 0 0); color: oklch(0.985 0 0); }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
   #wpchat-root { min-height: 100vh; }
 </style>
 </head>
-<body>
-<div id="wpchat-root"></div>
+<body class="dark">
+<div id="wpchat-root" class="dark"></div>
 <script>window.WPCHAT_BOOT = {$boot_json};</script>
 <script type="module" src="{$js_src}"></script>
 </body>
