@@ -4,7 +4,7 @@ Tags: woocommerce, chat, ai, claude, orders
 Requires at least: 6.5
 Tested up to: 6.6
 Requires PHP: 8.1
-Stable tag: 0.4.0
+Stable tag: 0.4.1
 License: MIT
 License URI: https://opensource.org/licenses/MIT
 
@@ -34,6 +34,13 @@ Bring your own Anthropic API key.
 4. WPChat → Chat → type.
 
 == Changelog ==
+
+= 0.4.1 =
+* Conversation history persistence — every user + assistant message is stored in a new `{prefix}_wpchat_messages` table (created by `dbDelta` on activation), scoped to the WP user who sent it. Each user only sees their own conversations.
+* Auto-grouping by 30-minute idle gap — sending a new message within 30 min continues the previous conversation; after the gap, a new conversation UUID is minted automatically.
+* History drawer in the chat UI — toggleable from a left-rail button in the header; shows recent conversations with first-message label, relative timestamp, and message count. Clicking one loads its full history into the chat view.
+* "New chat" button in the header — clears the current view and starts a fresh conversation on the next message.
+* REST: `POST /chat` now accepts/returns `conversation_id`; new `GET /conversations` and `GET /conversations/{uuid}` endpoints.
 
 = 0.4.0 =
 * Generic content-backend dispatch — `list_content_blocks`, `preview_content_change`, `apply_content_change` route to whichever backend claims a given `kind`. Replaces the previous Gentleman's Empire-specific `list_team_members` / `preview_team_member_role_change` / `apply_team_member_role_change` tools (those lived in the plugin and only worked on GE's static-HTML pages).

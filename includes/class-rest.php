@@ -29,7 +29,21 @@ class Rest {
                     'required' => true,
                     'type'     => 'array',
                 ],
+                'conversation_id' => [
+                    'required' => false,
+                    'type'     => 'string',
+                ],
             ],
+        ]);
+        register_rest_route(self::NAMESPACE, '/conversations', [
+            'methods'             => 'GET',
+            'permission_callback' => [$this, 'check_permission'],
+            'callback'            => [$this, 'handle_list_conversations'],
+        ]);
+        register_rest_route(self::NAMESPACE, '/conversations/(?P<id>[a-f0-9-]{36})', [
+            'methods'             => 'GET',
+            'permission_callback' => [$this, 'check_permission'],
+            'callback'            => [$this, 'handle_get_conversation'],
         ]);
     }
 
@@ -51,6 +65,19 @@ class Rest {
         }
 
         $messages = array_map([$this, 'sanitize_message'], $messages);
+        $user_id  = get_current_user_id();
+
+        $conversation_id = (string) $request->get_param('conversation_id');
+        if (!preg_match('/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/', $conversation_id)) {
+            $conversation_id = History::start_or_continue($user_id);
+        }
+
+        // Persist the latest user message before calling the LLM so we have
+        // a record even if the LLM call errors mid-flight.
+        $latest = end($messages);
+        if (is_array($latest) && ($latest['role'] ?? '') === 'user') {
+            History::append($user_id, $conversation_id, 'user', (string) $latest['content'], []);
+        }
 
         try {
             $result = Anthropic::run_with_tools(
@@ -63,13 +90,43 @@ class Rest {
                 ]
             );
         } catch (\Throwable $e) {
-            return new \WP_REST_Response(['error' => $e->getMessage()], 500);
+            return new \WP_REST_Response(['error' => $e->getMessage(), 'conversation_id' => $conversation_id], 500);
         }
 
+        History::append(
+            $user_id,
+            $conversation_id,
+            'assistant',
+            (string) ($result['text'] ?? ''),
+            is_array($result['tool_calls'] ?? null) ? $result['tool_calls'] : []
+        );
+
         return new \WP_REST_Response([
-            'text'       => $result['text'],
-            'messages'   => $result['messages'],
-            'tool_calls' => $result['tool_calls'],
+            'text'            => $result['text'],
+            'messages'        => $result['messages'],
+            'tool_calls'      => $result['tool_calls'],
+            'conversation_id' => $conversation_id,
+        ], 200);
+    }
+
+    public function handle_list_conversations(\WP_REST_Request $request): \WP_REST_Response {
+        $user_id = get_current_user_id();
+        $limit   = (int) ($request->get_param('limit') ?? 30);
+        return new \WP_REST_Response([
+            'conversations' => History::list_conversations($user_id, $limit),
+        ], 200);
+    }
+
+    public function handle_get_conversation(\WP_REST_Request $request): \WP_REST_Response {
+        $user_id         = get_current_user_id();
+        $conversation_id = (string) $request['id'];
+        $messages = History::get_conversation($user_id, $conversation_id);
+        if (empty($messages)) {
+            return new \WP_REST_Response(['error' => 'Conversation not found.'], 404);
+        }
+        return new \WP_REST_Response([
+            'conversation_id' => $conversation_id,
+            'messages'        => $messages,
         ], 200);
     }
 

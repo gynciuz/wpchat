@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { Mic, MicOff, Send, Loader2, ExternalLink, LogOut, ChevronDown } from "lucide-react";
+import { Mic, MicOff, Send, Loader2, ExternalLink, LogOut, ChevronDown, History as HistoryIcon, Plus } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { HistoryDrawer } from "./HistoryDrawer";
 
 interface Boot {
   restUrl: string;
@@ -65,6 +66,10 @@ export function Chat({ boot }: { boot?: Boot }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [listening, setListening] = useState(false);
+  const [conversationId, setConversationId] = useState<string | null>(null);
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [historyRefreshKey, setHistoryRefreshKey] = useState(0);
+  const [loadingConversation, setLoadingConversation] = useState(false);
   const recRef = useRef<SpeechRecognition | null>(null);
   const endRef = useRef<HTMLDivElement>(null);
 
@@ -114,7 +119,7 @@ export function Chat({ boot }: { boot?: Boot }) {
   async function handleSend(e: FormEvent) {
     e.preventDefault();
     const text = input.trim();
-    if (!text || busy || !boot) return;
+    if (!text || busy || loadingConversation || !boot) return;
     if (listening) recRef.current?.stop();
 
     const newUser: ChatMessage = { role: "user", text };
@@ -133,11 +138,17 @@ export function Chat({ boot }: { boot?: Boot }) {
         method: "POST",
         headers: { "Content-Type": "application/json", "X-WP-Nonce": boot.nonce },
         credentials: "same-origin",
-        body: JSON.stringify({ messages: history }),
+        body: JSON.stringify({
+          messages: history,
+          conversation_id: conversationId ?? undefined,
+        }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error || `HTTP ${res.status}`);
 
+      if (data.conversation_id) {
+        setConversationId(data.conversation_id);
+      }
       setMessages((m) => [
         ...m,
         {
@@ -146,6 +157,7 @@ export function Chat({ boot }: { boot?: Boot }) {
           toolCalls: data.tool_calls ?? [],
         },
       ]);
+      setHistoryRefreshKey((k) => k + 1);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Request failed.");
     } finally {
@@ -153,13 +165,54 @@ export function Chat({ boot }: { boot?: Boot }) {
     }
   }
 
+  async function loadConversation(id: string) {
+    if (!boot) return;
+    setLoadingConversation(true);
+    setError(null);
+    try {
+      const res = await fetch(`${boot.restUrl}conversations/${id}`, {
+        headers: { "X-WP-Nonce": boot.nonce },
+        credentials: "same-origin",
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.error || `HTTP ${res.status}`);
+      const loaded: ChatMessage[] = (data.messages ?? []).map((m: { role: string; content: string; tool_calls?: ToolCall[] }) => ({
+        role: m.role === "assistant" ? "assistant" : "user",
+        text: m.content,
+        toolCalls: m.tool_calls ?? [],
+      }));
+      setMessages(loaded);
+      setConversationId(id);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to load conversation.");
+    } finally {
+      setLoadingConversation(false);
+    }
+  }
+
+  function startNewChat() {
+    setMessages([]);
+    setConversationId(null);
+    setError(null);
+  }
+
   return (
     <div className="mx-auto flex min-h-screen max-w-3xl flex-col gap-4 px-4 py-6 sm:py-8">
       <header className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            onClick={() => setHistoryOpen(true)}
+            aria-label="Open chat history"
+            className="size-9 text-muted-foreground"
+          >
+            <HistoryIcon className="size-4" />
+          </Button>
           <h1 className="text-2xl font-semibold tracking-tight">WPChat</h1>
           <Badge variant="secondary" className="hidden sm:inline-flex">
-            v0.3
+            v0.4
           </Badge>
           {boot?.siteName && (
             <span className="hidden text-sm text-muted-foreground sm:inline">
@@ -167,15 +220,41 @@ export function Chat({ boot }: { boot?: Boot }) {
             </span>
           )}
         </div>
-        {boot?.logoutUrl && (
-          <Button asChild variant="ghost" size="sm" className="text-muted-foreground">
-            <a href={boot.logoutUrl}>
-              <LogOut className="size-4" />
-              <span className="ml-2 hidden sm:inline">Logout</span>
-            </a>
+        <div className="flex items-center gap-1">
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={startNewChat}
+            disabled={messages.length === 0 && conversationId === null}
+            className="text-muted-foreground"
+          >
+            <Plus className="size-4" />
+            <span className="ml-1.5 hidden sm:inline">New chat</span>
           </Button>
-        )}
+          {boot?.logoutUrl && (
+            <Button asChild variant="ghost" size="sm" className="text-muted-foreground">
+              <a href={boot.logoutUrl}>
+                <LogOut className="size-4" />
+                <span className="ml-2 hidden sm:inline">Logout</span>
+              </a>
+            </Button>
+          )}
+        </div>
       </header>
+
+      {boot && (
+        <HistoryDrawer
+          open={historyOpen}
+          onClose={() => setHistoryOpen(false)}
+          onSelect={loadConversation}
+          onNewChat={startNewChat}
+          restUrl={boot.restUrl}
+          nonce={boot.nonce}
+          refreshKey={historyRefreshKey}
+          currentConversationId={conversationId}
+        />
+      )}
 
       <div className="flex flex-1 flex-col gap-3 overflow-hidden">
         {messages.length === 0 && (

@@ -30,13 +30,13 @@ final class Plugin {
     }
 
     public static function activate(): void {
-        // No DB schema yet — settings live in wp_options.
         if (!get_option('wpchat_settings')) {
             add_option('wpchat_settings', [
                 'anthropic_api_key' => '',
                 'model'             => 'claude-sonnet-4-6',
             ]);
         }
+        History::migrate();
     }
 
     public static function deactivate(): void {
