@@ -81,36 +81,48 @@ class Tools {
                 ],
             ],
             [
-                'name'        => 'list_team_members',
-                'description' => 'List team members (barbers) across ALL static pages where they appear (the homepage AND the dedicated /musu-meistrai page). Returns each occurrence with file path, name, and current role/subtitle. Read-only.',
-                'input_schema' => [
-                    'type'       => 'object',
-                    'properties' => new \stdClass(),
-                ],
-            ],
-            [
-                'name'        => 'preview_team_member_role_change',
-                'description' => 'PREVIEW (no write) a change to a team member\'s role/subtitle. Searches BOTH the homepage and the team page; returns every file/occurrence that would change. ALWAYS call this BEFORE apply_team_member_role_change. Use Lithuanian for the new role (the website is Lithuanian).',
+                'name'        => 'list_content_blocks',
+                'description' => 'List content items of a given kind. Available kinds depend on which backends are registered on this site (see the system prompt). Common kinds: wp_post, wp_page_slug, wp_post_meta, wp_term. Sites may add custom kinds (e.g. team_member).',
                 'input_schema' => [
                     'type'       => 'object',
                     'properties' => [
-                        'name'     => ['type' => 'string', 'description' => 'Full or partial name of the team member.'],
-                        'new_role' => ['type' => 'string', 'description' => 'The proposed new role/subtitle text in Lithuanian.'],
+                        'kind' => ['type' => 'string', 'description' => 'The content kind slug.'],
+                        'args' => [
+                            'type'        => 'object',
+                            'description' => 'Optional kind-specific filters (e.g. {search: "..."} for wp_post, {taxonomy: "category"} for wp_term, {post_id: 123} for wp_post_meta).',
+                        ],
                     ],
-                    'required' => ['name', 'new_role'],
+                    'required' => ['kind'],
                 ],
             ],
             [
-                'name'        => 'apply_team_member_role_change',
-                'description' => 'APPLY the role change. Updates ALL matching occurrences across the static pages (homepage + team page). REQUIRES explicit user confirmation: pass the confirmation phrase the user typed into `confirmation`. Only "yes", "confirm", "apply", "do it", "taip", "patvirtinu", "да", "tak", "ok" (case-insensitive) are accepted. If the user has NOT confirmed in the chat, call preview first instead.',
+                'name'        => 'preview_content_change',
+                'description' => 'PREVIEW (no write) a change to a content item. Returns the diff (old vs new) for every location that would be affected. ALWAYS call this BEFORE apply_content_change.',
                 'input_schema' => [
                     'type'       => 'object',
                     'properties' => [
-                        'name'         => ['type' => 'string'],
-                        'new_role'     => ['type' => 'string'],
+                        'target' => [
+                            'type'        => 'object',
+                            'description' => 'Kind-specific reference to the item. Must include `kind` and the fields the kind requires (e.g. {kind: "wp_post", id: 123}, {kind: "wp_page_slug", slug: "apie-mus"}, {kind: "team_member", name: "Nesar"}).',
+                        ],
+                        'field' => ['type' => 'string', 'description' => 'Which property to change. Allowed values depend on the kind (see the system prompt).'],
+                        'value' => ['description' => 'Proposed new value. Usually a string; some fields accept other types.'],
+                    ],
+                    'required' => ['target', 'field', 'value'],
+                ],
+            ],
+            [
+                'name'        => 'apply_content_change',
+                'description' => 'APPLY the change. REQUIRES explicit user confirmation: pass the confirmation phrase the user typed into `confirmation`. Only "yes", "confirm", "apply", "do it", "taip", "patvirtinu", "да", "tak", "ok" (case-insensitive) are accepted. If the user has NOT confirmed in the chat, call preview_content_change first instead.',
+                'input_schema' => [
+                    'type'       => 'object',
+                    'properties' => [
+                        'target'       => ['type' => 'object', 'description' => 'Same target shape as preview_content_change.'],
+                        'field'        => ['type' => 'string'],
+                        'value'        => ['description' => 'New value (same as preview).'],
                         'confirmation' => ['type' => 'string', 'description' => 'Verbatim confirmation phrase from the user.'],
                     ],
-                    'required' => ['name', 'new_role', 'confirmation'],
+                    'required' => ['target', 'field', 'value', 'confirmation'],
                 ],
             ],
         ];
@@ -119,16 +131,17 @@ class Tools {
     /** Map name → callable. */
     public static function implementations(): array {
         return [
-            'list_orders'                       => [__CLASS__, 'list_orders'],
-            'get_order'                         => [__CLASS__, 'get_order'],
-            'update_order_status'               => [__CLASS__, 'update_order_status'],
-            'add_order_note'                    => [__CLASS__, 'add_order_note'],
-            'find_customer_orders'              => [__CLASS__, 'find_customer_orders'],
-            // Team-page tools (option A — gated by confirmation phrase whitelist).
-            // Authorized by site owner 2026-05-22.
-            'list_team_members'                 => [__CLASS__, 'list_team_members'],
-            'preview_team_member_role_change'   => [__CLASS__, 'preview_team_member_role_change'],
-            'apply_team_member_role_change'     => [__CLASS__, 'apply_team_member_role_change'],
+            'list_orders'           => [__CLASS__, 'list_orders'],
+            'get_order'             => [__CLASS__, 'get_order'],
+            'update_order_status'   => [__CLASS__, 'update_order_status'],
+            'add_order_note'        => [__CLASS__, 'add_order_note'],
+            'find_customer_orders'  => [__CLASS__, 'find_customer_orders'],
+            // Generic content-backend dispatch (v0.4).
+            // Routes to whichever registered backend claims target.kind.
+            // Backends are pulled via apply_filters('wpchat_content_backends').
+            'list_content_blocks'   => [__CLASS__, 'list_content_blocks'],
+            'preview_content_change' => [__CLASS__, 'preview_content_change'],
+            'apply_content_change'  => [__CLASS__, 'apply_content_change'],
         ];
     }
 
@@ -139,208 +152,64 @@ class Tools {
     }
 
     // ============================================================
-    // Team-page tools — option A (gated by confirmation phrase whitelist)
+    // Generic content-backend dispatch (v0.4)
+    // Routes to whichever registered backend claims target.kind.
     // ============================================================
 
-    /** Static files that contain team__member blocks. */
-    private static function team_pages(): array {
-        return [
-            'homepage'      => ABSPATH . 'html/pages/index.html',
-            'meistrai_page' => ABSPATH . 'html/pages/musu-meistrai.html',
-        ];
-    }
-
-    /** Parse every team__member block in $html into structured records. */
-    private static function parse_team_blocks(string $html): array {
-        $block_pattern = '/<div class="team__member[^"]*">.*?<\/div>\s*<\/div>/s';
-        preg_match_all($block_pattern, $html, $blocks);
-        $out = [];
-        foreach ($blocks[0] as $block) {
-            $alt = '';
-            $name = '';
-            $role = '';
-            if (preg_match('/<img[^>]*alt="([^"]+)"/i', $block, $m)) {
-                $alt = $m[1];
-            }
-            if (preg_match('/<h3[^>]*class="team__member-name"[^>]*>(.*?)<\/h3>/s', $block, $m)) {
-                $name = trim(html_entity_decode(strip_tags($m[1]), ENT_QUOTES | ENT_HTML5, 'UTF-8'));
-            }
-            if (preg_match('/<p[^>]*class="team__member-role"[^>]*>(.*?)<\/p>/s', $block, $m)) {
-                $role = trim(html_entity_decode(strip_tags($m[1]), ENT_QUOTES | ENT_HTML5, 'UTF-8'));
-            }
-            $out[] = ['alt' => $alt, 'name' => $name, 'role' => $role, 'block' => $block];
-        }
-        return $out;
-    }
-
-    private static function name_matches(string $needle, array $member): bool {
-        $needle_lc = mb_strtolower($needle, 'UTF-8');
-        if ($needle_lc === '') {
-            return false;
-        }
-        $hay = mb_strtolower($member['alt'] . ' ' . $member['name'], 'UTF-8');
-        return strpos($hay, $needle_lc) !== false;
-    }
-
-    public static function list_team_members(array $args): array {
-        $results = [];
-        foreach (self::team_pages() as $label => $path) {
-            if (!file_exists($path)) {
-                continue;
-            }
-            foreach (self::parse_team_blocks(file_get_contents($path)) as $m) {
-                $results[] = ['file' => $label, 'name' => $m['name'], 'role' => $m['role']];
-            }
-        }
-        return [
-            'count'   => count($results),
-            'pages'   => array_keys(self::team_pages()),
-            'members' => $results,
-        ];
-    }
-
-    /** Read-only preview — finds every occurrence that would change. */
-    public static function preview_team_member_role_change(array $args): array {
-        $name     = trim((string) ($args['name'] ?? ''));
-        $new_role = trim((string) ($args['new_role'] ?? ''));
-        if ($name === '' || $new_role === '') {
-            return ['error' => 'Both `name` and `new_role` are required.'];
-        }
-        $matches = [];
-        $available = [];
-        foreach (self::team_pages() as $label => $path) {
-            if (!file_exists($path)) {
-                continue;
-            }
-            foreach (self::parse_team_blocks(file_get_contents($path)) as $m) {
-                $available[] = $m['name'];
-                if (self::name_matches($name, $m)) {
-                    $matches[] = [
-                        'file'     => $label,
-                        'name'     => $m['name'],
-                        'old_role' => $m['role'],
-                        'new_role' => $new_role,
-                    ];
-                }
-            }
-        }
-        if (empty($matches)) {
+    public static function list_content_blocks(array $args): array {
+        $kind = (string) ($args['kind'] ?? '');
+        if ($kind === '') {
             return [
-                'matches'           => [],
-                'available_members' => array_values(array_unique($available)),
-                'hint'              => 'No team member matched. Show the available members and ask the user to pick.',
+                'error'           => 'kind is required.',
+                'available_kinds' => ContentRouter::all_kinds(),
             ];
         }
-        return [
-            'matches'          => $matches,
-            'occurrence_count' => count($matches),
-            'note'             => 'No write performed yet. To apply, call apply_team_member_role_change with the user\'s confirmation phrase.',
-        ];
-    }
-
-    /**
-     * Apply the role change. Requires `confirmation` to be a whitelisted
-     * affirmative phrase. This is the structural gate that lets an LLM-call
-     * write happen only after explicit user consent in chat.
-     */
-    public static function apply_team_member_role_change(array $args): array {
-        $name        = trim((string) ($args['name'] ?? ''));
-        $new_role    = trim((string) ($args['new_role'] ?? ''));
-        $confirmation = trim((string) ($args['confirmation'] ?? ''));
-
-        if ($name === '' || $new_role === '') {
-            return ['error' => 'Both `name` and `new_role` are required.'];
-        }
-        if (!self::is_confirmed_phrase($confirmation)) {
+        $backend = ContentRouter::for_kind($kind);
+        if (!$backend) {
             return [
-                'error'                 => 'Confirmation required. Ask the user to type one of: yes, confirm, taip, patvirtinu, да, ok.',
-                'received_confirmation' => $confirmation,
+                'error'           => "No backend registered for kind: $kind",
+                'available_kinds' => ContentRouter::all_kinds(),
             ];
         }
+        $sub_args = is_array($args['args'] ?? null) ? $args['args'] : [];
+        return $backend->list_items($kind, $sub_args);
+    }
 
-        $changes = [];
-        $errors  = [];
-        $new_role_html = self::escape_html_text($new_role);
-
-        foreach (self::team_pages() as $label => $path) {
-            if (!file_exists($path)) {
-                continue;
-            }
-            if (!is_writable($path)) {
-                $errors[] = ['file' => $label, 'error' => 'Not writable: ' . $path];
-                continue;
-            }
-
-            $html         = file_get_contents($path);
-            $page_changes = [];
-
-            foreach (self::parse_team_blocks($html) as $m) {
-                if (!self::name_matches($name, $m)) {
-                    continue;
-                }
-                $old_block = $m['block'];
-                $new_block = preg_replace(
-                    '/(<p[^>]*class="team__member-role"[^>]*>)(.*?)(<\/p>)/s',
-                    '$1' . $new_role_html . '$3',
-                    $old_block,
-                    1
-                );
-                if ($new_block === null || $new_block === $old_block) {
-                    continue;
-                }
-                $html = str_replace($old_block, $new_block, $html);
-                $page_changes[] = [
-                    'name'     => $m['name'],
-                    'old_role' => $m['role'],
-                    'new_role' => $new_role,
-                ];
-            }
-
-            if (!empty($page_changes)) {
-                $bytes = file_put_contents($path, $html);
-                if ($bytes === false) {
-                    $errors[] = ['file' => $label, 'error' => 'Write failed.'];
-                } else {
-                    $changes[] = ['file' => $label, 'changes' => $page_changes];
-                }
-            }
+    public static function preview_content_change(array $args): array {
+        $target = is_array($args['target'] ?? null) ? $args['target'] : [];
+        $field  = (string) ($args['field'] ?? '');
+        $value  = $args['value'] ?? null;
+        $kind   = (string) ($target['kind'] ?? '');
+        if ($kind === '' || $field === '') {
+            return ['error' => 'target.kind and field are required.'];
         }
-
-        if (empty($changes)) {
+        $backend = ContentRouter::for_kind($kind);
+        if (!$backend) {
             return [
-                'ok'     => false,
-                'error'  => 'No matching team member found in any page.',
-                'errors' => $errors,
+                'error'           => "No backend registered for kind: $kind",
+                'available_kinds' => ContentRouter::all_kinds(),
             ];
         }
-
-        return [
-            'ok'      => true,
-            'changes' => $changes,
-            'errors'  => $errors,
-            'note'    => 'Static HTML files updated on disk. The change is live now. Files are tracked in git — commit them, otherwise the next deploy will revert.',
-        ];
+        return $backend->preview($target, $field, $value);
     }
 
-    private static function is_confirmed_phrase(string $phrase): bool {
-        $lc = mb_strtolower(trim($phrase), 'UTF-8');
-        if ($lc === '') {
-            return false;
+    public static function apply_content_change(array $args): array {
+        $target       = is_array($args['target'] ?? null) ? $args['target'] : [];
+        $field        = (string) ($args['field'] ?? '');
+        $value        = $args['value'] ?? null;
+        $confirmation = (string) ($args['confirmation'] ?? '');
+        $kind         = (string) ($target['kind'] ?? '');
+        if ($kind === '' || $field === '') {
+            return ['error' => 'target.kind and field are required.'];
         }
-        $allowed = ['yes', 'confirm', 'apply', 'do it', 'taip', 'patvirtinu', 'да', 'tak', 'ok'];
-        foreach ($allowed as $needle) {
-            if ($lc === $needle) {
-                return true;
-            }
-            if (mb_strlen($lc, 'UTF-8') <= 40 && strpos($lc, $needle) !== false) {
-                return true;
-            }
+        $backend = ContentRouter::for_kind($kind);
+        if (!$backend) {
+            return [
+                'error'           => "No backend registered for kind: $kind",
+                'available_kinds' => ContentRouter::all_kinds(),
+            ];
         }
-        return false;
-    }
-
-    private static function escape_html_text(string $text): string {
-        return htmlspecialchars($text, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        return $backend->apply($target, $field, $value, $confirmation);
     }
 
     public static function list_orders(array $args): array {

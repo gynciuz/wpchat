@@ -4,7 +4,7 @@ Tags: woocommerce, chat, ai, claude, orders
 Requires at least: 6.5
 Tested up to: 6.6
 Requires PHP: 8.1
-Stable tag: 0.3.4
+Stable tag: 0.4.0
 License: MIT
 License URI: https://opensource.org/licenses/MIT
 
@@ -34,6 +34,12 @@ Bring your own Anthropic API key.
 4. WPChat → Chat → type.
 
 == Changelog ==
+
+= 0.4.0 =
+* Generic content-backend dispatch — `list_content_blocks`, `preview_content_change`, `apply_content_change` route to whichever backend claims a given `kind`. Replaces the previous Gentleman's Empire-specific `list_team_members` / `preview_team_member_role_change` / `apply_team_member_role_change` tools (those lived in the plugin and only worked on GE's static-HTML pages).
+* New `\WPChat\ContentBackend` interface + default `WPContentBackend` handling `wp_post`, `wp_page_slug`, `wp_post_meta`, `wp_term` via core WP functions (`wp_update_post`, `update_post_meta`, `wp_update_term`).
+* Site-specific backends register via the new `wpchat_content_backends` filter. Site code (theme / MU-plugin) implements `\WPChat\ContentBackend` and appends an instance to the filter; the plugin no longer carries any per-site paths or selectors.
+* System prompt enumerates available content kinds + editable fields at runtime by walking the registered backends. The two-step preview-then-apply pattern with confirmation-phrase whitelist (yes/taip/да/tak/patvirtinu/...) is centralised in `\WPChat\ContentConfirmation::is_confirmed()` so every backend gates writes identically.
 
 = 0.3.4 =
 * Transparent chat container — drop the surrounding card bg/border so the dark page background shows through; keep the structure and message bubbles.
