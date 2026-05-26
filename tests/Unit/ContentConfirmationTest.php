@@ -20,18 +20,32 @@ class ContentConfirmationTest extends TestCase {
 
     public static function acceptedPhrases(): array {
         return [
-            'english yes'     => ['yes'],
-            'lithuanian taip' => ['taip'],
+            // English
+            'english yes'      => ['yes'],
+            'english ok'       => ['ok'],
+            'english okay'     => ['okay'],
+            'english sure'     => ['sure'],
+            'english confirm'  => ['confirm'],
+            'english apply'    => ['apply'],
+            'english do it'    => ['do it'],
+            // Lithuanian
+            'lithuanian taip'       => ['taip'],
+            'lithuanian gerai'      => ['gerai'],
+            'lithuanian sutinku'    => ['sutinku'],
+            'lithuanian patvirtinu' => ['patvirtinu'],
+            // Russian
             'russian да'      => ['да'],
+            'russian хорошо'  => ['хорошо'],
+            'russian ок'      => ['ок'],
+            // Polish
             'polish tak'      => ['tak'],
-            'confirm'         => ['confirm'],
-            'apply'           => ['apply'],
-            'do it'           => ['do it'],
-            'patvirtinu'      => ['patvirtinu'],
-            'ok'              => ['ok'],
-            'case insensitive' => ['TAIP'],
-            'with whitespace' => ['  yes  '],
-            'sentence containing yes' => ['ok, do it'],
+            'polish dobrze'   => ['dobrze'],
+            // Casing + whitespace
+            'case insensitive uppercase' => ['TAIP'],
+            'case insensitive mixed'     => ['Gerai'],
+            'with whitespace'            => ['  yes  '],
+            'with punctuation'           => ['ok!'],
+            'sentence with affirmative'  => ['ok, do it'],
         ];
     }
 
@@ -46,18 +60,27 @@ class ContentConfirmationTest extends TestCase {
             'whitespace only'    => ['   '],
             'no'                 => ['no'],
             'lithuanian ne'      => ['ne'],
+            'lithuanian negerai (negation of gerai)' => ['negerai'],
+            'lithuanian atšaukti' => ['atšaukti'],
             'russian нет'        => ['нет'],
+            'russian не надо'    => ['не надо'],
+            'polish nie'         => ['nie'],
             'cancel'             => ['cancel'],
             'maybe'              => ['maybe'],
             'unrelated word'     => ['banana'],
+            // Safety: if the user types both an affirmative AND a negation,
+            // refuse — the user is uncertain and should retry cleanly.
+            'mixed signals ne taip' => ['ne, taip'],
+            'mixed signals no ok'   => ['no, ok'],
         ];
     }
 
-    public function test_long_strings_are_not_substring_matched(): void {
+    public function test_long_strings_with_embedded_affirmative_still_rejected(): void {
+        // No word boundary around the embedded "yes" — token-match rejects.
         $long = str_repeat('a', 60) . 'yes' . str_repeat('a', 60);
         $this->assertFalse(
             ContentConfirmation::is_confirmed($long),
-            'Strings longer than 40 chars should not substring-match (prevents accidental confirmation from quoted long text).'
+            'Affirmatives buried inside larger strings without word boundaries must not match.'
         );
     }
 }

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { Mic, MicOff, Send, Loader2, ExternalLink, LogOut, ChevronDown, History as HistoryIcon, Plus } from "lucide-react";
+import { Mic, MicOff, Send, Loader2, ExternalLink, LogOut, ChevronDown, History as HistoryIcon, Plus, Check, X } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { Button } from "@/components/ui/button";
@@ -116,9 +116,8 @@ export function Chat({ boot }: { boot?: Boot }) {
     rec.start();
   }
 
-  async function handleSend(e: FormEvent) {
-    e.preventDefault();
-    const text = input.trim();
+  async function sendText(rawText: string) {
+    const text = rawText.trim();
     if (!text || busy || loadingConversation || !boot) return;
     if (listening) recRef.current?.stop();
 
@@ -132,6 +131,16 @@ export function Chat({ boot }: { boot?: Boot }) {
     setInput("");
     setBusy(true);
     setError(null);
+    await postChat(history);
+  }
+
+  async function handleSend(e: FormEvent) {
+    e.preventDefault();
+    await sendText(input);
+  }
+
+  async function postChat(history: WireMessage[]) {
+    if (!boot) return;
 
     try {
       const res = await fetch(`${boot.restUrl}chat`, {
@@ -284,6 +293,13 @@ export function Chat({ boot }: { boot?: Boot }) {
               )}
               {m.toolCalls && m.toolCalls.length > 0 && (
                 <ToolCallDisclosure calls={m.toolCalls} />
+              )}
+              {m.role === "assistant" && isPendingConfirmation(m, i, messages) && !busy && (
+                <ConfirmCancelButtons
+                  onConfirm={() => sendText("taip")}
+                  onCancel={() => sendText("ne")}
+                  locale={boot?.locale}
+                />
               )}
             </motion.div>
           ))}
@@ -493,6 +509,66 @@ function EmptyState() {
       </ul>
     </div>
   );
+}
+
+/**
+ * Decide whether an assistant message is in "awaiting confirmation" state:
+ * it called a preview_* tool (or the older preview_team_member_role_change)
+ * AND no later message has called an apply_* tool. If true, the UI renders
+ * Confirm/Cancel buttons under that bubble so the user doesn't have to type
+ * one of taip/gerai/ok/etc.
+ */
+function isPendingConfirmation(message: ChatMessage, index: number, all: ChatMessage[]): boolean {
+  if (message.role !== "assistant") return false;
+  const calls = message.toolCalls ?? [];
+  const hasPreview = calls.some((c) => c.name.startsWith("preview_"));
+  if (!hasPreview) return false;
+  // If a later assistant message already applied or the user explicitly cancelled, no buttons.
+  for (let j = index + 1; j < all.length; j++) {
+    const next = all[j];
+    if (next.role === "assistant" && next.toolCalls?.some((c) => c.name.startsWith("apply_"))) {
+      return false;
+    }
+  }
+  return index === all.length - 1; // only show on the latest assistant message
+}
+
+function ConfirmCancelButtons({
+  onConfirm,
+  onCancel,
+  locale,
+}: {
+  onConfirm: () => void;
+  onCancel: () => void;
+  locale?: string;
+}) {
+  const labels = labelsFor(locale);
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 4 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.22 }}
+      className="flex items-center gap-2 self-start"
+    >
+      <Button type="button" size="sm" onClick={onConfirm} className="gap-1.5">
+        <Check className="size-4" />
+        {labels.confirm}
+      </Button>
+      <Button type="button" size="sm" variant="secondary" onClick={onCancel} className="gap-1.5">
+        <X className="size-4" />
+        {labels.cancel}
+      </Button>
+    </motion.div>
+  );
+}
+
+function labelsFor(locale?: string): { confirm: string; cancel: string } {
+  switch (locale) {
+    case "lt": return { confirm: "Patvirtinti", cancel: "Atšaukti" };
+    case "ru": return { confirm: "Подтвердить", cancel: "Отмена" };
+    case "pl": return { confirm: "Potwierdź", cancel: "Anuluj" };
+    default:   return { confirm: "Confirm", cancel: "Cancel" };
+  }
 }
 
 function ToolCallDisclosure({ calls }: { calls: ToolCall[] }) {

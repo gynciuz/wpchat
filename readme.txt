@@ -4,7 +4,7 @@ Tags: woocommerce, chat, ai, claude, orders
 Requires at least: 6.5
 Tested up to: 6.6
 Requires PHP: 8.1
-Stable tag: 0.4.3
+Stable tag: 0.4.4
 License: MIT
 License URI: https://opensource.org/licenses/MIT
 
@@ -34,6 +34,12 @@ Bring your own Anthropic API key.
 4. WPChat → Chat → type.
 
 == Changelog ==
+
+= 0.4.4 =
+* Confirm / Cancel BUTTONS replace typed confirmation phrases. When the assistant previews a content change (preview_content_change tool call), the chat UI now renders localized `[Patvirtinti]` / `[Atšaukti]` (LT) / `[Подтвердить]` / `[Отмена]` (RU) / `[Potwierdź]` / `[Anuluj]` (PL) / `[Confirm]` / `[Cancel]` (EN) buttons under the assistant bubble. One tap applies or cancels — no more typing "taip" and getting rejected because you said "gerai" instead.
+* Expanded affirmative whitelist for users who DO type: `gerai`, `sutinku`, `okay`, `sure`, `хорошо`, `ок`, `dobrze` are now all accepted alongside the previous yes/taip/patvirtinu/да/tak/ok/apply/confirm/do-it.
+* Token-based matching instead of substring matching — fixes the bug where `negerai` (Lithuanian "not good") would have accidentally matched `gerai` ("good") via substring search. Now matches whole words only, AND explicitly rejects negations (`ne`, `нет`, `не`, `no`, `nie`, `cancel`, `atšaukti`, `negerai`) anywhere in the input, even if an affirmative is also present (mixed-signal inputs like "ne, taip" are rejected — user should retry clean).
+* System prompt updated — assistant is told to describe the change in the user's language but NOT to demand a specific confirmation word; the buttons handle that.
 
 = 0.4.3 =
 * Bump base font on the `/wpchat` route from 16px → 18px (rem reference). Every Tailwind `text-*` utility scales proportionally, so message text, table cells, footers, and chips all become noticeably more readable on phones. wp-admin embed unchanged.

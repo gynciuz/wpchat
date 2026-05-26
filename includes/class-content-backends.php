@@ -67,20 +67,56 @@ interface ContentBackend {
  */
 class ContentConfirmation {
 
+    /**
+     * Accepted natural-language affirmatives across LT / RU / PL / EN.
+     * Single-token matches; we explicitly reject negations first so words
+     * that contain an affirmative as a substring (e.g. "negerai" — "not
+     * okay" — would have substring-matched "gerai") can't slip through.
+     */
     public static function is_confirmed(string $phrase): bool {
         $lc = mb_strtolower(trim($phrase), 'UTF-8');
         if ($lc === '') {
             return false;
         }
-        $allowed = ['yes', 'confirm', 'apply', 'do it', 'taip', 'patvirtinu', 'да', 'tak', 'ok'];
-        foreach ($allowed as $needle) {
-            if ($lc === $needle) {
+
+        $tokens = preg_split('/[\s,;!?.()]+/u', $lc, -1, PREG_SPLIT_NO_EMPTY) ?: [];
+
+        // Reject negations first. If any rejection word is present anywhere
+        // in the input, treat as not-confirmed even if an affirmative is
+        // also present — fail safe for "ne, taip" / "no, ok" / etc.
+        $rejections = ['no', 'ne', 'нет', 'не', 'nie', 'cancel', 'atšaukti', 'negerai'];
+        foreach ($tokens as $token) {
+            if (in_array($token, $rejections, true)) {
+                return false;
+            }
+        }
+
+        // Single-token affirmatives — exact word match, no substring.
+        $allowed_words = [
+            // English
+            'yes', 'ok', 'okay', 'sure', 'confirm', 'apply',
+            // Lithuanian
+            'taip', 'gerai', 'sutinku', 'patvirtinu',
+            // Russian
+            'да', 'хорошо', 'ок',
+            // Polish
+            'tak', 'dobrze',
+        ];
+        foreach ($tokens as $token) {
+            if (in_array($token, $allowed_words, true)) {
                 return true;
             }
+        }
+
+        // Multi-word affirmative phrases — substring is fine because
+        // these are unambiguous.
+        $allowed_phrases = ['do it'];
+        foreach ($allowed_phrases as $needle) {
             if (mb_strlen($lc, 'UTF-8') <= 40 && strpos($lc, $needle) !== false) {
                 return true;
             }
         }
+
         return false;
     }
 }
