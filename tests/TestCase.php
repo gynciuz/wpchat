@@ -36,6 +36,15 @@ abstract class TestCase extends \WP_UnitTestCase {
             'role'       => 'administrator',
             'user_login' => 'wpchat-test-admin-' . uniqid(),
         ]);
+        // The REST permission check requires manage_woocommerce OR
+        // edit_shop_orders. Both are WC-registered caps and don't exist
+        // unless WC is active. Grant them directly so the chat REST
+        // route is reachable even when WC isn't loaded in tests.
+        $user = \get_user_by('id', $this->adminUserId);
+        if ($user) {
+            $user->add_cap('manage_woocommerce');
+            $user->add_cap('edit_shop_orders');
+        }
         \wp_set_current_user($this->adminUserId);
     }
 
