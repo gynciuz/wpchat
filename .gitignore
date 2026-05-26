@@ -21,5 +21,9 @@ app/dist/
 vendor/
 composer.lock
 
+# PHPUnit cache
+.phpunit.cache/
+.phpunit.result.cache
+
 # pnpm
 pnpm-debug.log*

@@ -1,0 +1,27 @@
+{
+    "name": "gynciuz/wpchat",
+    "description": "Chat-based admin assistant for WooCommerce orders, powered by Anthropic Claude.",
+    "type": "wordpress-plugin",
+    "license": "MIT",
+    "require": {
+        "php": ">=8.1"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^9.6",
+        "yoast/phpunit-polyfills": "^2.0"
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "WPChat\\Tests\\": "tests/"
+        }
+    },
+    "scripts": {
+        "test": "phpunit",
+        "test:unit": "phpunit --testsuite=unit",
+        "test:integration": "phpunit --testsuite=integration",
+        "test:scenarios": "phpunit --testsuite=scenarios"
+    },
+    "config": {
+        "platform-check": false
+    }
+}

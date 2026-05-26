@@ -52,15 +52,21 @@ class Anthropic {
                 $request['tools'] = $tools;
             }
 
-            $response = wp_remote_post(self::ENDPOINT, [
-                'timeout' => 60,
-                'headers' => [
-                    'x-api-key'         => $api_key,
-                    'anthropic-version' => self::VERSION,
-                    'content-type'      => 'application/json',
-                ],
-                'body' => wp_json_encode($request),
-            ]);
+            // Allow tests to intercept the HTTP call. In production no filter
+            // is registered so this returns null and the real wp_remote_post
+            // runs. Tests register a mock via wpchat_anthropic_http_response.
+            $response = apply_filters('wpchat_anthropic_http_response', null, $request);
+            if ($response === null) {
+                $response = wp_remote_post(self::ENDPOINT, [
+                    'timeout' => 60,
+                    'headers' => [
+                        'x-api-key'         => $api_key,
+                        'anthropic-version' => self::VERSION,
+                        'content-type'      => 'application/json',
+                    ],
+                    'body' => wp_json_encode($request),
+                ]);
+            }
 
             if (is_wp_error($response)) {
                 throw new \RuntimeException('HTTP error: ' . $response->get_error_message());

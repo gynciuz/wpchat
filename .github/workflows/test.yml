@@ -1,0 +1,91 @@
+name: Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  phpunit:
+    name: PHP ${{ matrix.php }} · WP ${{ matrix.wp }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['8.1', '8.2', '8.3']
+        wp:  ['6.6', 'latest']
+
+    services:
+      mysql:
+        image: mysql:8
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: wpchat_tests
+        ports: ['3306:3306']
+        options: >-
+          --health-cmd="mysqladmin ping --silent"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: mysqli, mbstring, intl, dom, libxml, zip
+          coverage: none
+          tools: composer:v2
+
+      - name: Install subversion (for WP test scaffold)
+        run: sudo apt-get update && sudo apt-get install -y subversion
+
+      - name: Cache composer
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/composer
+          key: composer-${{ matrix.php }}-${{ hashFiles('composer.json') }}
+
+      - name: Install composer dependencies
+        run: composer install --prefer-dist --no-progress
+
+      - name: Install WordPress test scaffold + WC
+        env:
+          WP_VERSION: ${{ matrix.wp }}
+        run: |
+          chmod +x bin/install-wp-tests.sh
+          bin/install-wp-tests.sh wpchat_tests root root 127.0.0.1:3306 ${WP_VERSION}
+
+          # Pull WooCommerce so order-tool tests can call real wc_* functions.
+          mkdir -p /tmp/wordpress/wp-content/plugins
+          curl -fsSL https://downloads.wordpress.org/plugin/woocommerce.zip -o /tmp/wc.zip
+          unzip -q /tmp/wc.zip -d /tmp/wordpress/wp-content/plugins/
+
+      - name: Run PHPUnit
+        env:
+          WP_TESTS_DIR: /tmp/wordpress-tests-lib
+        run: vendor/bin/phpunit --colors=always
+
+  lint:
+    name: PHP syntax lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          tools: none
+
+      - name: Lint every PHP file
+        run: |
+          find . -name '*.php' -not -path './vendor/*' -not -path './build/*' -not -path './app/node_modules/*' \
+            -print0 | xargs -0 -n1 -P4 php -l

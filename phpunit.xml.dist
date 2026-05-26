@@ -1,0 +1,30 @@
+<?xml version="1.0"?>
+<phpunit
+    bootstrap="tests/bootstrap.php"
+    backupGlobals="false"
+    colors="true"
+    convertErrorsToExceptions="true"
+    convertNoticesToExceptions="true"
+    convertWarningsToExceptions="true"
+    stopOnFailure="false"
+    cacheResultFile=".phpunit.cache/result"
+>
+    <testsuites>
+        <testsuite name="unit">
+            <directory suffix=".php">tests/Unit</directory>
+        </testsuite>
+        <testsuite name="integration">
+            <directory suffix=".php">tests/Integration</directory>
+        </testsuite>
+        <testsuite name="scenarios">
+            <directory suffix=".php">tests/Scenarios</directory>
+        </testsuite>
+    </testsuites>
+
+    <coverage>
+        <include>
+            <directory suffix=".php">includes</directory>
+            <file>wpchat.php</file>
+        </include>
+    </coverage>
+</phpunit>
