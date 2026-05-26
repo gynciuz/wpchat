@@ -81,6 +81,18 @@ class Tools {
                 ],
             ],
             [
+                'name'        => 'get_admin_url',
+                'description' => 'Return the WordPress admin URL for a given resource so the user can open it in a new tab and act there directly. Use this whenever a request cannot be fulfilled by the available tools (e.g. delete order, refund, bulk action) — hand the user a deep link instead of stating limitations.',
+                'input_schema' => [
+                    'type'       => 'object',
+                    'properties' => [
+                        'resource' => ['type' => 'string', 'description' => 'One of: order, orders_list, post, pages_list, user, users_list, dashboard.'],
+                        'id'       => ['type' => 'integer', 'description' => 'Resource id (order id, post id, user id). Required for order/post/user; ignored for *_list and dashboard.'],
+                    ],
+                    'required' => ['resource'],
+                ],
+            ],
+            [
                 'name'        => 'list_content_blocks',
                 'description' => 'List content items of a given kind. Available kinds depend on which backends are registered on this site (see the system prompt). Common kinds: wp_post, wp_page_slug, wp_post_meta, wp_term. Sites may add custom kinds (e.g. team_member).',
                 'input_schema' => [
@@ -136,6 +148,7 @@ class Tools {
             'update_order_status'   => [__CLASS__, 'update_order_status'],
             'add_order_note'        => [__CLASS__, 'add_order_note'],
             'find_customer_orders'  => [__CLASS__, 'find_customer_orders'],
+            'get_admin_url'         => [__CLASS__, 'get_admin_url'],
             // Generic content-backend dispatch (v0.4).
             // Routes to whichever registered backend claims target.kind.
             // Backends are pulled via apply_filters('wpchat_content_backends').
@@ -294,6 +307,51 @@ class Tools {
             'note_id'          => $note_id,
             'customer_visible' => $customer_visible,
         ];
+    }
+
+    public static function get_admin_url(array $args): array {
+        $resource = (string) ($args['resource'] ?? '');
+        $id       = (int) ($args['id'] ?? 0);
+        $admin    = admin_url();
+
+        switch ($resource) {
+            case 'order':
+                if (!$id) {
+                    return ['error' => 'id required for resource=order.'];
+                }
+                $order = function_exists('wc_get_order') ? wc_get_order($id) : null;
+                if ($order && method_exists($order, 'get_edit_order_url')) {
+                    // HPOS-aware.
+                    return ['url' => $order->get_edit_order_url(), 'resource' => 'order', 'id' => $id];
+                }
+                return ['url' => admin_url('post.php?post=' . $id . '&action=edit'), 'resource' => 'order', 'id' => $id];
+
+            case 'orders_list':
+                return ['url' => admin_url('admin.php?page=wc-orders'), 'resource' => 'orders_list'];
+
+            case 'post':
+                if (!$id) {
+                    return ['error' => 'id required for resource=post.'];
+                }
+                return ['url' => admin_url('post.php?post=' . $id . '&action=edit'), 'resource' => 'post', 'id' => $id];
+
+            case 'pages_list':
+                return ['url' => admin_url('edit.php?post_type=page'), 'resource' => 'pages_list'];
+
+            case 'user':
+                if (!$id) {
+                    return ['error' => 'id required for resource=user.'];
+                }
+                return ['url' => admin_url('user-edit.php?user_id=' . $id), 'resource' => 'user', 'id' => $id];
+
+            case 'users_list':
+                return ['url' => admin_url('users.php'), 'resource' => 'users_list'];
+
+            case 'dashboard':
+                return ['url' => $admin, 'resource' => 'dashboard'];
+        }
+
+        return ['error' => "Unknown resource: $resource", 'allowed' => ['order', 'orders_list', 'post', 'pages_list', 'user', 'users_list', 'dashboard']];
     }
 
     public static function find_customer_orders(array $args): array {

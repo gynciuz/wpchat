@@ -4,7 +4,7 @@ Tags: woocommerce, chat, ai, claude, orders
 Requires at least: 6.5
 Tested up to: 6.6
 Requires PHP: 8.1
-Stable tag: 0.4.1
+Stable tag: 0.4.2
 License: MIT
 License URI: https://opensource.org/licenses/MIT
 
@@ -34,6 +34,13 @@ Bring your own Anthropic API key.
 4. WPChat → Chat → type.
 
 == Changelog ==
+
+= 0.4.2 =
+* New tool `get_admin_url(resource, id)` — returns the WordPress admin deep link for an order (HPOS-aware via `WC_Order::get_edit_order_url`), post, user, or list view. Lets the assistant hand off via a clickable link instead of dead-ending on "I can't do that".
+* System prompt overhaul — adds a "How to be useful" preamble that bans dead-end "I can't" responses, requires concrete next-step handoffs via `get_admin_url`, and forbids hallucinating technical explanations for tool failures.
+* Hard guardrails section — explicitly bans bulk destructive operations (no "cancel all", no "delete every", no `*_ids: [array]` ever) and pre-specs the future DELETE-word confirmation pattern for genuinely destructive ops (require typing literal `DELETE` / `IŠTRINTI` / `УДАЛИТЬ` for deletes).
+* Multilingual status mapping table — explicit `user word → slug` rows for cancelled / completed / processing / pending / on-hold / refunded / failed / panaudotas, so Lithuanian "atšauktas" / Russian "отменён" / etc. reliably map to the right WC slug. Fixes the hallucinated "config has `ancelled` typo" failure mode seen in production 2026-05-26.
+* Status reference now formatted as `\`slug\` → "Label"` for unambiguous parsing.
 
 = 0.4.1 =
 * Conversation history persistence — every user + assistant message is stored in a new `{prefix}_wpchat_messages` table (created by `dbDelta` on activation), scoped to the WP user who sent it. Each user only sees their own conversations.
