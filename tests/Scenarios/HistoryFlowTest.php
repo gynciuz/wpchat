@@ -63,9 +63,14 @@ class HistoryFlowTest extends TestCase {
         $resp_a = $this->postChat('User A private message');
         $conv_a = $resp_a['data']['conversation_id'];
 
-        // Switch to user B.
-        $other = $this->factory()->user->create(['role' => 'administrator']);
-        \wp_set_current_user($other);
+        // Switch to user B — also a legit admin with the same caps, so the
+        // REST permission check passes and we actually exercise the
+        // history-repo's cross-user filter (not just the route gate).
+        $other_id = $this->factory()->user->create(['role' => 'administrator']);
+        $other = \get_user_by('id', $other_id);
+        $other->add_cap('manage_woocommerce');
+        $other->add_cap('edit_shop_orders');
+        \wp_set_current_user($other_id);
 
         $stolen = $this->getConversation($conv_a);
         $this->assertSame(404, $stolen['status'], 'Cross-user reads must return 404, never leak content.');
