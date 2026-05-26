@@ -88,6 +88,9 @@ class Frontend {
   /* Match shadcn's dark --background token so there's no light gutter
      around the chat root on wider viewports. */
   html, body { margin: 0; padding: 0; height: 100%; background: oklch(0.145 0 0); color: oklch(0.985 0 0); }
+  /* Bump rem reference 16px → 18px so every Tailwind text-* utility scales
+     proportionally — more readable on phones between salon clients. */
+  html { font-size: 18px; }
   body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
   #wpchat-root { min-height: 100vh; }
 </style>

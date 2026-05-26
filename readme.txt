@@ -4,7 +4,7 @@ Tags: woocommerce, chat, ai, claude, orders
 Requires at least: 6.5
 Tested up to: 6.6
 Requires PHP: 8.1
-Stable tag: 0.4.2
+Stable tag: 0.4.3
 License: MIT
 License URI: https://opensource.org/licenses/MIT
 
@@ -34,6 +34,9 @@ Bring your own Anthropic API key.
 4. WPChat → Chat → type.
 
 == Changelog ==
+
+= 0.4.3 =
+* Bump base font on the `/wpchat` route from 16px → 18px (rem reference). Every Tailwind `text-*` utility scales proportionally, so message text, table cells, footers, and chips all become noticeably more readable on phones. wp-admin embed unchanged.
 
 = 0.4.2 =
 * New tool `get_admin_url(resource, id)` — returns the WordPress admin deep link for an order (HPOS-aware via `WC_Order::get_edit_order_url`), post, user, or list view. Lets the assistant hand off via a clickable link instead of dead-ending on "I can't do that".
