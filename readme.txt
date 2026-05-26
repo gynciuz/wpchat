@@ -4,7 +4,7 @@ Tags: woocommerce, chat, ai, claude, orders
 Requires at least: 6.5
 Tested up to: 6.6
 Requires PHP: 8.1
-Stable tag: 0.4.4
+Stable tag: 0.4.5
 License: MIT
 License URI: https://opensource.org/licenses/MIT
 
@@ -34,6 +34,11 @@ Bring your own Anthropic API key.
 4. WPChat → Chat → type.
 
 == Changelog ==
+
+= 0.4.5 =
+* Fix "the page is static HTML, you need FTP" dead-end refusal. The LLM was reading the team_member backend's self-description as a reason to give up instead of as the tool that does the job. System prompt now has a "Discover before giving up — MANDATORY" section that requires the assistant to call list_content_blocks for every plausible kind before saying it can't help. Explicit ban on refusing a content edit on static-HTML grounds: if a registered kind handles the location, USE IT.
+* Intent→kind mapping baked into the prompt: person/barber/master → team_member; page section → wp_page_slug; post → wp_post; setting → wp_post_meta; category/tag → wp_term.
+* Scenario test DiscoverBeforeRefusingTest locks these rules so the regression can't reappear silently.
 
 = 0.4.4 =
 * Confirm / Cancel BUTTONS replace typed confirmation phrases. When the assistant previews a content change (preview_content_change tool call), the chat UI now renders localized `[Patvirtinti]` / `[Atšaukti]` (LT) / `[Подтвердить]` / `[Отмена]` (RU) / `[Potwierdź]` / `[Anuluj]` (PL) / `[Confirm]` / `[Cancel]` (EN) buttons under the assistant bubble. One tap applies or cancels — no more typing "taip" and getting rejected because you said "gerai" instead.
