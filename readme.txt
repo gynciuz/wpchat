@@ -4,7 +4,7 @@ Tags: woocommerce, chat, ai, claude, orders
 Requires at least: 6.5
 Tested up to: 6.6
 Requires PHP: 8.1
-Stable tag: 0.4.7
+Stable tag: 0.4.8
 License: MIT
 License URI: https://opensource.org/licenses/MIT
 
@@ -34,6 +34,13 @@ Bring your own Anthropic API key.
 4. WPChat → Chat → type.
 
 == Changelog ==
+
+= 0.4.8 =
+* New `\WPChat\GitSync` helper. Site backends that mutate tracked files (e.g. the GE team_member backend writing to static HTML) can call `GitSync::commit_files($paths, $message, $author)` after a successful write to commit + push automatically. Without this, WPChat-originated edits would sit uncommitted on prod and silently disappear on the next disaster-recovery reset (which is what happened during the 2026-05-26 reconcile incident).
+* Opt-in by design — gracefully no-ops with a clear `skipped_reason` when `WPCHAT_GIT_SYNC_ENABLED` is not set to true in wp-config.php. Operator sees "(Git auto-sync skipped: …)" in the chat assistant's success message, never silent.
+* `proc_open` with argv arrays (no shell invocation, no escaping bugs). Concurrent writes serialise via `flock` against a lockfile so two rapid edits don't race. Push failure is surfaced as a distinct error from commit failure — the commit lands locally even if push can't reach origin, and the response reflects that.
+* GE backend wired in: a successful team_member apply now commits + pushes the changed HTML files with the WP user's display name + email as commit author. Defaults to bot identity if the WP user has no email.
+* GitSyncTest covers: opt-in default-off behaviour, commit + push happy path, idempotent no-op when file is unchanged, rejection of files outside repo root, and the commit-succeeded-push-failed split error.
 
 = 0.4.7 =
 * Microphone UX overhaul (B5). The persistent red "Microphone access denied" banner that used to eat ~25% of mobile screen real estate is gone. Replaced with a dismissible muted toast that auto-clears after 6 seconds. The toast has its own X button. When the browser reports microphone permission is permanently denied (or the browser doesn't support voice at all), the mic icon disappears entirely instead of taunting you on every send — a small "balsas išjungtas" hint surfaces in the footer instead. iOS Safari users get an iOS-specific message pointing at Settings → Safari → Microphone (or Settings → WPChat → Microphone if installed as PWA), not the generic browser-address-bar copy that doesn't apply on iOS.
