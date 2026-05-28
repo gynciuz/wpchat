@@ -68,6 +68,7 @@ class Frontend {
             'userName' => wp_get_current_user()->display_name,
             'locale'   => substr(get_user_locale(), 0, 2),
             'siteName' => get_bloginfo('name'),
+            'siteUrl'  => untrailingslashit(home_url()),
             'logoutUrl' => wp_logout_url(home_url(self::URL_PATH)),
         ];
         $boot_json = wp_json_encode($boot);

@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { HistoryDrawer } from "./HistoryDrawer";
+import { OrdersTable, extractOrders } from "./OrdersTable";
 
 interface Boot {
   restUrl: string;
@@ -15,6 +16,7 @@ interface Boot {
   userName?: string;
   locale: string;
   siteName?: string;
+  siteUrl?: string;
   logoutUrl?: string;
 }
 
@@ -289,7 +291,17 @@ export function Chat({ boot }: { boot?: Boot }) {
                   {m.text}
                 </div>
               ) : (
-                <AssistantBubble text={m.text} />
+                <>
+                  {boot && m.toolCalls && extractOrders(m.toolCalls).length > 0 && (
+                    <OrdersTable
+                      orders={extractOrders(m.toolCalls)}
+                      restUrl={boot.restUrl}
+                      nonce={boot.nonce}
+                      siteUrl={boot.siteUrl ?? ""}
+                    />
+                  )}
+                  <AssistantBubble text={m.text} />
+                </>
               )}
               {m.toolCalls && m.toolCalls.length > 0 && (
                 <ToolCallDisclosure calls={m.toolCalls} />

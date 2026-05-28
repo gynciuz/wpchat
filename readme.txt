@@ -4,7 +4,7 @@ Tags: woocommerce, chat, ai, claude, orders
 Requires at least: 6.5
 Tested up to: 6.6
 Requires PHP: 8.1
-Stable tag: 0.4.5
+Stable tag: 0.4.6
 License: MIT
 License URI: https://opensource.org/licenses/MIT
 
@@ -34,6 +34,12 @@ Bring your own Anthropic API key.
 4. WPChat → Chat → type.
 
 == Changelog ==
+
+= 0.4.6 =
+* Inline 3-dot actions on order tables (no AI involved). When the assistant lists orders (via `list_orders` or `find_customer_orders`), the chat now renders the orders as a structured React table ABOVE the LLM's text reply, with a 3-dot menu per row offering: (a) "Atidaryti WP admin" — deep link to the order in a new tab, (b) "Keisti statusą →" — submenu with every available WC status (including the custom `panaudotas`). One tap changes the status with zero Anthropic API spend and zero hallucination risk.
+* Status changes happen via new direct-action REST endpoints (`POST /wpchat/v1/actions/order/{id}/status`, `POST /wpchat/v1/actions/order/{id}/note`, `GET /wpchat/v1/actions/order-statuses`) that share the chat permission check (manage_woocommerce / edit_shop_orders) but bypass the LLM entirely. The row re-renders in place with the new status badge after a successful change.
+* New `boot.siteUrl` exposed in the frontend bootstrap payload so the table can construct correct HPOS-aware admin URLs without round-tripping through the LLM.
+* Scenario test DirectActionsTest locks the architecture: direct-action endpoints work even when no Anthropic key is configured, never invoke the LLM, and require the same caps as the chat route.
 
 = 0.4.5 =
 * Fix "the page is static HTML, you need FTP" dead-end refusal. The LLM was reading the team_member backend's self-description as a reason to give up instead of as the tool that does the job. System prompt now has a "Discover before giving up — MANDATORY" section that requires the assistant to call list_content_blocks for every plausible kind before saying it can't help. Explicit ban on refusing a content edit on static-HTML grounds: if a registered kind handles the location, USE IT.

@@ -45,6 +45,24 @@ class Rest {
             'permission_callback' => [$this, 'check_permission'],
             'callback'            => [$this, 'handle_get_conversation'],
         ]);
+        // Direct-action endpoints — these BYPASS the LLM entirely so the
+        // chat UI's 3-dot menus on order tables can mutate state without
+        // burning API credits or risking tool-call hallucinations.
+        register_rest_route(self::NAMESPACE, '/actions/order/(?P<id>\d+)/status', [
+            'methods'             => 'POST',
+            'permission_callback' => [$this, 'check_permission'],
+            'callback'            => [$this, 'handle_action_order_status'],
+        ]);
+        register_rest_route(self::NAMESPACE, '/actions/order/(?P<id>\d+)/note', [
+            'methods'             => 'POST',
+            'permission_callback' => [$this, 'check_permission'],
+            'callback'            => [$this, 'handle_action_order_note'],
+        ]);
+        register_rest_route(self::NAMESPACE, '/actions/order-statuses', [
+            'methods'             => 'GET',
+            'permission_callback' => [$this, 'check_permission'],
+            'callback'            => [$this, 'handle_action_order_statuses'],
+        ]);
     }
 
     public function check_permission(): bool {
@@ -115,6 +133,62 @@ class Rest {
         return new \WP_REST_Response([
             'conversations' => History::list_conversations($user_id, $limit),
         ], 200);
+    }
+
+    /**
+     * Direct status change — no LLM. Called by the chat UI's 3-dot menu
+     * on an order row. Returns the updated order summary so the table can
+     * re-render in place.
+     */
+    public function handle_action_order_status(\WP_REST_Request $request): \WP_REST_Response {
+        $id     = (int) $request['id'];
+        $status = (string) ($request->get_json_params()['status'] ?? '');
+        $note   = (string) ($request->get_json_params()['note'] ?? '');
+
+        $result = Tools::update_order_status([
+            'order_id' => $id,
+            'status'   => $status,
+            'note'     => $note,
+        ]);
+
+        if (!empty($result['error'])) {
+            return new \WP_REST_Response($result, 400);
+        }
+
+        // Hand back the fresh summary so the UI doesn't need a follow-up GET.
+        $order = function_exists('wc_get_order') ? \wc_get_order($id) : null;
+        $summary = $order ? Tools::summarize($order) : null;
+
+        return new \WP_REST_Response([
+            'ok'      => true,
+            'order'   => $summary,
+            'result'  => $result,
+        ], 200);
+    }
+
+    public function handle_action_order_note(\WP_REST_Request $request): \WP_REST_Response {
+        $id      = (int) $request['id'];
+        $body    = $request->get_json_params();
+        $note    = (string) ($body['note'] ?? '');
+        $visible = !empty($body['customer_visible']);
+
+        $result = Tools::add_order_note([
+            'order_id'         => $id,
+            'note'             => $note,
+            'customer_visible' => $visible,
+        ]);
+
+        $status = empty($result['error']) ? 200 : 400;
+        return new \WP_REST_Response($result, $status);
+    }
+
+    public function handle_action_order_statuses(\WP_REST_Request $request): \WP_REST_Response {
+        $statuses = function_exists('wc_get_order_statuses') ? \wc_get_order_statuses() : [];
+        $out = [];
+        foreach ($statuses as $slug => $label) {
+            $out[] = ['slug' => ltrim($slug, 'wc-'), 'label' => $label];
+        }
+        return new \WP_REST_Response(['statuses' => $out], 200);
     }
 
     public function handle_get_conversation(\WP_REST_Request $request): \WP_REST_Response {
