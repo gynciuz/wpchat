@@ -4,7 +4,7 @@ Tags: woocommerce, chat, ai, claude, orders
 Requires at least: 6.5
 Tested up to: 6.6
 Requires PHP: 8.1
-Stable tag: 0.4.8
+Stable tag: 0.4.9
 License: MIT
 License URI: https://opensource.org/licenses/MIT
 
@@ -34,6 +34,9 @@ Bring your own Anthropic API key.
 4. WPChat → Chat → type.
 
 == Changelog ==
+
+= 0.4.9 =
+* Fix double-HTML-encoding in the `/wpchat` page title and chat header. Sites where `blogname` is stored already entity-encoded (e.g. "Gentleman&#039;s Empire") were rendering "Gentleman&#039;s Empire" literally in the browser tab title and the chat header subtitle. Decode entities first, then escape once.
 
 = 0.4.8 =
 * New `\WPChat\GitSync` helper. Site backends that mutate tracked files (e.g. the GE team_member backend writing to static HTML) can call `GitSync::commit_files($paths, $message, $author)` after a successful write to commit + push automatically. Without this, WPChat-originated edits would sit uncommitted on prod and silently disappear on the next disaster-recovery reset (which is what happened during the 2026-05-26 reconcile incident).

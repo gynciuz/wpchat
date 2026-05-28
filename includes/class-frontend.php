@@ -61,19 +61,25 @@ class Frontend {
         }
         $js_src = esc_url($build_url . ($entry['file'] ?? ''));
 
+        // Some WP installs store `blogname` already HTML-entity-encoded (e.g.
+        // "Gentleman&#039;s Empire"). esc_html'ing that again produces
+        // "Gentleman&amp;#039;s Empire" which the browser only half-decodes,
+        // leaving "&#039;" visible. Decode entities first, then escape once.
+        $site_name = html_entity_decode((string) get_bloginfo('name'), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+
         $boot = [
             'restUrl'  => rest_url('wpchat/v1/'),
             'nonce'    => wp_create_nonce('wp_rest'),
             'userId'   => get_current_user_id(),
-            'userName' => wp_get_current_user()->display_name,
+            'userName' => html_entity_decode((string) wp_get_current_user()->display_name, ENT_QUOTES | ENT_HTML5, 'UTF-8'),
             'locale'   => substr(get_user_locale(), 0, 2),
-            'siteName' => get_bloginfo('name'),
+            'siteName' => $site_name,
             'siteUrl'  => untrailingslashit(home_url()),
             'logoutUrl' => wp_logout_url(home_url(self::URL_PATH)),
         ];
         $boot_json = wp_json_encode($boot);
 
-        $title = sprintf('%s — %s', esc_html__('WPChat', 'wpchat'), esc_html(get_bloginfo('name')));
+        $title = sprintf('%s — %s', esc_html__('WPChat', 'wpchat'), esc_html($site_name));
 
         echo <<<HTML
 <!DOCTYPE html>
