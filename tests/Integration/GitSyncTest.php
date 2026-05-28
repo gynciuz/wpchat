@@ -37,7 +37,10 @@ class GitSyncTest extends TestCase {
         mkdir($this->remote);
         mkdir($this->repo);
 
-        self::sh("git init --bare {$this->remote}");
+        // Pin both to `main` so older git (which defaults bare-init HEAD to
+        // `master`) doesn't mismatch with the working repo's branch and break
+        // `git log -1` against the remote.
+        self::sh("git init --bare -b main {$this->remote}");
         self::sh("git -C {$this->repo} init -b main");
         self::sh("git -C {$this->repo} config user.email seed@test");
         self::sh("git -C {$this->repo} config user.name seed");
@@ -74,8 +77,9 @@ class GitSyncTest extends TestCase {
             $this->assertTrue($result['ok'], 'Expected commit + push to succeed, got: ' . wp_json_encode($result));
             $this->assertNotEmpty($result['commit_sha']);
 
-            // Remote has the commit?
-            $log = self::sh("git -C {$this->remote} log --oneline -1");
+            // Remote has the commit? Read the branch explicitly so the
+            // assertion doesn't depend on the bare repo's HEAD symref.
+            $log = self::sh("git -C {$this->remote} log --oneline -1 main");
             $this->assertStringContainsString('test: change to after', $log['stdout']);
         });
     }
