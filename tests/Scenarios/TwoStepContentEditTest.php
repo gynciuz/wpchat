@@ -19,11 +19,14 @@ class TwoStepContentEditTest extends TestCase {
     public function test_apply_rejects_non_whitelisted_confirmation(): void {
         $post_id = $this->factory()->post->create(['post_title' => 'Before']);
 
+        // Phrase deliberately chosen to contain ZERO whitelisted affirmative
+        // tokens. Don't reuse common natural phrases like "sure why not" —
+        // the token-based matcher would treat "sure" as a confirmation.
         $result = Tools::apply_content_change([
             'target'       => ['kind' => 'wp_post', 'id' => $post_id],
             'field'        => 'title',
             'value'        => 'After',
-            'confirmation' => 'sure why not',
+            'confirmation' => 'maybe later',
         ]);
 
         $this->assertArrayHasKey('error', $result);

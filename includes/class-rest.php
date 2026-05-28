@@ -145,11 +145,15 @@ class Rest {
         $status = (string) ($request->get_json_params()['status'] ?? '');
         $note   = (string) ($request->get_json_params()['note'] ?? '');
 
-        $result = Tools::update_order_status([
-            'order_id' => $id,
-            'status'   => $status,
-            'note'     => $note,
-        ]);
+        try {
+            $result = Tools::update_order_status([
+                'order_id' => $id,
+                'status'   => $status,
+                'note'     => $note,
+            ]);
+        } catch (\Throwable $e) {
+            return new \WP_REST_Response(['error' => $e->getMessage()], 503);
+        }
 
         if (!empty($result['error'])) {
             return new \WP_REST_Response($result, 400);
@@ -172,11 +176,15 @@ class Rest {
         $note    = (string) ($body['note'] ?? '');
         $visible = !empty($body['customer_visible']);
 
-        $result = Tools::add_order_note([
-            'order_id'         => $id,
-            'note'             => $note,
-            'customer_visible' => $visible,
-        ]);
+        try {
+            $result = Tools::add_order_note([
+                'order_id'         => $id,
+                'note'             => $note,
+                'customer_visible' => $visible,
+            ]);
+        } catch (\Throwable $e) {
+            return new \WP_REST_Response(['error' => $e->getMessage()], 503);
+        }
 
         $status = empty($result['error']) ? 200 : 400;
         return new \WP_REST_Response($result, $status);
