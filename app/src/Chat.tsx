@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { Mic, MicOff, Send, Loader2, ExternalLink, LogOut, ChevronDown, History as HistoryIcon, Plus, Check, X } from "lucide-react";
+import { Send, Loader2, ExternalLink, LogOut, ChevronDown, History as HistoryIcon, Plus, Check, X } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { Button } from "@/components/ui/button";
@@ -8,6 +8,8 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { HistoryDrawer } from "./HistoryDrawer";
 import { OrdersTable, extractOrders } from "./OrdersTable";
+import { MicButton, MicStatusHint } from "./MicButton";
+import { QuickChips } from "./QuickChips";
 
 interface Boot {
   restUrl: string;
@@ -37,42 +39,17 @@ interface WireMessage {
   content: string;
 }
 
-/** Minimal browser SpeechRecognition typing — supports Safari/Chrome on iOS + macOS. */
-type SpeechRecognition = {
-  lang: string;
-  continuous: boolean;
-  interimResults: boolean;
-  start: () => void;
-  stop: () => void;
-  abort: () => void;
-  onresult: ((ev: { results: ArrayLike<{ 0: { transcript: string }; isFinal: boolean }> }) => void) | null;
-  onend: (() => void) | null;
-  onerror: ((ev: { error: string }) => void) | null;
-};
-
-function getRecognition(lang: string): SpeechRecognition | null {
-  const Ctor =
-    (window as unknown as { SpeechRecognition?: new () => SpeechRecognition }).SpeechRecognition ??
-    (window as unknown as { webkitSpeechRecognition?: new () => SpeechRecognition }).webkitSpeechRecognition;
-  if (!Ctor) return null;
-  const r = new Ctor();
-  r.lang = lang;
-  r.continuous = false;
-  r.interimResults = true;
-  return r;
-}
-
 export function Chat({ boot }: { boot?: Boot }) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [voiceToast, setVoiceToast] = useState<string | null>(null);
   const [listening, setListening] = useState(false);
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [historyRefreshKey, setHistoryRefreshKey] = useState(0);
   const [loadingConversation, setLoadingConversation] = useState(false);
-  const recRef = useRef<SpeechRecognition | null>(null);
   const endRef = useRef<HTMLDivElement>(null);
 
   // Speech recognition language preference. Vlad/wife → ru-RU; otherwise system locale.
@@ -82,46 +59,16 @@ export function Chat({ boot }: { boot?: Boot }) {
     endRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, busy]);
 
-  function toggleVoice() {
-    if (listening) {
-      recRef.current?.stop();
-      return;
-    }
-    const rec = getRecognition(speechLang);
-    if (!rec) {
-      setError("Voice input not supported in this browser.");
-      return;
-    }
-    recRef.current = rec;
-    setListening(true);
-    rec.onresult = (ev) => {
-      let txt = "";
-      for (let i = 0; i < ev.results.length; i++) {
-        txt += ev.results[i][0].transcript;
-      }
-      setInput(txt);
-    };
-    rec.onend = () => setListening(false);
-    rec.onerror = (ev) => {
-      setListening(false);
-      if (ev.error === "no-speech" || ev.error === "aborted") {
-        return;
-      }
-      if (ev.error === "not-allowed" || ev.error === "service-not-allowed") {
-        setError(
-          "Microphone access denied. Click the lock/site-info icon in your browser address bar, set Microphone to Allow, then reload."
-        );
-        return;
-      }
-      setError(`Voice error: ${ev.error}`);
-    };
-    rec.start();
-  }
+  // Auto-dismiss the voice toast after 6s so it doesn't loiter on a phone screen.
+  useEffect(() => {
+    if (!voiceToast) return;
+    const t = setTimeout(() => setVoiceToast(null), 6000);
+    return () => clearTimeout(t);
+  }, [voiceToast]);
 
   async function sendText(rawText: string) {
     const text = rawText.trim();
     if (!text || busy || loadingConversation || !boot) return;
-    if (listening) recRef.current?.stop();
 
     const newUser: ChatMessage = { role: "user", text };
     const history: WireMessage[] = [...messages, newUser].map((m) => ({
@@ -343,45 +290,47 @@ export function Chat({ boot }: { boot?: Boot }) {
           </div>
         )}
 
+        <AnimatePresence>
+          {voiceToast && (
+            <motion.div
+              key="voice-toast"
+              initial={{ opacity: 0, y: 12, filter: "blur(4px)" }}
+              animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+              exit={{ opacity: 0, y: 8, filter: "blur(4px)" }}
+              transition={{ type: "spring", duration: 0.4, bounce: 0 }}
+              className="flex items-center gap-2 self-stretch border border-muted/60 bg-muted/30 px-3 py-2 text-xs text-foreground"
+              style={{ borderRadius: 10 }}
+            >
+              <span className="flex-1 leading-snug">{voiceToast}</span>
+              <button
+                type="button"
+                onClick={() => setVoiceToast(null)}
+                className="text-muted-foreground hover:text-foreground"
+                aria-label="Dismiss"
+              >
+                <X className="size-3.5" />
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         <div ref={endRef} />
       </div>
 
+      <QuickChips
+        locale={boot?.locale}
+        busy={busy || loadingConversation}
+        onSelect={(q) => sendText(q)}
+      />
+
       <form onSubmit={handleSend} className="flex items-center gap-2">
-        <Button
-          type="button"
-          variant={listening ? "destructive" : "secondary"}
-          size="icon"
-          onClick={toggleVoice}
-          disabled={busy}
-          aria-label={listening ? "Stop voice input" : "Start voice input"}
-          className="size-10 shrink-0"
-        >
-          <AnimatePresence mode="wait" initial={false}>
-            {listening ? (
-              <motion.span
-                key="off"
-                initial={{ opacity: 0, scale: 0.6, filter: "blur(4px)" }}
-                animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
-                exit={{ opacity: 0, scale: 0.6, filter: "blur(4px)" }}
-                transition={{ duration: 0.18 }}
-                className="inline-flex"
-              >
-                <MicOff className="size-4" />
-              </motion.span>
-            ) : (
-              <motion.span
-                key="on"
-                initial={{ opacity: 0, scale: 0.6, filter: "blur(4px)" }}
-                animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
-                exit={{ opacity: 0, scale: 0.6, filter: "blur(4px)" }}
-                transition={{ duration: 0.18 }}
-                className="inline-flex"
-              >
-                <Mic className="size-4" />
-              </motion.span>
-            )}
-          </AnimatePresence>
-        </Button>
+        <MicButton
+          speechLang={speechLang}
+          busy={busy}
+          onTranscript={(t) => setInput(t)}
+          onError={(msg) => setVoiceToast(msg)}
+          onListeningChange={setListening}
+        />
 
         <Input
           type="text"
@@ -428,8 +377,9 @@ export function Chat({ boot }: { boot?: Boot }) {
       </form>
 
       <footer className="flex items-center justify-between text-xs text-muted-foreground">
-        <span>
+        <span className="inline-flex items-center gap-2">
           {boot?.userName ? `${boot.userName} · ` : ""}user {boot?.userId ?? "?"} · {speechLang}
+          <MicStatusHint />
         </span>
         <a
           href="/wp-admin/admin.php?page=wpchat-settings"
