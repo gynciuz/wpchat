@@ -247,7 +247,17 @@ export function Chat({ boot }: { boot?: Boot }) {
                       siteUrl={boot.siteUrl ?? ""}
                     />
                   )}
-                  <AssistantBubble text={m.text} />
+                  {/* When OrdersTable is rendered, strip any markdown table the
+                      LLM included in its prose so the user doesn't see the same
+                      data twice. Defensive — the system prompt already tells
+                      the LLM not to emit a table, but models drift. */}
+                  <AssistantBubble
+                    text={
+                      m.toolCalls && extractOrders(m.toolCalls).length > 0
+                        ? stripMarkdownTables(m.text)
+                        : m.text
+                    }
+                  />
                 </>
               )}
               {m.toolCalls && m.toolCalls.length > 0 && (
@@ -390,6 +400,37 @@ export function Chat({ boot }: { boot?: Boot }) {
       </footer>
     </div>
   );
+}
+
+/**
+ * Remove GFM-style markdown tables from a piece of assistant text.
+ * A markdown table is a contiguous run of lines starting with `|` and
+ * containing a header-separator row (|---|---|). We drop the entire run
+ * so the surrounding prose stays intact.
+ */
+function stripMarkdownTables(text: string): string {
+  if (!text.includes("|")) return text;
+  const lines = text.split("\n");
+  const out: string[] = [];
+  let i = 0;
+  while (i < lines.length) {
+    const line = lines[i];
+    const looksLikeTableRow = /^\s*\|.*\|\s*$/.test(line);
+    const nextIsSeparator =
+      looksLikeTableRow &&
+      i + 1 < lines.length &&
+      /^\s*\|[\s|:-]+\|\s*$/.test(lines[i + 1]);
+    if (nextIsSeparator) {
+      // Skip the header, separator, and every following row that's still
+      // a |-cell| line. Empty/non-pipe line ends the table.
+      i += 2;
+      while (i < lines.length && /^\s*\|.*\|\s*$/.test(lines[i])) i++;
+      continue;
+    }
+    out.push(line);
+    i++;
+  }
+  return out.join("\n").replace(/\n{3,}/g, "\n\n").trim();
 }
 
 function AssistantBubble({ text }: { text: string }) {

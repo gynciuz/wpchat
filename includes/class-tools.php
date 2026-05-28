@@ -164,6 +164,19 @@ class Tools {
         }
     }
 
+    /**
+     * Strip the `wc-` prefix from a WooCommerce status key, if present.
+     *
+     * NOT `ltrim($slug, 'wc-')` — ltrim treats its second arg as a character
+     * SET and would also strip a leading "c" from a slug like "cancelled",
+     * turning it into "ancelled". That bug (present since v0.1.0, fixed
+     * 2026-05-28) is the real cause of the "Unknown status: ancelled"
+     * error that earlier I misdiagnosed as an LLM hallucination.
+     */
+    public static function unprefixed_status(string $slug): string {
+        return str_starts_with($slug, 'wc-') ? substr($slug, 3) : $slug;
+    }
+
     // ============================================================
     // Generic content-backend dispatch (v0.4)
     // Routes to whichever registered backend claims target.kind.
@@ -240,7 +253,7 @@ class Tools {
         ];
 
         if ($status && $status !== 'any') {
-            $query['status'] = ['wc-' . ltrim($status, 'wc-')];
+            $query['status'] = ['wc-' . self::unprefixed_status((string) $status)];
         }
         if ($search) {
             $query['s'] = $search;
@@ -271,7 +284,7 @@ class Tools {
         if (!$order) {
             return ['error' => 'Order not found.'];
         }
-        $status = ltrim((string) ($args['status'] ?? ''), 'wc-');
+        $status = self::unprefixed_status((string) ($args['status'] ?? ''));
         if (!$status) {
             return ['error' => 'Status is required.'];
         }

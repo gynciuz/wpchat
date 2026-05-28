@@ -4,7 +4,7 @@ Tags: woocommerce, chat, ai, claude, orders
 Requires at least: 6.5
 Tested up to: 6.6
 Requires PHP: 8.1
-Stable tag: 0.4.9
+Stable tag: 0.4.10
 License: MIT
 License URI: https://opensource.org/licenses/MIT
 
@@ -34,6 +34,10 @@ Bring your own Anthropic API key.
 4. WPChat → Chat → type.
 
 == Changelog ==
+
+= 0.4.10 =
+* **CRITICAL FIX — "Unknown status: ancelled" bug present since v0.1.0.** `ltrim($slug, 'wc-')` was used in four places to strip the WooCommerce `wc-` prefix from status slugs. PHP's `ltrim` treats its second arg as a character SET, not a literal prefix, so it also stripped leading "c" / "w" / "-" chars: `cancelled` → `ancelled`, `completed` → `ompleted`, `wc-cancelled` → `ancelled`. This broke every status change involving cancelled/completed via tool calls AND polluted the dropdown's status list returned by `/actions/order-statuses` AND the system prompt's status reference. New `Tools::unprefixed_status()` helper does proper prefix removal. Earlier the resulting error was misdiagnosed as an LLM hallucination — it was real code. UnprefixedStatusTest locks the regression.
+* Redundant order-table markdown removed from assistant replies. When `list_orders` or `find_customer_orders` runs, the chat UI already renders a structured React `<OrdersTable>` above the assistant's prose. System prompt now explicitly instructs the LLM to write a short prose summary only (not a markdown reproduction). Defensive: the frontend also strips any GFM markdown table the model still emits in that context, so the user never sees the same data twice.
 
 = 0.4.9 =
 * Fix double-HTML-encoding in the `/wpchat` page title and chat header. Sites where `blogname` is stored already entity-encoded (e.g. "Gentleman&#039;s Empire") were rendering "Gentleman&#039;s Empire" literally in the browser tab title and the chat header subtitle. Decode entities first, then escape once.

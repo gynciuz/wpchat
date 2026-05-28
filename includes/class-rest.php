@@ -194,7 +194,7 @@ class Rest {
         $statuses = function_exists('wc_get_order_statuses') ? \wc_get_order_statuses() : [];
         $out = [];
         foreach ($statuses as $slug => $label) {
-            $out[] = ['slug' => ltrim($slug, 'wc-'), 'label' => $label];
+            $out[] = ['slug' => Tools::unprefixed_status($slug), 'label' => $label];
         }
         return new \WP_REST_Response(['statuses' => $out], 200);
     }
@@ -231,7 +231,7 @@ class Rest {
 
         $status_lines = [];
         foreach ($statuses as $slug => $label) {
-            $status_lines[] = sprintf('  - `%s` → "%s"', ltrim($slug, 'wc-'), $label);
+            $status_lines[] = sprintf('  - `%s` → "%s"', Tools::unprefixed_status($slug), $label);
         }
         $status_block = $status_lines ? "\n" . implode("\n", $status_lines) : '';
 
@@ -288,6 +288,7 @@ Always map the user's word to the corresponding slug below before calling `updat
 - Order numbers users mention can be integers; pass them as integers.
 - For partial-use voucher notes ("dalinai 30 eur, liko 20" / "использовано 30 €, осталось 20"), capture the amounts in the note exactly as the user said (keep the language they used).
 - After tool calls, summarize in 1-2 short sentences. Do not echo full JSON.
+- **DO NOT render markdown tables of orders or order lists when calling `list_orders` or `find_customer_orders`.** The chat UI already renders the structured order data as an interactive React table above your text reply (with per-row 3-dot menus for status change + admin link). Your text should be a SHORT prose summary only — e.g. "Štai 10 paskutinių užsakymų — 3 panaudoti, 4 neapmokėti, viso 870 €." NOT a markdown table reproduction of what's already shown.
 - For requests outside what the tools cover (delete, refund, bulk action, customer edit, product edit, etc.) → `get_admin_url(resource='order', id=<n>)` or `get_admin_url(resource='orders_list')` and hand the link to the user with a concrete next step.
 
 # Content editing — STRICT two-step + dynamic kinds
