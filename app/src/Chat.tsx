@@ -287,8 +287,23 @@ export function Chat({ boot }: { boot?: Boot }) {
       )}
 
       <div className="flex flex-1 flex-col gap-3 overflow-hidden">
-        {messages.length === 0 && (
-          <EmptyState />
+        {messages.length === 0 && !busy && (
+          <EmptyHero
+            locale={boot?.locale}
+            input={input}
+            setInput={setInput}
+            onSend={handleSend}
+            busy={busy || loadingConversation || attachmentUploading}
+            speechLang={speechLang}
+            onVoiceTranscript={(t) => setInput(t)}
+            onVoiceError={(m) => setVoiceToast(m)}
+            onListeningChange={setListening}
+            attachment={attachment}
+            attachmentUploading={attachmentUploading}
+            onAttachPick={pickAttachment}
+            onAttachClear={clearAttachment}
+            onChipSelect={(q) => sendText(q)}
+          />
         )}
 
         <AnimatePresence initial={false}>
@@ -416,14 +431,16 @@ export function Chat({ boot }: { boot?: Boot }) {
         <div ref={endRef} />
       </div>
 
-      <QuickChips
-        locale={boot?.locale}
-        busy={busy || loadingConversation}
-        onSelect={(q) => sendText(q)}
-      />
+      {messages.length > 0 && (
+        <QuickChips
+          locale={boot?.locale}
+          busy={busy || loadingConversation}
+          onSelect={(q) => sendText(q)}
+        />
+      )}
 
       <AnimatePresence>
-        {attachment && (
+        {messages.length > 0 && attachment && (
           <motion.div
             key="att-chip"
             initial={{ opacity: 0, y: 6 }}
@@ -462,6 +479,7 @@ export function Chat({ boot }: { boot?: Boot }) {
         )}
       </AnimatePresence>
 
+      {messages.length > 0 && (
       <form onSubmit={handleSend} className="flex items-center gap-2">
         <AttachButton onPick={pickAttachment} disabled={busy || attachmentUploading} />
         <MicButton
@@ -515,6 +533,7 @@ export function Chat({ boot }: { boot?: Boot }) {
           </AnimatePresence>
         </Button>
       </form>
+      )}
 
       <footer className="flex items-center justify-between text-xs text-muted-foreground">
         <span className="inline-flex items-center gap-2">
@@ -631,17 +650,146 @@ function AssistantBubble({ text }: { text: string }) {
   );
 }
 
-function EmptyState() {
+interface EmptyHeroProps {
+  locale?: string;
+  input: string;
+  setInput: (v: string) => void;
+  onSend: (e: FormEvent) => void;
+  busy: boolean;
+  speechLang: string;
+  onVoiceTranscript: (text: string) => void;
+  onVoiceError: (message: string) => void;
+  onListeningChange: (listening: boolean) => void;
+  attachment: PendingAttachment | null;
+  attachmentUploading: boolean;
+  onAttachPick: (file: File) => void;
+  onAttachClear: () => void;
+  onChipSelect: (q: string) => void;
+}
+
+/**
+ * Empty-state hero: large outcome-focused title with the input centered
+ * underneath, auto-focused. QuickChips below for tap-to-fill shortcuts.
+ * Shown only when `messages.length === 0` — the chat reverts to the
+ * regular bottom-anchored input as soon as the conversation starts.
+ */
+function EmptyHero(props: EmptyHeroProps) {
+  const { confirm: _c, title, placeholder } = heroLabelsFor(props.locale);
+  void _c;
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  // Auto-focus on mount so the cursor is ready. iOS Safari only honors
+  // focus() if it's called inside a user gesture — but the chat is reached
+  // from a logged-in session via a tap, so the page itself counts.
+  useEffect(() => {
+    inputRef.current?.focus();
+  }, []);
+
   return (
-    <div className="my-auto flex flex-col items-center gap-3 self-center text-center text-sm text-muted-foreground">
-      <p className="font-medium text-foreground">Pasakyk, ką padaryti</p>
-      <ul className="space-y-1 text-xs">
-        <li>"rodyk 5 paskutinius užsakymus"</li>
-        <li>"užsakymą 2833 panaudotas, dalinai 30 eur, liko 20"</li>
-        <li>"найди заказ номер 2833"</li>
-      </ul>
+    <div className="my-auto flex w-full flex-col items-center gap-5 self-center px-2">
+      <h2 className="text-center text-2xl font-semibold leading-tight tracking-tight text-foreground sm:text-3xl">
+        {title}
+      </h2>
+
+      {props.attachment && (
+        <div
+          className="flex w-full max-w-xl items-center gap-2 border border-border/40 bg-secondary/40 px-2 py-1.5"
+          style={{ borderRadius: 10 }}
+        >
+          <img
+            src={props.attachment.previewUrl}
+            alt=""
+            className="size-10 shrink-0 object-cover"
+            style={{ borderRadius: 6 }}
+          />
+          <div className="min-w-0 flex-1 text-xs">
+            <div className="truncate font-medium text-foreground">{props.attachment.file.name}</div>
+            <div className="text-[10.5px] text-muted-foreground">
+              {props.attachmentUploading
+                ? "Įkeliama…"
+                : `${(props.attachment.file.size / 1024).toFixed(0)} KB`}
+            </div>
+          </div>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            onClick={props.onAttachClear}
+            disabled={props.attachmentUploading}
+            aria-label="Remove attachment"
+            className="size-7 text-muted-foreground"
+          >
+            <X className="size-4" />
+          </Button>
+        </div>
+      )}
+
+      <form onSubmit={props.onSend} className="flex w-full max-w-xl items-center gap-2">
+        <AttachButton onPick={props.onAttachPick} disabled={props.busy} />
+        <MicButton
+          speechLang={props.speechLang}
+          busy={props.busy}
+          onTranscript={props.onVoiceTranscript}
+          onError={props.onVoiceError}
+          onListeningChange={props.onListeningChange}
+        />
+        <Input
+          ref={inputRef}
+          type="text"
+          value={props.input}
+          onChange={(e) => props.setInput(e.target.value)}
+          placeholder={placeholder}
+          disabled={props.busy}
+          className="flex-1 h-11 text-base"
+          autoFocus
+        />
+        <Button
+          type="submit"
+          size="icon"
+          disabled={(!props.input.trim() && !props.attachment) || props.busy}
+          className="size-11 shrink-0"
+          aria-label="Send message"
+        >
+          <Send className="size-4" />
+        </Button>
+      </form>
+
+      <QuickChips
+        locale={props.locale}
+        busy={props.busy}
+        onSelect={props.onChipSelect}
+      />
     </div>
   );
+}
+
+function heroLabelsFor(locale?: string): { title: string; placeholder: string; confirm: string } {
+  switch (locale) {
+    case "lt":
+      return {
+        title: "Kokio rezultato siekiate?",
+        placeholder: "Rašykite arba kalbėkite…",
+        confirm: "Patvirtinti",
+      };
+    case "ru":
+      return {
+        title: "Какого результата хотите?",
+        placeholder: "Введите или скажите…",
+        confirm: "Подтвердить",
+      };
+    case "pl":
+      return {
+        title: "Jaki rezultat chcesz osiągnąć?",
+        placeholder: "Napisz lub powiedz…",
+        confirm: "Potwierdź",
+      };
+    default:
+      return {
+        title: "What outcome do you want?",
+        placeholder: "Type or speak…",
+        confirm: "Confirm",
+      };
+  }
 }
 
 /**

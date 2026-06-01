@@ -4,7 +4,7 @@ Tags: woocommerce, chat, ai, claude, orders
 Requires at least: 6.5
 Tested up to: 6.6
 Requires PHP: 8.1
-Stable tag: 0.5.0
+Stable tag: 0.5.1
 License: MIT
 License URI: https://opensource.org/licenses/MIT
 
@@ -34,6 +34,10 @@ Bring your own Anthropic API key.
 4. WPChat → Chat → type.
 
 == Changelog ==
+
+= 0.5.1 =
+* Empty-state redesign. Old "Pasakyk, ką padaryti" preamble + bullet examples are gone. When the chat is empty (fresh load or after "New chat"), the centre of the screen now shows a single outcome-focused title ("Kokio rezultato siekiate?" / "Какого результата хотите?" / "What outcome do you want?") with the input field directly below it — cursor auto-focused, ready to type. AttachButton, MicButton and Send sit next to the input as usual; QuickChips appear under the form for tap-to-fill shortcuts. The bottom input bar is hidden in this state so the focus is on one clear action.
+* As soon as a message lands in the conversation, the layout snaps back to the standard messages-above + input-at-bottom flow.
 
 = 0.5.0 =
 * **First slice of v0.5-media — image upload + team_member photo replacement.** Tap the 📎 button in the chat input → native picker → pick a JPG / PNG / WebP. The file uploads to the WP media library before the message is sent; a `[Uploaded foo.jpg → attachment 1234]` marker is silently prepended to the message text so the LLM knows the attachment id, while the user sees a thumbnail next to their bubble. Subsequent preview / apply uses the same confirmation buttons as text edits.
