@@ -20,14 +20,18 @@ interface QuickChipsProps {
 export function QuickChips({ locale, busy, onSelect }: QuickChipsProps) {
   const chips = chipsFor(locale);
   return (
-    <div className="-mx-1 flex flex-wrap items-center justify-center gap-x-4 gap-y-1.5 px-1 pb-1 text-center">
+    <div className="-mx-1 flex flex-wrap items-center justify-center gap-x-3 gap-y-0.5 px-1 text-center">
       {chips.map((c) => (
         <button
           key={c.label}
           type="button"
           onClick={() => onSelect(c.query)}
           disabled={busy}
-          className="text-xs text-muted-foreground underline underline-offset-4 decoration-foreground/60 transition-colors hover:text-foreground hover:decoration-foreground active:text-foreground active:decoration-foreground disabled:opacity-60"
+          // min-h-[44px] gives a touch-target >= Apple HIG / Material spec.
+          // Vertical padding centres the small text inside that taller hit area
+          // without inflating the visual underline. px-2 widens the hit area
+          // horizontally so adjacent links are easier to discriminate by thumb.
+          className="inline-flex min-h-[44px] items-center px-2 text-xs text-muted-foreground underline underline-offset-4 decoration-foreground/60 transition-colors hover:text-foreground hover:decoration-foreground active:text-foreground active:decoration-foreground disabled:opacity-60"
         >
           {c.label}
         </button>
