@@ -20,12 +20,12 @@
     "src": "node_modules/.pnpm/@fontsource-variable+geist@5.2.9/node_modules/@fontsource-variable/geist/files/geist-vietnamese-wght-normal.woff2"
   },
   "src/main.tsx": {
-    "file": "assets/main-m_pWdbo6.js",
+    "file": "assets/main-CSacm_vg.js",
     "name": "main",
     "src": "src/main.tsx",
     "isEntry": true,
     "css": [
-      "assets/main-DOJWDEey.css"
+      "assets/main-CxHzePKf.css"
     ],
     "assets": [
       "assets/geist-cyrillic-ext-wght-normal-DjL33-gN.woff2",

@@ -4,13 +4,12 @@ import { Send, Loader2, ExternalLink, LogOut, ChevronDown, History as HistoryIco
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { HistoryDrawer } from "./HistoryDrawer";
 import { OrdersTable, extractOrders } from "./OrdersTable";
 import { MicButton, MicStatusHint } from "./MicButton";
 import { QuickChips } from "./QuickChips";
-import { AttachButton } from "./AttachButton";
+import { cn } from "@/lib/utils";
 
 interface Boot {
   restUrl: string;
@@ -481,7 +480,6 @@ export function Chat({ boot }: { boot?: Boot }) {
 
       {messages.length > 0 && (
       <form onSubmit={handleSend} className="flex items-center gap-2">
-        <AttachButton onPick={pickAttachment} disabled={busy || attachmentUploading} />
         <MicButton
           speechLang={speechLang}
           busy={busy}
@@ -490,13 +488,13 @@ export function Chat({ boot }: { boot?: Boot }) {
           onListeningChange={setListening}
         />
 
-        <Input
-          type="text"
+        <InlineInput
           value={input}
-          onChange={(e) => setInput(e.target.value)}
+          onChange={setInput}
           placeholder={listening ? "Listening…" : busy ? "Waiting for assistant…" : "Type or speak…"}
           disabled={busy}
-          className="flex-1 h-10"
+          onAttachPick={pickAttachment}
+          attachDisabled={busy || attachmentUploading}
         />
 
         <Button
@@ -650,6 +648,70 @@ function AssistantBubble({ text }: { text: string }) {
   );
 }
 
+interface InlineInputProps {
+  value: string;
+  onChange: (v: string) => void;
+  placeholder?: string;
+  disabled?: boolean;
+  onAttachPick: (file: File) => void;
+  attachDisabled?: boolean;
+  inputRef?: React.Ref<HTMLInputElement>;
+  autoFocus?: boolean;
+  large?: boolean;
+}
+
+/**
+ * Text input with the attach (+) button inline on the right and no
+ * surrounding border. Hidden file <input> sits in the wrapper so a tap
+ * on the + opens the native picker.
+ */
+function InlineInput(props: InlineInputProps) {
+  const fileRef = useRef<HTMLInputElement>(null);
+  return (
+    <div
+      className={cn(
+        "relative flex flex-1 items-center bg-secondary/30",
+        props.large ? "h-11" : "h-10"
+      )}
+      style={{ borderRadius: 10 }}
+    >
+      <input
+        ref={fileRef}
+        type="file"
+        accept="image/jpeg,image/png,image/webp"
+        className="hidden"
+        onChange={(e) => {
+          const f = e.target.files?.[0];
+          if (f) props.onAttachPick(f);
+          e.target.value = "";
+        }}
+      />
+      <input
+        ref={props.inputRef}
+        type="text"
+        value={props.value}
+        onChange={(e) => props.onChange(e.target.value)}
+        placeholder={props.placeholder}
+        disabled={props.disabled}
+        autoFocus={props.autoFocus}
+        className={cn(
+          "h-full w-full min-w-0 bg-transparent pl-3 pr-10 text-foreground outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50",
+          props.large ? "text-base" : "text-sm"
+        )}
+      />
+      <button
+        type="button"
+        onClick={() => fileRef.current?.click()}
+        disabled={props.attachDisabled}
+        aria-label="Attach image"
+        className="absolute right-1.5 top-1/2 flex size-7 -translate-y-1/2 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground disabled:opacity-50"
+      >
+        <Plus className="size-4" />
+      </button>
+    </div>
+  );
+}
+
 interface EmptyHeroProps {
   locale?: string;
   input: string;
@@ -725,7 +787,6 @@ function EmptyHero(props: EmptyHeroProps) {
       )}
 
       <form onSubmit={props.onSend} className="flex w-full max-w-xl items-center gap-2">
-        <AttachButton onPick={props.onAttachPick} disabled={props.busy} />
         <MicButton
           speechLang={props.speechLang}
           busy={props.busy}
@@ -733,15 +794,16 @@ function EmptyHero(props: EmptyHeroProps) {
           onError={props.onVoiceError}
           onListeningChange={props.onListeningChange}
         />
-        <Input
-          ref={inputRef}
-          type="text"
+        <InlineInput
+          inputRef={inputRef}
           value={props.input}
-          onChange={(e) => props.setInput(e.target.value)}
+          onChange={props.setInput}
           placeholder={placeholder}
           disabled={props.busy}
-          className="flex-1 h-11 text-base"
+          onAttachPick={props.onAttachPick}
+          attachDisabled={props.busy}
           autoFocus
+          large
         />
         <Button
           type="submit"
