@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { HistoryDrawer } from "./HistoryDrawer";
 import { OrdersTable, extractOrders } from "./OrdersTable";
-import { MicButton, MicStatusHint } from "./MicButton";
 import { QuickChips } from "./QuickChips";
 import { cn } from "@/lib/utils";
 
@@ -60,8 +59,6 @@ export function Chat({ boot }: { boot?: Boot }) {
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [voiceToast, setVoiceToast] = useState<string | null>(null);
-  const [listening, setListening] = useState(false);
   const [attachment, setAttachment] = useState<PendingAttachment | null>(null);
   const [attachmentUploading, setAttachmentUploading] = useState(false);
   const [conversationId, setConversationId] = useState<string | null>(null);
@@ -70,19 +67,9 @@ export function Chat({ boot }: { boot?: Boot }) {
   const [loadingConversation, setLoadingConversation] = useState(false);
   const endRef = useRef<HTMLDivElement>(null);
 
-  // Speech recognition language preference. Vlad/wife → ru-RU; otherwise system locale.
-  const speechLang = (boot?.locale === "lt" ? "lt-LT" : boot?.locale === "ru" ? "ru-RU" : "en-US");
-
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, busy]);
-
-  // Auto-dismiss the voice toast after 6s so it doesn't loiter on a phone screen.
-  useEffect(() => {
-    if (!voiceToast) return;
-    const t = setTimeout(() => setVoiceToast(null), 6000);
-    return () => clearTimeout(t);
-  }, [voiceToast]);
 
   function clearAttachment() {
     if (attachment) URL.revokeObjectURL(attachment.previewUrl);
@@ -293,10 +280,6 @@ export function Chat({ boot }: { boot?: Boot }) {
             setInput={setInput}
             onSend={handleSend}
             busy={busy || loadingConversation || attachmentUploading}
-            speechLang={speechLang}
-            onVoiceTranscript={(t) => setInput(t)}
-            onVoiceError={(m) => setVoiceToast(m)}
-            onListeningChange={setListening}
             attachment={attachment}
             attachmentUploading={attachmentUploading}
             onAttachPick={pickAttachment}
@@ -403,30 +386,6 @@ export function Chat({ boot }: { boot?: Boot }) {
           </div>
         )}
 
-        <AnimatePresence>
-          {voiceToast && (
-            <motion.div
-              key="voice-toast"
-              initial={{ opacity: 0, y: 12, filter: "blur(4px)" }}
-              animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-              exit={{ opacity: 0, y: 8, filter: "blur(4px)" }}
-              transition={{ type: "spring", duration: 0.4, bounce: 0 }}
-              className="flex items-center gap-2 self-stretch border border-muted/60 bg-muted/30 px-3 py-2 text-xs text-foreground"
-              style={{ borderRadius: 10 }}
-            >
-              <span className="flex-1 leading-snug">{voiceToast}</span>
-              <button
-                type="button"
-                onClick={() => setVoiceToast(null)}
-                className="text-muted-foreground hover:text-foreground"
-                aria-label="Dismiss"
-              >
-                <X className="size-3.5" />
-              </button>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
         <div ref={endRef} />
       </div>
 
@@ -480,18 +439,10 @@ export function Chat({ boot }: { boot?: Boot }) {
 
       {messages.length > 0 && (
       <form onSubmit={handleSend} className="flex items-center gap-2">
-        <MicButton
-          speechLang={speechLang}
-          busy={busy}
-          onTranscript={(t) => setInput(t)}
-          onError={(msg) => setVoiceToast(msg)}
-          onListeningChange={setListening}
-        />
-
         <InlineInput
           value={input}
           onChange={setInput}
-          placeholder={listening ? "Listening…" : busy ? "Waiting for assistant…" : "Type or speak…"}
+          placeholder={busy ? "Waiting for assistant…" : "Type…"}
           disabled={busy}
           onAttachPick={pickAttachment}
           attachDisabled={busy || attachmentUploading}
@@ -535,8 +486,7 @@ export function Chat({ boot }: { boot?: Boot }) {
 
       <footer className="flex items-center justify-between text-xs text-muted-foreground">
         <span className="inline-flex items-center gap-2">
-          {boot?.userName ? `${boot.userName} · ` : ""}user {boot?.userId ?? "?"} · {speechLang}
-          <MicStatusHint />
+          {boot?.userName ? `${boot.userName} · ` : ""}user {boot?.userId ?? "?"}
         </span>
         <a
           href="/wp-admin/admin.php?page=wpchat-settings"
@@ -718,10 +668,6 @@ interface EmptyHeroProps {
   setInput: (v: string) => void;
   onSend: (e: FormEvent) => void;
   busy: boolean;
-  speechLang: string;
-  onVoiceTranscript: (text: string) => void;
-  onVoiceError: (message: string) => void;
-  onListeningChange: (listening: boolean) => void;
   attachment: PendingAttachment | null;
   attachmentUploading: boolean;
   onAttachPick: (file: File) => void;
@@ -787,13 +733,6 @@ function EmptyHero(props: EmptyHeroProps) {
       )}
 
       <form onSubmit={props.onSend} className="flex w-full max-w-xl items-center gap-2">
-        <MicButton
-          speechLang={props.speechLang}
-          busy={props.busy}
-          onTranscript={props.onVoiceTranscript}
-          onError={props.onVoiceError}
-          onListeningChange={props.onListeningChange}
-        />
         <InlineInput
           inputRef={inputRef}
           value={props.input}

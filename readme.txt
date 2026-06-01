@@ -4,7 +4,7 @@ Tags: woocommerce, chat, ai, claude, orders
 Requires at least: 6.5
 Tested up to: 6.6
 Requires PHP: 8.1
-Stable tag: 0.5.5
+Stable tag: 0.5.6
 License: MIT
 License URI: https://opensource.org/licenses/MIT
 
@@ -34,6 +34,9 @@ Bring your own Anthropic API key.
 4. WPChat → Chat → type.
 
 == Changelog ==
+
+= 0.5.6 =
+* Voice / SpeechRecognition feature removed entirely. Browser SpeechRecognition added more friction than value in real usage — the mic permission UX from v0.4.7 + B5 was a series of patches around iOS Safari quirks, and the assistant never actually used voice. MicButton, MicStatusHint, the voice-toast UI, the `listening` / `speechLang` state, and the "balsas išjungtas" / `· en-US` footer tails are all gone. The mic icon is gone from both the empty-state hero and the bottom bar. If voice transcription comes back later it'll route through Anthropic's server-side audio API, not browser SpeechRecognition.
 
 = 0.5.5 =
 * QuickChips: underline at-rest opacity cut in half (foreground/60 → foreground/30). Still clearly readable, less visual weight, brightens fully on hover and tap.
