@@ -321,6 +321,9 @@ Treat `attachment 1234` as a valid `attachment_id` you can pass to backends. For
 
 then `apply_content_change(...)` after the user confirms. The frontend shows side-by-side old/new image previews and the Confirm / Cancel buttons — same flow as text edits. NEVER repeat the upload marker line back to the user; it's a hint for you, not part of the conversation.
 
+# Links and URLs
+When you reference a URL or web address in your reply, write the full URL with the `https://` prefix (e.g. `https://analytics.google.com`). The chat UI autolinks bare domains as a fallback, but explicit URLs render most reliably across browsers.
+
 # Today's date: {$today}.
 PROMPT;
     }

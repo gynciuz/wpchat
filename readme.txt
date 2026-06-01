@@ -4,7 +4,7 @@ Tags: woocommerce, chat, ai, claude, orders
 Requires at least: 6.5
 Tested up to: 6.6
 Requires PHP: 8.1
-Stable tag: 0.5.7
+Stable tag: 0.5.8
 License: MIT
 License URI: https://opensource.org/licenses/MIT
 
@@ -34,6 +34,10 @@ Bring your own Anthropic API key.
 4. WPChat → Chat → type.
 
 == Changelog ==
+
+= 0.5.8 =
+* Autolink bare URLs in assistant replies. `analytics.google.com` etc. without an `https://` prefix were rendered as plain text by react-markdown (only `https://` and `www.` prefixed URLs autolink by default in remark-gfm). New preprocessing step wraps bare domain.tld matches in markdown link brackets before passing to react-markdown, so they render as proper `<a>` tags with the existing underline styling. Covers common TLDs (.com .lt .net .org .app .io .dev .ai .co .eu .ru .de .uk .pl .fr .es). Skips text already inside markdown links / inline code / explicit autolinks.
+* System prompt updated to tell the LLM to prefer full URLs (`https://…`) for the most reliable rendering — autolink is a fallback for when it doesn't.
 
 = 0.5.7 =
 * Mobile order tables scroll horizontally now. Wrapping container gets `overflow-x-auto` and the inner table has a `min-w-[480px]` so the rightmost columns (Statusas badge + 3-dot menu) don't get clipped when the chat column is narrower than the table needs.

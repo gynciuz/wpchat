@@ -338,11 +338,11 @@ export function Chat({ boot }: { boot?: Boot }) {
                       data twice. Defensive — the system prompt already tells
                       the LLM not to emit a table, but models drift. */}
                   <AssistantBubble
-                    text={
+                    text={autolinkBareUrls(
                       m.toolCalls && extractOrders(m.toolCalls).length > 0
                         ? stripMarkdownTables(m.text)
                         : m.text
-                    }
+                    )}
                   />
                 </>
               )}
@@ -497,6 +497,30 @@ export function Chat({ boot }: { boot?: Boot }) {
       </footer>
     </div>
   );
+}
+
+/**
+ * Wrap bare URLs / domains in markdown link brackets so react-markdown
+ * renders them as <a> tags. remark-gfm only autolinks URLs with an
+ * http(s):// or www. prefix; bare domains like "analytics.google.com"
+ * stay as plain text without this preprocessing.
+ *
+ * Skips: text already inside markdown links `[text](url)`, inline code
+ * `text`, and explicit autolinks <url>. The negative-lookbehind matches
+ * those open-bracket / backtick / lt forms.
+ */
+function autolinkBareUrls(text: string): string {
+  const TLD = "(?:com|lt|net|org|app|io|dev|ai|co|eu|ru|de|uk|pl|fr|es)";
+  // Match either: full URL with protocol, www.-prefixed URL, or bare
+  // domain.tld (with optional path). Don't match if preceded by [, (, `, < or /.
+  const re = new RegExp(
+    `(?<![\\[\\(\`</])\\b((?:https?:\\/\\/|www\\.)[^\\s<>\`]+|[a-z0-9-]+(?:\\.[a-z0-9-]+)*\\.${TLD}(?:\\/[^\\s<>\`]*)?)`,
+    "gi"
+  );
+  return text.replace(re, (match) => {
+    const href = /^https?:\/\//i.test(match) ? match : `https://${match}`;
+    return `[${match}](${href})`;
+  });
 }
 
 /**
