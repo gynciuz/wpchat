@@ -90,9 +90,14 @@ class Upload {
 
         // Production uses wp_handle_upload (strict: requires is_uploaded_file).
         // Tests can swap to wp_handle_sideload via this filter so synthetic
-        // files pass the readability check instead.
+        // files pass the readability check instead. Both take $file by
+        // reference, so call_user_func can't be used — branch directly.
         $handler = apply_filters('wpchat_upload_handler', 'wp_handle_upload');
-        $moved   = call_user_func($handler, $file, $overrides);
+        if ($handler === 'wp_handle_sideload') {
+            $moved = wp_handle_sideload($file, $overrides);
+        } else {
+            $moved = wp_handle_upload($file, $overrides);
+        }
         if (isset($moved['error'])) {
             return new \WP_REST_Response(['error' => $moved['error']], 500);
         }
