@@ -4,7 +4,7 @@ Tags: woocommerce, chat, ai, claude, orders
 Requires at least: 6.5
 Tested up to: 6.6
 Requires PHP: 8.1
-Stable tag: 0.5.8
+Stable tag: 0.5.9
 License: MIT
 License URI: https://opensource.org/licenses/MIT
 
@@ -34,6 +34,11 @@ Bring your own Anthropic API key.
 4. WPChat → Chat → type.
 
 == Changelog ==
+
+= 0.5.9 =
+* **Auto-updates from GitHub Releases — no more SCP-from-Actions.** Vendor Yahnis Elsts' Plugin Update Checker library (PUC, v5.7, MIT) under `vendor-puc/`. Wired in `wpchat.php` to track `gynciuz/wpchat` release assets. Every WP site running the plugin now sees update notifications in **Plugins → Updates** within ~12 h of a release being published (or on manual "Check Again"), and the standard one-click "Update Now" pulls the latest release ZIP. Same flow WP.org plugins use; no submission queue, no review delays.
+* New `Update URI: https://github.com/gynciuz/wpchat` header in the plugin metadata pins WordPress's update lookups to this repository — a future plugin on the WP.org directory with the same slug can't silently hijack our update channel. (WP 5.8+ honors this header.)
+* This release ships via the existing `install-wpchat.yml` workflow ONE LAST TIME. From v0.5.10 onward, GE (and any other site running the plugin) will auto-update via wp-admin — no GitHub Actions, no SSH, no SCP. The install workflow can be deleted after one verified auto-update cycle.
 
 = 0.5.8 =
 * Autolink bare URLs in assistant replies. `analytics.google.com` etc. without an `https://` prefix were rendered as plain text by react-markdown (only `https://` and `www.` prefixed URLs autolink by default in remark-gfm). New preprocessing step wraps bare domain.tld matches in markdown link brackets before passing to react-markdown, so they render as proper `<a>` tags with the existing underline styling. Covers common TLDs (.com .lt .net .org .app .io .dev .ai .co .eu .ru .de .uk .pl .fr .es). Skips text already inside markdown links / inline code / explicit autolinks.

@@ -1,66 +1,109 @@
 # WPChat
 
 Chat-based admin for WooCommerce. Type *"mark order 2833 used, customer
-spent 30€ of 100€"* in the WP admin sidebar and watch it happen — the
-assistant calls the right WC functions and renders rich cards (OrderCard,
-StatusBadge, confirm dialogs) inline. Pure WordPress plugin: upload the
-ZIP, activate, paste your Anthropic API key, start chatting.
+spent 30€ of 100€"* in your WordPress site's chat at `/wpchat` and watch
+it happen — the assistant calls the right WC functions, renders rich
+cards (orders table, confirm buttons, image previews) inline, and writes
+back to your site.
 
-Built with PHP 8.1+ + React 19 + Tailwind v4 + shadcn/ui + Anthropic Claude.
-MIT-licensed.
-
-## Status
-
-**v0.1.0 — scaffold.** Admin menu + settings page + REST endpoint shape
-are in place. The chat UI bundle and the order tools are NOT wired yet
-(see `~/.claude-personal/plans/snug-chasing-bunny.md` for the plan).
+Built with PHP 8.1+ · React 19 · Tailwind v4 · shadcn/ui · Anthropic
+Claude. MIT-licensed. Auto-updates from GitHub Releases (no WP.org
+listing required).
 
 ## Install
 
-1. Download the latest release ZIP (or `git clone` + zip the folder).
-2. WP admin → Plugins → Add New → Upload Plugin → choose the ZIP.
-3. Activate.
-4. Sidebar → WPChat → Settings → paste your Anthropic API key
-   (https://console.anthropic.com).
-5. Sidebar → WPChat → Chat → type.
+1. Download the latest **`wpchat-vX.Y.Z.zip`** from
+   [Releases](https://github.com/gynciuz/wpchat/releases).
+2. WP admin → **Plugins → Add New → Upload Plugin** → choose the ZIP →
+   **Install Now** → **Activate**.
+3. Sidebar → **WPChat → Settings** → paste your Anthropic API key from
+   [console.anthropic.com](https://console.anthropic.com).
+4. Visit **`https://your-site.example/wpchat`** → start chatting.
+
+## Auto-updates
+
+The plugin uses [Plugin Update Checker (PUC)](https://github.com/YahnisElsts/plugin-update-checker)
+bundled under `vendor-puc/` to track this repository's GitHub Releases.
+Within ~12 hours of a new release being published (or on a manual
+"Check Again" in wp-admin → Plugins → Updates), the standard WordPress
+update flow appears — one-click **Update Now** pulls the latest release
+ZIP. No SSH, no SFTP, no GitHub Actions on your side.
+
+The `Update URI` header in the plugin metadata pins update lookups to
+this repository, so a future plugin on the WP.org directory with the
+same slug can't silently hijack your update channel.
 
 ## Requirements
 
 - WordPress 6.5+
-- PHP 8.1+
-- WooCommerce active
+- PHP 8.1+ (the plugin uses typed properties, enums, and `str_starts_with`)
+- WooCommerce active (for the order tools — non-WC sites can still use
+  the content / image-replacement / admin-handoff features)
 - An Anthropic API key
+
+## What it does
+
+**Out of the box on any WP+WC install:**
+
+- **Orders** — list, filter, search, get detail, change status, add
+  note. Custom statuses (e.g. `panaudotas`) are auto-discovered from
+  `wc_get_order_statuses()`. Direct 3-dot inline actions on order
+  tables bypass the LLM entirely (zero API spend for routine status
+  changes).
+- **Content editing** — change any `wp_post` / `wp_page_slug` /
+  `wp_post_meta` / `wp_term` via the chat with two-step preview + confirm
+  buttons. Localized confirmation phrases (`taip` / `gerai` / `да` /
+  `tak` / `confirm` etc.) or one-tap **Patvirtinti / Atšaukti** /
+  **Подтвердить / Отмена** / **Potwierdź / Anuluj** / **Confirm / Cancel**
+  buttons.
+- **Media** — upload an image via the inline `+` button, replace
+  references via the same preview/confirm flow. JPEG / PNG / WebP, ≤10 MB.
+- **Smart handoff** — when something can't be done via tools, the
+  assistant returns a deep link to the relevant wp-admin page instead of
+  dead-ending ("I can't…").
+
+**Extensible via filters:**
+
+- `wpchat_content_backends` — register custom content kinds for your
+  site (e.g. a `team_member` backend that writes to static HTML files,
+  a `testimonial` backend that updates an ACF repeater).
+- Cache purge + git-commit-on-write hooks — see the `WPChat\CachePurge`
+  and `WPChat\GitSync` helpers; gated behind wp-config constants so
+  default behavior is pure-WP.
 
 ## Dev
 
 ```bash
+# React app
 cd app/
 pnpm install
-pnpm build     # produces ../build/chat.js + ../build/chat.css
+pnpm build     # outputs to ../build/
+pnpm dev       # vite dev server (use with `pnpm build --watch` for live mount)
+
+# PHP test suite (requires MySQL + WP test scaffold)
+composer install
+bin/install-wp-tests.sh wpchat_tests root '' 127.0.0.1 latest
+composer test
 ```
 
-For active UI development:
+## Releases
 
-```bash
-pnpm dev       # Vite dev server, HMR — admin page reads from build/ so
-               # you'll need to run `pnpm build --watch` for live reload
-```
+We tag every release on this repo and attach a `wpchat-vX.Y.Z.zip` to
+the GitHub Release. The PUC auto-update mechanism reads this asset; no
+WP.org submission needed today. WP.org listing is planned for ~v0.7 once
+the plugin has more public users.
 
-## Scope
+## Roadmap
 
-**Phase 1 (MVP)** — order management only:
+See [`docs/PLAN.md`](./docs/PLAN.md) (or `~/.claude-personal/plans/snug-chasing-bunny.md`
+if you're the maintainer) for the detailed release plan. Highlights:
 
-- `list_orders` (status, search, since-date filters)
-- `get_order` (full detail)
-- `update_order_status` (status + optional note in one round-trip)
-- `add_order_note` (private or customer-visible)
-- `find_customer_orders` (by email or name)
-
-Custom statuses (like Gentleman's Empire's `wc-panaudotas`) are
-auto-discovered from `wc_get_order_statuses()` — no per-site code.
-
-Reports, content editing, media, and team-roster management are
-explicitly out of scope for v0.
+- **v0.5.x** — image upload + team-member photo replacement (done),
+  borderless input + 📎 + underline chips (done), distribution via PUC
+  (this release), first-run onboarding wizard (next).
+- **v0.6.x** — analytics provider router (auto-detect Site Kit /
+  Jetpack Stats / etc. for traffic + sales summaries), embedded video.
+- **v0.7+** — WP.org plugin directory submission, more content kinds.
 
 ## License
 
