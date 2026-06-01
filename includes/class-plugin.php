@@ -27,6 +27,7 @@ final class Plugin {
         new Settings();
         new Rest();
         new Upload();
+        new Onboarding();
         new Frontend();
     }
 

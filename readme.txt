@@ -4,7 +4,7 @@ Tags: woocommerce, chat, ai, claude, orders
 Requires at least: 6.5
 Tested up to: 6.6
 Requires PHP: 8.1
-Stable tag: 0.5.9
+Stable tag: 0.5.10
 License: MIT
 License URI: https://opensource.org/licenses/MIT
 
@@ -34,6 +34,14 @@ Bring your own Anthropic API key.
 4. WPChat → Chat → type.
 
 == Changelog ==
+
+= 0.5.10 =
+* **First-run onboarding wizard.** On first /wpchat visit (or via `?onboarding=1`), the chat is replaced by a guided stepper that reflects the user back at themselves (their name, their site), then walks through the capabilities WPChat needs: Anthropic API key (interactive paste-and-save), model picker (interactive), required WP capabilities (diagnostic + deep link), WooCommerce active status, detected analytics provider (Site Kit / Jetpack / WP Statistics / MonsterInsights), content backends available on this site, and optional CF / Git integrations. Ends with a capability matrix summary and one tap to enter the chat.
+* Dynamic step composition — sites already fully configured see a short happy-path (Welcome → Model → Backends → Summary); first-runners see the full sequence. Designed to follow "one sharp thing at a time" (no dense screens) and "reflect the user, not the product" (no feature tour).
+* New REST routes: `GET /wpchat/v1/onboarding/status` (capability matrix), `POST /onboarding/api-key`, `POST /onboarding/model`, `POST /onboarding/complete`, `POST /onboarding/reset`. Same permission gate as `/chat`.
+* New plugin metadata field: `mode` injected into `WPCHAT_BOOT` so the React entry chooses Wizard or Chat. Tracked per-user via `wpchat_onboarding_done` user meta.
+* WPChat → Settings now has a "Re-run onboarding wizard" link.
+* Tests: `OnboardingStatusTest` (matrix shape, API-key reporting, user first-name in payload, subscriber 403), `OnboardingPersistTest` (api-key + model persist, constant-locked 409, completion flips user meta, `should_show_for_user` logic).
 
 = 0.5.9 =
 * **Auto-updates from GitHub Releases — no more SCP-from-Actions.** Vendor Yahnis Elsts' Plugin Update Checker library (PUC, v5.7, MIT) under `vendor-puc/`. Wired in `wpchat.php` to track `gynciuz/wpchat` release assets. Every WP site running the plugin now sees update notifications in **Plugins → Updates** within ~12 h of a release being published (or on manual "Check Again"), and the standard one-click "Update Now" pulls the latest release ZIP. Same flow WP.org plugins use; no submission queue, no review delays.

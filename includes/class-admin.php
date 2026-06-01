@@ -124,6 +124,13 @@ class Admin {
         do_settings_sections('wpchat-settings');
         submit_button();
         echo '</form>';
+
+        $onboarding_url = esc_url(home_url('/wpchat?onboarding=1'));
+        echo '<p style="margin-top:2rem;border-top:1px solid #c3c4c7;padding-top:1rem;">';
+        echo '<a href="' . $onboarding_url . '">' . esc_html__('Re-run onboarding wizard', 'wpchat') . '</a> ';
+        echo '<span class="description">' . esc_html__('— walk through the capability check + settings again.', 'wpchat') . '</span>';
+        echo '</p>';
+
         echo '</div>';
     }
 }

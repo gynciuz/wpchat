@@ -67,14 +67,18 @@ class Frontend {
         // leaving "&#039;" visible. Decode entities first, then escape once.
         $site_name = html_entity_decode((string) get_bloginfo('name'), ENT_QUOTES | ENT_HTML5, 'UTF-8');
 
+        $mode = Onboarding::should_show_for_user(get_current_user_id()) ? 'onboarding' : 'chat';
+
         $boot = [
-            'restUrl'  => rest_url('wpchat/v1/'),
-            'nonce'    => wp_create_nonce('wp_rest'),
-            'userId'   => get_current_user_id(),
-            'userName' => html_entity_decode((string) wp_get_current_user()->display_name, ENT_QUOTES | ENT_HTML5, 'UTF-8'),
-            'locale'   => substr(get_user_locale(), 0, 2),
-            'siteName' => $site_name,
-            'siteUrl'  => untrailingslashit(home_url()),
+            'mode'      => $mode,
+            'restUrl'   => rest_url('wpchat/v1/'),
+            'nonce'     => wp_create_nonce('wp_rest'),
+            'userId'    => get_current_user_id(),
+            'userName'  => html_entity_decode((string) wp_get_current_user()->display_name, ENT_QUOTES | ENT_HTML5, 'UTF-8'),
+            'firstName' => (string) wp_get_current_user()->first_name,
+            'locale'    => substr(get_user_locale(), 0, 2),
+            'siteName'  => $site_name,
+            'siteUrl'   => untrailingslashit(home_url()),
             'logoutUrl' => wp_logout_url(home_url(self::URL_PATH)),
         ];
         $boot_json = wp_json_encode($boot);
