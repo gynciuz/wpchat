@@ -85,12 +85,14 @@ class Upload {
             'unique_filename_callback' => null,
         ];
 
-        // Allow tests to inject `test_upload => false` so synthetic files
-        // can pass wp_handle_upload's is_uploaded_file() check. Production
-        // never sets this filter; the check stays in place.
+        // Allow tests to inject overrides. Production never sets this filter.
         $overrides = apply_filters('wpchat_upload_overrides', $overrides, $file);
 
-        $moved = wp_handle_upload($file, $overrides);
+        // Production uses wp_handle_upload (strict: requires is_uploaded_file).
+        // Tests can swap to wp_handle_sideload via this filter so synthetic
+        // files pass the readability check instead.
+        $handler = apply_filters('wpchat_upload_handler', 'wp_handle_upload');
+        $moved   = call_user_func($handler, $file, $overrides);
         if (isset($moved['error'])) {
             return new \WP_REST_Response(['error' => $moved['error']], 500);
         }

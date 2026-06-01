@@ -97,27 +97,12 @@ class UploadTest extends TestCase {
         $request = new \WP_REST_Request('POST', '/wpchat/v1/upload');
         $request->set_file_params(['file' => $file]);
 
-        // wp_handle_upload calls is_uploaded_file() + move_uploaded_file().
-        // Both fail on synthetic tmp files. Disable the is_uploaded_file
-        // check via the plugin's wpchat_upload_overrides filter; copy the
-        // file to its destination ourselves via pre_move_uploaded_file
-        // (returning a string short-circuits wp_handle_upload's move).
-        $disable_test = function ($overrides) {
-            $overrides['test_upload'] = false;
-            return $overrides;
-        };
-        $move_hook = function ($null, $f, $new_file) {
-            if (file_exists($f['tmp_name'])) {
-                @copy($f['tmp_name'], $new_file);
-                return $new_file;
-            }
-            return $null;
-        };
-        add_filter('wpchat_upload_overrides', $disable_test);
-        add_filter('pre_move_uploaded_file', $move_hook, 10, 3);
+        // Swap to wp_handle_sideload — it uses is_readable() instead of
+        // is_uploaded_file(), so synthetic test files pass.
+        $swap_handler = static fn() => 'wp_handle_sideload';
+        add_filter('wpchat_upload_handler', $swap_handler);
         $response = \rest_get_server()->dispatch($request);
-        remove_filter('pre_move_uploaded_file', $move_hook, 10);
-        remove_filter('wpchat_upload_overrides', $disable_test);
+        remove_filter('wpchat_upload_handler', $swap_handler);
 
         return [
             'status' => $response->get_status(),
