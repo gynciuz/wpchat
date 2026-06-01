@@ -10,6 +10,7 @@ import { HistoryDrawer } from "./HistoryDrawer";
 import { OrdersTable, extractOrders } from "./OrdersTable";
 import { MicButton, MicStatusHint } from "./MicButton";
 import { QuickChips } from "./QuickChips";
+import { AttachButton } from "./AttachButton";
 
 interface Boot {
   restUrl: string;
@@ -32,6 +33,22 @@ interface ChatMessage {
   role: "user" | "assistant";
   text: string;
   toolCalls?: ToolCall[];
+  /** Inline thumbnail rendered next to a user message that uploaded an image. */
+  attachmentPreviewUrl?: string;
+}
+
+interface PendingAttachment {
+  file: File;
+  previewUrl: string; // object URL revoked when cleared
+}
+
+interface UploadResult {
+  attachment_id: number;
+  url: string;
+  width: number;
+  height: number;
+  mime_type: string;
+  filename: string;
 }
 
 interface WireMessage {
@@ -46,6 +63,8 @@ export function Chat({ boot }: { boot?: Boot }) {
   const [error, setError] = useState<string | null>(null);
   const [voiceToast, setVoiceToast] = useState<string | null>(null);
   const [listening, setListening] = useState(false);
+  const [attachment, setAttachment] = useState<PendingAttachment | null>(null);
+  const [attachmentUploading, setAttachmentUploading] = useState(false);
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [historyRefreshKey, setHistoryRefreshKey] = useState(0);
@@ -66,11 +85,64 @@ export function Chat({ boot }: { boot?: Boot }) {
     return () => clearTimeout(t);
   }, [voiceToast]);
 
+  function clearAttachment() {
+    if (attachment) URL.revokeObjectURL(attachment.previewUrl);
+    setAttachment(null);
+  }
+
+  function pickAttachment(file: File) {
+    if (attachment) URL.revokeObjectURL(attachment.previewUrl);
+    setAttachment({ file, previewUrl: URL.createObjectURL(file) });
+  }
+
+  async function uploadAttachment(file: File): Promise<UploadResult> {
+    if (!boot) throw new Error("Not ready");
+    const fd = new FormData();
+    fd.append("file", file);
+    const res = await fetch(`${boot.restUrl}upload`, {
+      method: "POST",
+      headers: { "X-WP-Nonce": boot.nonce },
+      credentials: "same-origin",
+      body: fd,
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data?.error || `Upload failed (HTTP ${res.status})`);
+    return data as UploadResult;
+  }
+
   async function sendText(rawText: string) {
     const text = rawText.trim();
-    if (!text || busy || loadingConversation || !boot) return;
+    if (!text && !attachment) return;
+    if (busy || loadingConversation || !boot) return;
 
-    const newUser: ChatMessage = { role: "user", text };
+    let finalText = text;
+    let previewForUser: string | undefined;
+
+    // If there's a pending attachment, upload it before composing the
+    // message. The marker line on the first line tells the LLM the
+    // attachment id to use; the user sees the thumbnail beside their
+    // bubble instead of the raw marker.
+    if (attachment) {
+      setAttachmentUploading(true);
+      try {
+        const uploaded = await uploadAttachment(attachment.file);
+        finalText = `[Uploaded ${uploaded.filename} → attachment ${uploaded.attachment_id}]` +
+          (text ? `\n${text}` : "");
+        previewForUser = uploaded.url;
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Upload failed");
+        setAttachmentUploading(false);
+        return;
+      }
+      setAttachmentUploading(false);
+      clearAttachment();
+    }
+
+    const newUser: ChatMessage = {
+      role: "user",
+      text: finalText,
+      attachmentPreviewUrl: previewForUser,
+    };
     const history: WireMessage[] = [...messages, newUser].map((m) => ({
       role: m.role,
       content: m.text,
@@ -231,11 +303,28 @@ export function Chat({ boot }: { boot?: Boot }) {
               className="flex flex-col gap-2"
             >
               {m.role === "user" ? (
-                <div
-                  className="max-w-[88%] self-end whitespace-pre-wrap bg-primary px-3.5 py-2.5 text-sm leading-relaxed text-primary-foreground tabular-nums"
-                  style={{ borderRadius: 10 }}
-                >
-                  {m.text}
+                <div className="flex max-w-[88%] flex-col items-end gap-1.5 self-end">
+                  {m.attachmentPreviewUrl && (
+                    <a
+                      href={m.attachmentPreviewUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="block overflow-hidden border border-border/40"
+                      style={{ borderRadius: 10 }}
+                    >
+                      <img
+                        src={m.attachmentPreviewUrl}
+                        alt="uploaded"
+                        className="block h-32 w-auto object-cover"
+                      />
+                    </a>
+                  )}
+                  <div
+                    className="whitespace-pre-wrap bg-primary px-3.5 py-2.5 text-sm leading-relaxed text-primary-foreground tabular-nums"
+                    style={{ borderRadius: 10 }}
+                  >
+                    {stripUploadMarker(m.text)}
+                  </div>
                 </div>
               ) : (
                 <>
@@ -333,7 +422,48 @@ export function Chat({ boot }: { boot?: Boot }) {
         onSelect={(q) => sendText(q)}
       />
 
+      <AnimatePresence>
+        {attachment && (
+          <motion.div
+            key="att-chip"
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 6 }}
+            transition={{ duration: 0.18 }}
+            className="flex items-center gap-2 self-stretch border border-border/40 bg-secondary/40 px-2 py-1.5"
+            style={{ borderRadius: 10 }}
+          >
+            <img
+              src={attachment.previewUrl}
+              alt=""
+              className="size-10 shrink-0 object-cover"
+              style={{ borderRadius: 6 }}
+            />
+            <div className="min-w-0 flex-1 text-xs">
+              <div className="truncate font-medium text-foreground">{attachment.file.name}</div>
+              <div className="text-[10.5px] text-muted-foreground">
+                {attachmentUploading
+                  ? "Įkeliama…"
+                  : `${(attachment.file.size / 1024).toFixed(0)} KB · paspauskite Siųsti, kad pridėtumėte`}
+              </div>
+            </div>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              onClick={clearAttachment}
+              disabled={attachmentUploading}
+              aria-label="Remove attachment"
+              className="size-7 text-muted-foreground"
+            >
+              <X className="size-4" />
+            </Button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <form onSubmit={handleSend} className="flex items-center gap-2">
+        <AttachButton onPick={pickAttachment} disabled={busy || attachmentUploading} />
         <MicButton
           speechLang={speechLang}
           busy={busy}
@@ -512,6 +642,16 @@ function EmptyState() {
       </ul>
     </div>
   );
+}
+
+/**
+ * Strip the "[Uploaded foo.jpg → attachment N]" marker line from a
+ * user-bubble's visible text. The marker is metadata for the LLM, not
+ * something the user needs to see again under the thumbnail they
+ * already picked.
+ */
+function stripUploadMarker(text: string): string {
+  return text.replace(/^\[Uploaded[^\]]+→\s*attachment\s+\d+\][ \t]*\n?/u, "").trim();
 }
 
 /**

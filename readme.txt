@@ -4,7 +4,7 @@ Tags: woocommerce, chat, ai, claude, orders
 Requires at least: 6.5
 Tested up to: 6.6
 Requires PHP: 8.1
-Stable tag: 0.4.10
+Stable tag: 0.5.0
 License: MIT
 License URI: https://opensource.org/licenses/MIT
 
@@ -34,6 +34,13 @@ Bring your own Anthropic API key.
 4. WPChat → Chat → type.
 
 == Changelog ==
+
+= 0.5.0 =
+* **First slice of v0.5-media — image upload + team_member photo replacement.** Tap the 📎 button in the chat input → native picker → pick a JPG / PNG / WebP. The file uploads to the WP media library before the message is sent; a `[Uploaded foo.jpg → attachment 1234]` marker is silently prepended to the message text so the LLM knows the attachment id, while the user sees a thumbnail next to their bubble. Subsequent preview / apply uses the same confirmation buttons as text edits.
+* New `POST /wpchat/v1/upload` REST endpoint (same permission check as /chat). Uses WP core's `wp_handle_upload` + `wp_insert_attachment` + `wp_generate_attachment_metadata` — no custom file handling. Validates: JPG / PNG / WebP only (415 otherwise), max 10 MB (413 otherwise).
+* GE-side team_member backend gains a `photo` field. Preview returns old + new image URLs; apply rewrites the `<img src>` attribute in both index.html and musu-meistrai.html. Inherits existing cache-purge + git auto-commit tail for free.
+* New components: `AttachButton.tsx`, plus pending-attachment chip + thumbnail rendering in `Chat.tsx`.
+* New tests: `UploadTest` (jpeg/png happy path, 415 pdf, 413 oversized, 401/403 subscriber, 400 missing) + `PhotoReplaceTest` (preview returns urls without writing, apply rewrites src, no-confirmation rejected).
 
 = 0.4.10 =
 * **CRITICAL FIX — "Unknown status: ancelled" bug present since v0.1.0.** `ltrim($slug, 'wc-')` was used in four places to strip the WooCommerce `wc-` prefix from status slugs. PHP's `ltrim` treats its second arg as a character SET, not a literal prefix, so it also stripped leading "c" / "w" / "-" chars: `cancelled` → `ancelled`, `completed` → `ompleted`, `wc-cancelled` → `ancelled`. This broke every status change involving cancelled/completed via tool calls AND polluted the dropdown's status list returned by `/actions/order-statuses` AND the system prompt's status reference. New `Tools::unprefixed_status()` helper does proper prefix removal. Earlier the resulting error was misdiagnosed as an LLM hallucination — it was real code. UnprefixedStatusTest locks the regression.

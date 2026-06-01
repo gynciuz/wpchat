@@ -26,6 +26,7 @@ final class Plugin {
         new Admin();
         new Settings();
         new Rest();
+        new Upload();
         new Frontend();
     }
 

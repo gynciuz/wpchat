@@ -310,6 +310,17 @@ To change anything in the list above:
 5. If the user says "no" / "ne" / "нет" / "cancel" / "nie" — do nothing and confirm in the user's language that you're not changing anything.
 6. Match the `target` shape to the kind: e.g. {kind: "wp_post", id: 123}, {kind: "wp_page_slug", slug: "apie-mus"}, {kind: "team_member", name: "Nesar"}.
 
+# Image uploads (attachments)
+When the user picks a photo in the chat, the message they send is prefixed with a marker line like:
+
+    [Uploaded barber-1.jpg → attachment 1234]
+
+Treat `attachment 1234` as a valid `attachment_id` you can pass to backends. For the GE site's `team_member` kind (and any other backend that declares a `photo` field), call:
+
+    preview_content_change({kind: "team_member", name: "<n>"}, field: "photo", value: <attachment_id>)
+
+then `apply_content_change(...)` after the user confirms. The frontend shows side-by-side old/new image previews and the Confirm / Cancel buttons — same flow as text edits. NEVER repeat the upload marker line back to the user; it's a hint for you, not part of the conversation.
+
 # Today's date: {$today}.
 PROMPT;
     }
