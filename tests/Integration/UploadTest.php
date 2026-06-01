@@ -96,29 +96,21 @@ class UploadTest extends TestCase {
     private function dispatchUploadRaw(array $file): array {
         $request = new \WP_REST_Request('POST', '/wpchat/v1/upload');
         $request->set_file_params(['file' => $file]);
-        // wp_handle_upload normally checks `is_uploaded_file($tmp_name)`.
-        // We monkey-patch that check via the {action}_overrides filter is
-        // already handled by Upload::handle_upload setting test_form=false.
-        // But wp_handle_upload ALSO calls move_uploaded_file which only
-        // works on actual HTTP uploads. Hook 'wp_handle_upload_prefilter'
-        // to swap in a rename-friendly path.
-        $hook = function ($file) {
-            if (!is_uploaded_file($file['tmp_name']) && file_exists($file['tmp_name'])) {
-                $upload_dir = wp_upload_dir();
-                $dest       = trailingslashit($upload_dir['path']) . wp_unique_filename($upload_dir['path'], $file['name']);
-                @rename($file['tmp_name'], $dest);
-                $file['tmp_name'] = $dest;
-                // Mark as uploaded so wp_handle_upload's move passes.
-                add_filter('pre_move_uploaded_file', function ($null, $f) use ($dest) {
-                    if (($f['tmp_name'] ?? '') === $dest) return $dest;
-                    return $null;
-                }, 10, 2);
+
+        // wp_handle_upload calls is_uploaded_file() + move_uploaded_file()
+        // which both fail on synthetic tmp files. Short-circuit both via
+        // pre_move_uploaded_file: if it returns a string, wp_handle_upload
+        // skips the real move and trusts that string as the final path.
+        $hook = function ($null, $f, $new_file) {
+            if (file_exists($f['tmp_name'])) {
+                @copy($f['tmp_name'], $new_file);
+                return $new_file;
             }
-            return $file;
+            return $null;
         };
-        add_filter('wp_handle_upload_prefilter', $hook);
+        add_filter('pre_move_uploaded_file', $hook, 10, 3);
         $response = \rest_get_server()->dispatch($request);
-        remove_filter('wp_handle_upload_prefilter', $hook);
+        remove_filter('pre_move_uploaded_file', $hook, 10);
 
         return [
             'status' => $response->get_status(),
