@@ -64,10 +64,13 @@ export function OrdersTable({ orders, restUrl, nonce, siteUrl, onChanged }: Orde
 
   return (
     <div
-      className="self-stretch overflow-hidden border border-border/40 bg-secondary/30"
+      // overflow-x-auto + min-w-0 lets the inner table scroll horizontally
+      // on phones when the rendered width exceeds the chat column. Without
+      // this the rightmost column (Statusas + 3-dot menu) is clipped.
+      className="-mx-2 self-stretch overflow-x-auto border border-border/40 bg-secondary/30 sm:mx-0 [scrollbar-width:thin]"
       style={{ borderRadius: 12 }}
     >
-      <table className="w-full border-collapse text-xs tabular-nums">
+      <table className="w-full min-w-[480px] border-collapse text-xs tabular-nums">
         <thead className="bg-background/50 text-muted-foreground">
           <tr>
             <th className="px-2.5 py-2 text-left font-semibold">#</th>

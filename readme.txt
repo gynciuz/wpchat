@@ -4,7 +4,7 @@ Tags: woocommerce, chat, ai, claude, orders
 Requires at least: 6.5
 Tested up to: 6.6
 Requires PHP: 8.1
-Stable tag: 0.5.6
+Stable tag: 0.5.7
 License: MIT
 License URI: https://opensource.org/licenses/MIT
 
@@ -34,6 +34,11 @@ Bring your own Anthropic API key.
 4. WPChat → Chat → type.
 
 == Changelog ==
+
+= 0.5.7 =
+* Mobile order tables scroll horizontally now. Wrapping container gets `overflow-x-auto` and the inner table has a `min-w-[480px]` so the rightmost columns (Statusas badge + 3-dot menu) don't get clipped when the chat column is narrower than the table needs.
+* Markdown URLs in assistant replies now have a visible underline at rest (`text-primary` with `decoration-primary/60`), brightening to full primary on hover. Previously the underline only appeared on hover, making links easy to miss.
+* (Voice removal from v0.5.6 also lands here — v0.5.6's install was blocked by an install-workflow YAML regression that's now reverted.)
 
 = 0.5.6 =
 * Voice / SpeechRecognition feature removed entirely. Browser SpeechRecognition added more friction than value in real usage — the mic permission UX from v0.4.7 + B5 was a series of patches around iOS Safari quirks, and the assistant never actually used voice. MicButton, MicStatusHint, the voice-toast UI, the `listening` / `speechLang` state, and the "balsas išjungtas" / `· en-US` footer tails are all gone. The mic icon is gone from both the empty-state hero and the bottom bar. If voice transcription comes back later it'll route through Anthropic's server-side audio API, not browser SpeechRecognition.

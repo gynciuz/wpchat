@@ -584,7 +584,7 @@ function AssistantBubble({ text }: { text: string }) {
               href={href}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-primary underline-offset-2 hover:underline"
+              className="text-primary underline underline-offset-2 decoration-primary/60 hover:decoration-primary"
             >
               {children}
             </a>
