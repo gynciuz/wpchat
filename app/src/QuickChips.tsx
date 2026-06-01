@@ -10,8 +10,9 @@ interface QuickChipsProps {
 }
 
 /**
- * Text-link preset shortcuts. Underlined labels, no border, no
- * background, no icon — just type. Tap fires the preset query.
+ * Text-link preset shortcuts. Underline is always visible (clearly
+ * indicating tappability); hover / active state brightens both text
+ * and underline. No border, no background, no icon — just type.
  *
  * Future: once dev-telemetry data exists, swap the static set for
  * the user's top-5 actual queries.
@@ -26,7 +27,7 @@ export function QuickChips({ locale, busy, onSelect }: QuickChipsProps) {
           type="button"
           onClick={() => onSelect(c.query)}
           disabled={busy}
-          className="text-xs text-muted-foreground underline underline-offset-4 decoration-border/60 transition-colors hover:text-foreground hover:decoration-foreground/60 disabled:opacity-60"
+          className="text-xs text-muted-foreground underline underline-offset-4 decoration-foreground/60 transition-colors hover:text-foreground hover:decoration-foreground active:text-foreground active:decoration-foreground disabled:opacity-60"
         >
           {c.label}
         </button>

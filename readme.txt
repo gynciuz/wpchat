@@ -4,7 +4,7 @@ Tags: woocommerce, chat, ai, claude, orders
 Requires at least: 6.5
 Tested up to: 6.6
 Requires PHP: 8.1
-Stable tag: 0.5.2
+Stable tag: 0.5.3
 License: MIT
 License URI: https://opensource.org/licenses/MIT
 
@@ -34,6 +34,9 @@ Bring your own Anthropic API key.
 4. WPChat → Chat → type.
 
 == Changelog ==
+
+= 0.5.3 =
+* QuickChips: underline is now always clearly visible (was too faint). Hover and active (tap) states still brighten both the text and the underline. Tap affordance is obvious at first glance.
 
 = 0.5.2 =
 * Input simplified — borderless, with the attach button as a small `+` icon inline on the right side of the input. Standalone paperclip button removed from both the empty-state hero and the messages-mode bottom bar.
