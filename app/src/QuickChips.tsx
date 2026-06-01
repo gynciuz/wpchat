@@ -31,7 +31,7 @@ export function QuickChips({ locale, busy, onSelect }: QuickChipsProps) {
           // Vertical padding centres the small text inside that taller hit area
           // without inflating the visual underline. px-2 widens the hit area
           // horizontally so adjacent links are easier to discriminate by thumb.
-          className="inline-flex min-h-[44px] items-center px-2 text-xs text-muted-foreground underline underline-offset-4 decoration-foreground/60 transition-colors hover:text-foreground hover:decoration-foreground active:text-foreground active:decoration-foreground disabled:opacity-60"
+          className="inline-flex min-h-[44px] items-center px-2 text-xs text-muted-foreground underline underline-offset-4 decoration-foreground/30 transition-colors hover:text-foreground hover:decoration-foreground active:text-foreground active:decoration-foreground disabled:opacity-60"
         >
           {c.label}
         </button>

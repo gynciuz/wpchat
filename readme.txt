@@ -4,7 +4,7 @@ Tags: woocommerce, chat, ai, claude, orders
 Requires at least: 6.5
 Tested up to: 6.6
 Requires PHP: 8.1
-Stable tag: 0.5.4
+Stable tag: 0.5.5
 License: MIT
 License URI: https://opensource.org/licenses/MIT
 
@@ -34,6 +34,9 @@ Bring your own Anthropic API key.
 4. WPChat → Chat → type.
 
 == Changelog ==
+
+= 0.5.5 =
+* QuickChips: underline at-rest opacity cut in half (foreground/60 → foreground/30). Still clearly readable, less visual weight, brightens fully on hover and tap.
 
 = 0.5.4 =
 * QuickChips: tap target enforced to >= 44px on every link (Apple HIG / Material guideline). Vertical padding centres the small text inside the larger hit area without making the underline look fat. Horizontal padding widens the per-link hit zone so adjacent links don't conflict on a thumb-tap.
