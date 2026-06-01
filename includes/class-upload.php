@@ -85,6 +85,11 @@ class Upload {
             'unique_filename_callback' => null,
         ];
 
+        // Allow tests to inject `test_upload => false` so synthetic files
+        // can pass wp_handle_upload's is_uploaded_file() check. Production
+        // never sets this filter; the check stays in place.
+        $overrides = apply_filters('wpchat_upload_overrides', $overrides, $file);
+
         $moved = wp_handle_upload($file, $overrides);
         if (isset($moved['error'])) {
             return new \WP_REST_Response(['error' => $moved['error']], 500);
