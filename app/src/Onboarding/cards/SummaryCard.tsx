@@ -20,16 +20,6 @@ export function SummaryCard({ status, boot }: Props) {
     { label: labels.permissions, ok: status.permissions.ok },
     { label: labels.wc, ok: status.wc.active },
     { label: labels.analytics, ok: status.analytics.detected.length > 0, optional: true },
-    {
-      label: labels.cf,
-      ok: status.integrations.cf_purge.configured,
-      optional: true,
-    },
-    {
-      label: labels.git,
-      ok: status.integrations.git_sync.configured,
-      optional: true,
-    },
   ];
 
   return (
@@ -74,8 +64,6 @@ function labelsFor(locale?: string) {
         permissions: "Reikalingos teisės",
         wc: "WooCommerce aktyvuotas",
         analytics: "Analitikos teikėjas",
-        cf: "Cloudflare automatinis cache",
-        git: "Git auto-commit",
         optional: "Neprivaloma",
       };
     case "ru":
@@ -86,8 +74,6 @@ function labelsFor(locale?: string) {
         permissions: "Нужные права",
         wc: "WooCommerce активен",
         analytics: "Источник аналитики",
-        cf: "Cloudflare auto-purge",
-        git: "Git auto-commit",
         optional: "Опционально",
       };
     case "pl":
@@ -98,8 +84,6 @@ function labelsFor(locale?: string) {
         permissions: "Uprawnienia",
         wc: "WooCommerce aktywny",
         analytics: "Źródło analityki",
-        cf: "Cloudflare auto-purge",
-        git: "Git auto-commit",
         optional: "Opcjonalne",
       };
     default:
@@ -110,8 +94,6 @@ function labelsFor(locale?: string) {
         permissions: "Required capabilities",
         wc: "WooCommerce active",
         analytics: "Analytics provider",
-        cf: "Cloudflare auto-purge",
-        git: "Git auto-commit",
         optional: "Optional",
       };
   }

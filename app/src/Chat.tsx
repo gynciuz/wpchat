@@ -272,7 +272,11 @@ export function Chat({ boot }: { boot?: Boot }) {
         />
       )}
 
-      <div className="flex flex-1 flex-col gap-3 overflow-hidden">
+      {/* No `overflow-hidden` on this wrapper — it clips horizontal scroll
+          from child OrdersTable (which uses overflow-x-auto + min-w-[480px]
+          to let phones swipe wide tables). Only constrain Y so messages
+          stream vertically. */}
+      <div className="flex flex-1 flex-col gap-3 overflow-y-auto">
         {messages.length === 0 && !busy && (
           <EmptyHero
             locale={boot?.locale}

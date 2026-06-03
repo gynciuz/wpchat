@@ -4,7 +4,7 @@ Tags: woocommerce, chat, ai, claude, orders
 Requires at least: 6.5
 Tested up to: 6.6
 Requires PHP: 8.1
-Stable tag: 0.5.10
+Stable tag: 0.5.11
 License: MIT
 License URI: https://opensource.org/licenses/MIT
 
@@ -34,6 +34,11 @@ Bring your own Anthropic API key.
 4. WPChat → Chat → type.
 
 == Changelog ==
+
+= 0.5.11 =
+* **Mobile order tables actually scroll horizontally now.** Discovered the v0.5.7 fix was being clipped by a `overflow-hidden` on the message-stream wrapper (`Chat.tsx:275`), which cut off any horizontal overflow from child elements regardless of their own scroll declarations. Constrained to `overflow-y-auto` so messages stream vertically while the table inside can scroll horizontally on a phone — the Statusas column + 3-dot menu now reachable by swiping.
+* **Onboarding footer no longer hides under the keyboard / off-screen on tall cards.** Wizard switched from `min-h-screen` to `min-h-[100dvh]` (dynamic viewport — survives Safari address-bar collapse + iOS keyboard show); main slot is `overflow-y-auto` so tall cards scroll inside the wizard not the document; Back / Skip / Next footer is now `sticky bottom-0` with `env(safe-area-inset-bottom)` padding so it never gets buried.
+* **Removed Cloudflare auto-purge + Git auto-commit cards from the public onboarding.** Both are site-specific (CachePurge lives in the GE child theme, GitSync needs a writable git repo at ABSPATH) and don't apply to a fresh WordPress install. They stay documented in the plugin README + remain available via wp-config constants for power users — they just don't clutter the first-run wizard anymore. Per design principles #2 (one sharp thing) + #5 (state of mind, not state of app).
 
 = 0.5.10 =
 * **First-run onboarding wizard.** On first /wpchat visit (or via `?onboarding=1`), the chat is replaced by a guided stepper that reflects the user back at themselves (their name, their site), then walks through the capabilities WPChat needs: Anthropic API key (interactive paste-and-save), model picker (interactive), required WP capabilities (diagnostic + deep link), WooCommerce active status, detected analytics provider (Site Kit / Jetpack / WP Statistics / MonsterInsights), content backends available on this site, and optional CF / Git integrations. Ends with a capability matrix summary and one tap to enter the chat.

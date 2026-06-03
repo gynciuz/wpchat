@@ -10,7 +10,6 @@ import { PermissionsCard } from "./cards/PermissionsCard";
 import { WooCommerceCard } from "./cards/WooCommerceCard";
 import { AnalyticsCard } from "./cards/AnalyticsCard";
 import { BackendsCard } from "./cards/BackendsCard";
-import { IntegrationsCard } from "./cards/IntegrationsCard";
 import { SummaryCard } from "./cards/SummaryCard";
 
 /**
@@ -102,10 +101,14 @@ export function OnboardingWizard({ boot }: { boot: Boot }) {
   }
 
   return (
-    <div className="mx-auto flex min-h-screen max-w-2xl flex-col px-4 py-6 sm:py-12">
+    // `min-h-[100dvh]` honors mobile dynamic-viewport changes (Safari
+    // address bar collapse / iOS keyboard show) better than `min-h-screen`.
+    // The footer is sticky so a tall card (or an open keyboard) can never
+    // bury the Back/Skip/Next controls below the visible viewport.
+    <div className="mx-auto flex min-h-[100dvh] max-w-2xl flex-col px-4">
       <Header total={steps.length} current={stepIndex} />
 
-      <main className="flex flex-1 flex-col justify-center">
+      <main className="flex flex-1 flex-col justify-center overflow-y-auto py-2">
         <AnimatePresence mode="wait" initial={false}>
           <motion.div
             key={current.id}
@@ -141,7 +144,10 @@ export function OnboardingWizard({ boot }: { boot: Boot }) {
 
 function Header({ total, current }: { total: number; current: number }) {
   return (
-    <header className="flex items-center justify-between pb-8">
+    <header
+      className="sticky top-0 z-10 flex items-center justify-between bg-background pb-4"
+      style={{ paddingTop: "max(env(safe-area-inset-top, 0px), 1.5rem)" }}
+    >
       <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
         <Sparkles className="size-4 text-foreground" />
         WPChat
@@ -183,7 +189,10 @@ function Footer({
   nextLabel: string;
 }) {
   return (
-    <footer className="flex items-center justify-between pt-8">
+    <footer
+      className="sticky bottom-0 z-10 flex items-center justify-between bg-background pt-4"
+      style={{ paddingBottom: "max(env(safe-area-inset-bottom, 0px), 1rem)" }}
+    >
       <Button
         type="button"
         variant="ghost"
@@ -310,13 +319,12 @@ function buildSteps(status: OnboardingStatus | null, boot: Boot): Step[] {
     render: ({ status, boot }) => <BackendsCard status={status} boot={boot} />,
   });
 
-  const integrationsNeed = !status.integrations.cf_purge.configured || !status.integrations.git_sync.configured;
-  if (integrationsNeed) {
-    steps.push({
-      id: "integrations",
-      render: ({ status, boot }) => <IntegrationsCard status={status} boot={boot} />,
-    });
-  }
+  // CF auto-purge + Git auto-commit integrations are site-specific
+  // (CachePurge lives in GE's child theme; GitSync needs a writable
+  // git repo at ABSPATH). They're documented in the plugin README for
+  // power users; they don't belong in a first-run wizard — per design
+  // principle #5 (state of mind, not state of app), a fresh-install
+  // user is not in "advanced sysadmin" mode.
 
   steps.push({
     id: "summary",
