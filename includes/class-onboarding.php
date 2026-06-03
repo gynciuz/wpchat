@@ -24,6 +24,8 @@ class Onboarding {
     const NAMESPACE          = 'wpchat/v1';
     const USER_META_KEY      = 'wpchat_onboarding_done';
     const DISABLED_KINDS_OPT = 'wpchat_disabled_kinds';
+    const PROVIDER_OPT       = 'wpchat_provider_choice';
+    const WAITLIST_OPT       = 'wpchat_cloud_waitlist';
 
     public function __construct() {
         add_action('rest_api_init', [$this, 'register_routes']);
@@ -60,6 +62,11 @@ class Onboarding {
             'permission_callback' => [$this, 'check_admin'],
             'callback'            => [$this, 'handle_set_disabled_kinds'],
         ]);
+        register_rest_route(self::NAMESPACE, '/onboarding/provider', [
+            'methods'             => 'POST',
+            'permission_callback' => [$this, 'check_permission'],
+            'callback'            => [$this, 'handle_set_provider'],
+        ]);
     }
 
     /** Stricter gate: only manage_options users (site admins) may flip
@@ -78,6 +85,7 @@ class Onboarding {
         return new \WP_REST_Response([
             'apiKey'         => $this->api_key_status(),
             'model'          => $this->model_status(),
+            'provider'       => $this->provider_status(),
             'permissions'    => $this->permissions_status($user),
             'wc'             => $this->wc_status(),
             'analytics'      => $this->analytics_status(),
@@ -151,6 +159,36 @@ class Onboarding {
         return new \WP_REST_Response(['ok' => true], 200);
     }
 
+    public function handle_set_provider(\WP_REST_Request $request): \WP_REST_Response {
+        $body     = $request->get_json_params();
+        $provider = (string) ($body['provider'] ?? '');
+        $email    = isset($body['email']) ? sanitize_email((string) $body['email']) : '';
+        if (!in_array($provider, ['byo', 'cloud-waitlist'], true)) {
+            return new \WP_REST_Response([
+                'error'   => 'Unknown provider.',
+                'allowed' => ['byo', 'cloud-waitlist'],
+            ], 400);
+        }
+        update_option(self::PROVIDER_OPT, $provider, false);
+
+        // If they're opting into the Cloud waitlist, capture the email
+        // alongside the existing list so we can ping people when the
+        // tier opens. Email is optional (the choice itself is the
+        // primary signal).
+        if ($provider === 'cloud-waitlist' && $email && is_email($email)) {
+            $waitlist = (array) get_option(self::WAITLIST_OPT, []);
+            $waitlist[] = [
+                'email' => $email,
+                'user_id' => get_current_user_id(),
+                'at'    => time(),
+                'site'  => home_url(),
+            ];
+            update_option(self::WAITLIST_OPT, $waitlist, false);
+        }
+
+        return new \WP_REST_Response(['provider' => $this->provider_status()], 200);
+    }
+
     public function handle_set_disabled_kinds(\WP_REST_Request $request): \WP_REST_Response {
         $body = $request->get_json_params();
         $raw  = is_array($body['disabled'] ?? null) ? $body['disabled'] : [];
@@ -196,6 +234,18 @@ class Onboarding {
             'masked'  => $key ? '••••' . substr($key, -4) : null,
             'source'  => $constant_defined ? 'constant' : ($key ? 'option' : 'none'),
             'editable' => !$constant_defined,
+        ];
+    }
+
+    private function provider_status(): array {
+        $current = (string) get_option(self::PROVIDER_OPT, 'byo');
+        if (!in_array($current, ['byo', 'cloud-waitlist'], true)) {
+            $current = 'byo';
+        }
+        return [
+            'current'             => $current,
+            'cloudAvailable'      => false, // flip when the cloud service actually ships
+            'cloudWaitlistOpen'   => true,
         ];
     }
 

@@ -22,6 +22,11 @@ export interface OnboardingStatus {
     current: string;
     options: Array<{ id: string; label: string }>;
   };
+  provider: {
+    current: "byo" | "cloud-waitlist";
+    cloudAvailable: boolean;
+    cloudWaitlistOpen: boolean;
+  };
   permissions: {
     ok: boolean;
     has: string[];

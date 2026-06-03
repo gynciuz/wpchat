@@ -15,8 +15,15 @@ interface Props {
  */
 export function SummaryCard({ status, boot }: Props) {
   const labels = labelsFor(boot.locale);
+  const cloud = status.provider?.current === "cloud-waitlist";
   const rows = [
-    { label: labels.aiKey, ok: status.apiKey.ok },
+    {
+      label: cloud ? labels.providerCloud : labels.providerByo,
+      ok: cloud || status.apiKey.ok,
+    },
+    ...(cloud
+      ? []
+      : [{ label: labels.aiKey, ok: status.apiKey.ok }]),
     { label: labels.permissions, ok: status.permissions.ok },
     { label: labels.wc, ok: status.wc.active },
     { label: labels.analytics, ok: status.analytics.detected.length > 0, optional: true },
@@ -60,6 +67,8 @@ function labelsFor(locale?: string) {
       return {
         title: "Pasiruošę pradėti",
         subtitle: "Štai kas veikia. Neprivalomi dalykai galima įjungti vėliau iš Nustatymų.",
+        providerByo: "Tiekėjas: Anthropic (jūsų raktas)",
+        providerCloud: "Tiekėjas: WPChat Cloud (laukimo sąraše)",
         aiKey: "Anthropic API raktas",
         permissions: "Reikalingos teisės",
         wc: "WooCommerce aktyvuotas",
@@ -70,6 +79,8 @@ function labelsFor(locale?: string) {
       return {
         title: "Готово к работе",
         subtitle: "Вот что работает. Опциональные пункты можно подключить позже из Настроек.",
+        providerByo: "Провайдер: Anthropic (ваш ключ)",
+        providerCloud: "Провайдер: WPChat Cloud (в листе ожидания)",
         aiKey: "API-ключ Anthropic",
         permissions: "Нужные права",
         wc: "WooCommerce активен",
@@ -80,6 +91,8 @@ function labelsFor(locale?: string) {
       return {
         title: "Gotowe",
         subtitle: "Oto co działa. Opcjonalne elementy można dodać później z Ustawień.",
+        providerByo: "Dostawca: Anthropic (Twój klucz)",
+        providerCloud: "Dostawca: WPChat Cloud (lista oczekujących)",
         aiKey: "Klucz API Anthropic",
         permissions: "Uprawnienia",
         wc: "WooCommerce aktywny",
@@ -90,6 +103,8 @@ function labelsFor(locale?: string) {
       return {
         title: "Ready to go",
         subtitle: "Here's what's working. Optional items can be enabled later from Settings.",
+        providerByo: "Provider: Anthropic (your key)",
+        providerCloud: "Provider: WPChat Cloud (waitlisted)",
         aiKey: "Anthropic API key",
         permissions: "Required capabilities",
         wc: "WooCommerce active",

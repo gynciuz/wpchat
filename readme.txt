@@ -4,7 +4,7 @@ Tags: woocommerce, chat, ai, claude, orders
 Requires at least: 6.5
 Tested up to: 6.6
 Requires PHP: 8.1
-Stable tag: 0.5.12
+Stable tag: 0.5.13
 License: MIT
 License URI: https://opensource.org/licenses/MIT
 
@@ -34,6 +34,16 @@ Bring your own Anthropic API key.
 4. WPChat → Chat → type.
 
 == Changelog ==
+
+= 0.5.13 =
+* **Provider step in onboarding.** A new card right after Welcome lets you choose how WPChat reaches the AI: **Bring your own Anthropic API key** (free; you're billed by Anthropic) or **WPChat Cloud — Coming soon** (€10/mo for €5 of tokens, Stripe-billed; currently a waitlist). Picking BYO continues to the existing API-key + Model picker steps. Picking Cloud-waitlist skips both (no key needed yet) and captures an optional email so we can ping you when the tier opens.
+* New REST routes: `POST /wpchat/v1/onboarding/provider` (body `{provider: 'byo'|'cloud-waitlist', email?: string}`); status payload gains a `provider` block with `current`, `cloudAvailable`, `cloudWaitlistOpen` flags.
+* Summary card adapts to the choice — BYO sees "Provider: Anthropic (your key)"; Cloud-waitlist sees "Provider: WPChat Cloud (waitlisted)" and the API-key row is omitted from the matrix.
+* New site options: `wpchat_provider_choice` + `wpchat_cloud_waitlist`.
+* Locale-aware for LT / RU / PL / EN.
+* New tests: OnboardingProviderTest covering default, persistence, validation, waitlist email capture, and confirmation that BYO doesn't touch the waitlist.
+
+This ships the choice UI now. The actual Cloud service (Stripe + proxy + account mgmt) is a separate multi-week project still ahead; the cloud-waitlist path is forward-compatible with the eventual live service.
 
 = 0.5.12 =
 * **Onboarding's "What chat can edit" card now shows every kind.** Previously only custom site-specific kinds appeared (the four core wp_* types were summarised by count only). Now the full list renders, so admins see exactly what scope WPChat will touch on this site.

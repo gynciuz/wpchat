@@ -11,6 +11,7 @@ import { WooCommerceCard } from "./cards/WooCommerceCard";
 import { AnalyticsCard } from "./cards/AnalyticsCard";
 import { BackendsCard } from "./cards/BackendsCard";
 import { SummaryCard } from "./cards/SummaryCard";
+import { ProviderCard } from "./cards/ProviderCard";
 
 /**
  * First-run onboarding stepper. Cards are picked dynamically based on
@@ -273,24 +274,44 @@ function buildSteps(status: OnboardingStatus | null, boot: Boot): Step[] {
 
   if (!status) return steps;
 
-  // High-impact interactive cards first, only if relevant.
-  if (!status.apiKey.ok) {
+  // Provider step — the choice that frames everything below. Sets
+  // the tone before we ask for an API key vs send the user to a
+  // waitlist.
+  steps.push({
+    id: "provider",
+    render: ({ status, boot, onUpdateStatus, onNext }) => (
+      <ProviderCard
+        status={status}
+        boot={boot}
+        onUpdateStatus={onUpdateStatus}
+        onAdvance={onNext}
+      />
+    ),
+  });
+
+  // If the user picked the Cloud waitlist, we don't ask for an
+  // Anthropic key (they're not bringing one) or a model (we'll
+  // pick on their behalf when the service opens). Continue
+  // straight to the capability diagnostics + summary.
+  const usingCloud = status.provider?.current === "cloud-waitlist";
+
+  if (!usingCloud) {
+    if (!status.apiKey.ok) {
+      steps.push({
+        id: "api-key",
+        render: ({ status, boot, onUpdateStatus, onNext }) => (
+          <ApiKeyCard status={status} boot={boot} onUpdateStatus={onUpdateStatus} onAdvance={onNext} />
+        ),
+      });
+    }
+
     steps.push({
-      id: "api-key",
-      render: ({ status, boot, onUpdateStatus, onNext }) => (
-        <ApiKeyCard status={status} boot={boot} onUpdateStatus={onUpdateStatus} onAdvance={onNext} />
+      id: "model",
+      render: ({ status, boot, onUpdateStatus }) => (
+        <ModelCard status={status} boot={boot} onUpdateStatus={onUpdateStatus} />
       ),
     });
   }
-
-  // Always offer the model picker — it's cheap and one of the most
-  // impactful decisions a new user makes.
-  steps.push({
-    id: "model",
-    render: ({ status, boot, onUpdateStatus }) => (
-      <ModelCard status={status} boot={boot} onUpdateStatus={onUpdateStatus} />
-    ),
-  });
 
   if (!status.permissions.ok) {
     steps.push({
