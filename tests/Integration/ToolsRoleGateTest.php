@@ -26,10 +26,11 @@ class ToolsRoleGateTest extends TestCase {
         $this->assertTrue(Tools::user_can_edit_kind('wp_term'));
     }
 
-    public function test_editor_cannot_edit_wp_term(): void {
-        $editor = $this->factory()->user->create(['role' => 'editor']);
-        \wp_set_current_user($editor);
-        // Editors don't have manage_categories by default.
+    public function test_author_cannot_edit_wp_term(): void {
+        // Editors do have manage_categories by default. Authors don't —
+        // they can publish their own posts but can't manage taxonomies.
+        $author = $this->factory()->user->create(['role' => 'author']);
+        \wp_set_current_user($author);
         $this->assertFalse(Tools::user_can_edit_kind('wp_term'));
     }
 
@@ -50,8 +51,9 @@ class ToolsRoleGateTest extends TestCase {
     }
 
     public function test_dispatch_refused_when_role_restricted(): void {
-        $editor = $this->factory()->user->create(['role' => 'editor']);
-        \wp_set_current_user($editor);
+        // Use author role — lacks manage_categories.
+        $author = $this->factory()->user->create(['role' => 'author']);
+        \wp_set_current_user($author);
 
         $result = Tools::preview_content_change([
             'target' => ['kind' => 'wp_term', 'term_id' => 1, 'taxonomy' => 'category'],
@@ -79,19 +81,18 @@ class ToolsRoleGateTest extends TestCase {
     }
 
     public function test_system_prompt_omits_role_restricted_kinds(): void {
-        $editor = $this->factory()->user->create(['role' => 'editor']);
-        // Grant the chat-route caps so postChat doesn't 403; editors don't
-        // get manage_woocommerce by default.
-        $user = \get_user_by('id', $editor);
+        // Authors lack manage_categories. Grant the chat-route caps so
+        // postChat doesn't 403 at the gate.
+        $author = $this->factory()->user->create(['role' => 'author']);
+        $user = \get_user_by('id', $author);
         $user->add_cap('manage_woocommerce');
         $user->add_cap('edit_shop_orders');
-        \wp_set_current_user($editor);
+        \wp_set_current_user($author);
 
         $this->mockAnthropic->enqueueEndTurn('ok');
         $this->postChat('hi');
 
         $system = $this->mockAnthropic->lastRequest()['system'] ?? '';
-        // Editors don't have manage_categories → wp_term should be filtered out.
         $this->assertStringNotContainsString('**wp_term**', $system);
     }
 }
