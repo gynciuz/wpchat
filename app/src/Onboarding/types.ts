@@ -43,11 +43,16 @@ export interface OnboardingStatus {
     description: string;
     fields: string[];
     source: "core" | "site";
+    requiredCap: string;
+    userCanEdit: boolean;
+    siteDisabled: boolean;
   }>;
   integrations: {
     cf_purge: { configured: boolean; snippet: string };
     git_sync: { configured: boolean; snippet: string };
   };
+  disabled_kinds: string[];
+  isAdmin: boolean;
   user: {
     id: number;
     display_name: string;

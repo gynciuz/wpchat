@@ -21,8 +21,9 @@ if (!defined('ABSPATH')) {
 
 class Onboarding {
 
-    const NAMESPACE     = 'wpchat/v1';
-    const USER_META_KEY = 'wpchat_onboarding_done';
+    const NAMESPACE          = 'wpchat/v1';
+    const USER_META_KEY      = 'wpchat_onboarding_done';
+    const DISABLED_KINDS_OPT = 'wpchat_disabled_kinds';
 
     public function __construct() {
         add_action('rest_api_init', [$this, 'register_routes']);
@@ -54,6 +55,17 @@ class Onboarding {
             'permission_callback' => [$this, 'check_permission'],
             'callback'            => [$this, 'handle_reset'],
         ]);
+        register_rest_route(self::NAMESPACE, '/onboarding/disabled-kinds', [
+            'methods'             => 'POST',
+            'permission_callback' => [$this, 'check_admin'],
+            'callback'            => [$this, 'handle_set_disabled_kinds'],
+        ]);
+    }
+
+    /** Stricter gate: only manage_options users (site admins) may flip
+     *  the site-wide disabled-kinds list. */
+    public function check_admin(): bool {
+        return current_user_can('manage_options');
     }
 
     public function check_permission(): bool {
@@ -64,14 +76,16 @@ class Onboarding {
         $user = wp_get_current_user();
 
         return new \WP_REST_Response([
-            'apiKey'       => $this->api_key_status(),
-            'model'        => $this->model_status(),
-            'permissions'  => $this->permissions_status($user),
-            'wc'           => $this->wc_status(),
-            'analytics'    => $this->analytics_status(),
-            'backends'     => $this->backends_status(),
-            'integrations' => $this->integrations_status(),
-            'user'         => [
+            'apiKey'         => $this->api_key_status(),
+            'model'          => $this->model_status(),
+            'permissions'    => $this->permissions_status($user),
+            'wc'             => $this->wc_status(),
+            'analytics'      => $this->analytics_status(),
+            'backends'       => $this->backends_status(),
+            'integrations'   => $this->integrations_status(),
+            'disabled_kinds' => self::get_site_disabled_kinds(),
+            'isAdmin'        => current_user_can('manage_options'),
+            'user'           => [
                 'id'           => $user->ID,
                 'display_name' => html_entity_decode((string) $user->display_name, ENT_QUOTES | ENT_HTML5, 'UTF-8'),
                 'first_name'   => $user->first_name ?: '',
@@ -135,6 +149,39 @@ class Onboarding {
     public function handle_reset(\WP_REST_Request $request): \WP_REST_Response {
         delete_user_meta(get_current_user_id(), self::USER_META_KEY);
         return new \WP_REST_Response(['ok' => true], 200);
+    }
+
+    public function handle_set_disabled_kinds(\WP_REST_Request $request): \WP_REST_Response {
+        $body = $request->get_json_params();
+        $raw  = is_array($body['disabled'] ?? null) ? $body['disabled'] : [];
+        $clean = [];
+        foreach ($raw as $kind) {
+            if (is_string($kind) && $kind !== '') {
+                $clean[] = sanitize_key($kind);
+            }
+        }
+        $clean = array_values(array_unique($clean));
+        update_option(self::DISABLED_KINDS_OPT, $clean, false);
+        return new \WP_REST_Response([
+            'ok'             => true,
+            'disabled_kinds' => $clean,
+        ], 200);
+    }
+
+    /**
+     * Site-level list of content kinds an admin has disabled for the
+     * chat. Empty array by default (all kinds enabled). Tools dispatch
+     * checks this BEFORE the backend's own gate, so a disabled kind
+     * short-circuits even if the LLM tries it.
+     *
+     * @return string[]
+     */
+    public static function get_site_disabled_kinds(): array {
+        $value = get_option(self::DISABLED_KINDS_OPT, []);
+        if (!is_array($value)) {
+            return [];
+        }
+        return array_values(array_filter(array_map('strval', $value)));
     }
 
     // ------------------------------------------------------------------
@@ -220,15 +267,19 @@ class Onboarding {
     }
 
     private function backends_status(): array {
-        $out = [];
+        $out      = [];
+        $disabled = self::get_site_disabled_kinds();
         if (class_exists('\WPChat\ContentRouter')) {
             foreach (\WPChat\ContentRouter::all_descriptions() as $kind => $desc) {
                 $is_core = in_array($kind, ['wp_post', 'wp_page_slug', 'wp_post_meta', 'wp_term'], true);
                 $out[] = [
-                    'kind'        => $kind,
-                    'description' => $desc['description'] ?? '',
-                    'fields'      => $desc['fields'] ?? [],
-                    'source'      => $is_core ? 'core' : 'site',
+                    'kind'           => $kind,
+                    'description'    => $desc['description'] ?? '',
+                    'fields'         => $desc['fields'] ?? [],
+                    'source'         => $is_core ? 'core' : 'site',
+                    'requiredCap'    => Tools::kind_required_cap($kind),
+                    'userCanEdit'    => Tools::user_can_edit_kind($kind),
+                    'siteDisabled'   => in_array($kind, $disabled, true),
                 ];
             }
         }

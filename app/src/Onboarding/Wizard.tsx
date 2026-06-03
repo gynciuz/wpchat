@@ -316,7 +316,9 @@ function buildSteps(status: OnboardingStatus | null, boot: Boot): Step[] {
   // Content backends always — shows what the chat can edit on this site.
   steps.push({
     id: "backends",
-    render: ({ status, boot }) => <BackendsCard status={status} boot={boot} />,
+    render: ({ status, boot, onUpdateStatus }) => (
+      <BackendsCard status={status} boot={boot} onUpdateStatus={onUpdateStatus} />
+    ),
   });
 
   // CF auto-purge + Git auto-commit integrations are site-specific

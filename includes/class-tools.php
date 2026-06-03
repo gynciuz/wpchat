@@ -165,6 +165,73 @@ class Tools {
     }
 
     /**
+     * Map a content `kind` to the WordPress capability the current user
+     * needs in order to edit it. Built-in kinds resolve to their natural
+     * caps; custom kinds may declare via the ContentBackend's optional
+     * `required_cap()` method (we use method_exists so older backends
+     * keep working without modification).
+     *
+     * The optional $target lets us resolve per-post_type caps (e.g.
+     * `edit_pages` vs `edit_posts`) when we have a specific post id
+     * to inspect. When no target is provided we fall back to the
+     * generic "edit posts" cap which is the most permissive parent.
+     */
+    public static function kind_required_cap(string $kind, array $target = []): string {
+        switch ($kind) {
+            case 'wp_post':
+            case 'wp_post_meta':
+            case 'wp_page_slug':
+                $post_id = (int) ($target['post_id'] ?? $target['id'] ?? 0);
+                if (!$post_id && !empty($target['slug'])) {
+                    $page = get_page_by_path((string) $target['slug'], OBJECT, ['post', 'page']);
+                    $post_id = $page ? (int) $page->ID : 0;
+                }
+                if ($post_id) {
+                    $type_obj = get_post_type_object(get_post_type($post_id) ?: 'post');
+                    if ($type_obj && !empty($type_obj->cap->edit_post)) {
+                        return (string) $type_obj->cap->edit_post;
+                    }
+                }
+                return 'edit_posts';
+
+            case 'wp_term':
+                $taxonomy = (string) ($target['taxonomy'] ?? '');
+                if ($taxonomy) {
+                    $tax_obj = get_taxonomy($taxonomy);
+                    if ($tax_obj && !empty($tax_obj->cap->edit_terms)) {
+                        return (string) $tax_obj->cap->edit_terms;
+                    }
+                }
+                return 'manage_categories';
+        }
+
+        // Custom kinds — let the backend declare its own required cap.
+        $backend = ContentRouter::for_kind($kind);
+        if ($backend && method_exists($backend, 'required_cap')) {
+            $cap = (string) $backend->required_cap($kind);
+            if ($cap !== '') {
+                return $cap;
+            }
+        }
+        return 'edit_posts';
+    }
+
+    /**
+     * True iff the current user is permitted to edit the given kind.
+     * Uses kind_required_cap() to resolve which cap to check; supports
+     * per-post resolution when $target carries an id/slug.
+     */
+    public static function user_can_edit_kind(string $kind, array $target = []): bool {
+        $cap = self::kind_required_cap($kind, $target);
+        // Per-post / per-term caps take object id as a second arg in WP core.
+        $post_id = (int) ($target['post_id'] ?? $target['id'] ?? 0);
+        if ($post_id && in_array($cap, ['edit_post', 'edit_page'], true)) {
+            return current_user_can($cap, $post_id);
+        }
+        return current_user_can($cap);
+    }
+
+    /**
      * Strip the `wc-` prefix from a WooCommerce status key, if present.
      *
      * NOT `ltrim($slug, 'wc-')` — ltrim treats its second arg as a character
@@ -209,6 +276,9 @@ class Tools {
         if ($kind === '' || $field === '') {
             return ['error' => 'target.kind and field are required.'];
         }
+        if ($err = self::check_kind_access($kind, $target)) {
+            return $err;
+        }
         $backend = ContentRouter::for_kind($kind);
         if (!$backend) {
             return [
@@ -228,6 +298,9 @@ class Tools {
         if ($kind === '' || $field === '') {
             return ['error' => 'target.kind and field are required.'];
         }
+        if ($err = self::check_kind_access($kind, $target)) {
+            return $err;
+        }
         $backend = ContentRouter::for_kind($kind);
         if (!$backend) {
             return [
@@ -236,6 +309,38 @@ class Tools {
             ];
         }
         return $backend->apply($target, $field, $value, $confirmation);
+    }
+
+    /**
+     * Two-layer access check, run before the backend dispatch on every
+     * preview / apply:
+     *   1. Site policy — the kind must NOT be in the wpchat_disabled_kinds
+     *      site option (set by admins via the onboarding BackendsCard).
+     *   2. WP role — the current user must hold the WP capability the
+     *      kind requires (resolved via kind_required_cap()).
+     *
+     * Returns null when the user may proceed, or an `['error' => …]`
+     * array shaped for the LLM (with a `code` hint) when refused.
+     */
+    private static function check_kind_access(string $kind, array $target): ?array {
+        $disabled = Onboarding::get_site_disabled_kinds();
+        if (in_array($kind, $disabled, true)) {
+            return [
+                'error' => 'This content kind is disabled site-wide. Site admin can re-enable it from WPChat onboarding / Settings.',
+                'code'  => 'kind_disabled_site',
+                'kind'  => $kind,
+            ];
+        }
+        if (!self::user_can_edit_kind($kind, $target)) {
+            $cap = self::kind_required_cap($kind, $target);
+            return [
+                'error' => "Your WordPress role doesn't permit editing this content kind. The kind '$kind' requires the capability '$cap'.",
+                'code'  => 'kind_role_restricted',
+                'kind'  => $kind,
+                'required_cap' => $cap,
+            ];
+        }
+        return null;
     }
 
     public static function list_orders(array $args): array {

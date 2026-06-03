@@ -4,7 +4,7 @@ Tags: woocommerce, chat, ai, claude, orders
 Requires at least: 6.5
 Tested up to: 6.6
 Requires PHP: 8.1
-Stable tag: 0.5.11
+Stable tag: 0.5.12
 License: MIT
 License URI: https://opensource.org/licenses/MIT
 
@@ -34,6 +34,14 @@ Bring your own Anthropic API key.
 4. WPChat → Chat → type.
 
 == Changelog ==
+
+= 0.5.12 =
+* **Onboarding's "What chat can edit" card now shows every kind.** Previously only custom site-specific kinds appeared (the four core wp_* types were summarised by count only). Now the full list renders, so admins see exactly what scope WPChat will touch on this site.
+* **Site admins can disable individual kinds.** Each kind row in the BackendsCard has a checkbox when viewed by an admin (`manage_options`). Unticking a kind adds it to a new site-level `wpchat_disabled_kinds` option that gates every preview / apply dispatch — the LLM is also blocked at the prompt layer so it never sees disabled kinds as options. Optimistic UI with rollback on failure.
+* **WordPress role enforcement.** Even for kinds NOT disabled at the site level, individual editors can only act on content their WP role permits. Editors lacking `manage_categories` no longer see `wp_term` in the chat's capability list (or in the system prompt). The dispatch returns distinct errors for site-disabled vs role-restricted so the LLM can explain which gate blocked the request.
+* **Non-admins see a read-only view.** No checkboxes; each kind row shows one of three status badges: Available, Disabled (admin), or Role restricted. Clear about which lever to pull (ask admin to re-enable / ask admin for role upgrade).
+* New REST: `POST /wpchat/v1/onboarding/disabled-kinds` (`manage_options` gated, returns 401/403 for editors).
+* New tests: OnboardingDisabledKindsTest (option persistence, admin gate, status surfacing) + ToolsRoleGateTest (cap mapping, dispatch refusals, system-prompt filter).
 
 = 0.5.11 =
 * **Mobile order tables actually scroll horizontally now.** Discovered the v0.5.7 fix was being clipped by a `overflow-hidden` on the message-stream wrapper (`Chat.tsx:275`), which cut off any horizontal overflow from child elements regardless of their own scroll declarations. Constrained to `overflow-y-auto` so messages stream vertically while the table inside can scroll horizontally on a phone — the Statusas column + 3-dot menu now reachable by swiping.

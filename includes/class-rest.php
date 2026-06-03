@@ -235,8 +235,21 @@ class Rest {
         }
         $status_block = $status_lines ? "\n" . implode("\n", $status_lines) : '';
 
+        // Filter the kinds list before the LLM ever sees it:
+        //  - Site admin may have disabled specific kinds (Onboarding option).
+        //  - The current user's WP role may not permit editing some kinds
+        //    (e.g. an editor doesn't have manage_categories for wp_term).
+        // Hiding restricted kinds from the prompt is belt-and-suspenders;
+        // Tools::apply_content_change() also refuses on dispatch.
+        $disabled = Onboarding::get_site_disabled_kinds();
         $kind_lines = [];
         foreach (ContentRouter::all_descriptions() as $kind => $desc) {
+            if (in_array($kind, $disabled, true)) {
+                continue;
+            }
+            if (!Tools::user_can_edit_kind($kind)) {
+                continue;
+            }
             $fields = !empty($desc['fields']) ? implode(', ', $desc['fields']) : '(no editable fields)';
             $kind_lines[] = sprintf("  - **%s** — %s\n      Editable fields: %s", $kind, $desc['description'] ?? '', $fields);
         }
