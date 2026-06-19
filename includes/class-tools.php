@@ -81,6 +81,29 @@ class Tools {
                 ],
             ],
             [
+                'name'        => 'list_order_actions',
+                'description' => 'List the order actions available for a single order — exactly the ones in WooCommerce\'s "Order actions" box, including plugin-added actions. Use this to DISCOVER what emails/actions can be triggered before calling trigger_order_action. Covers built-ins like "Email invoice / order details to customer" and "Resend new order notification", plus plugin actions such as PW Gift Cards "Resend gift cards". Returns each action\'s machine slug and human label.',
+                'input_schema' => [
+                    'type'       => 'object',
+                    'properties' => [
+                        'order_id' => ['type' => 'integer', 'description' => 'WooCommerce order ID.'],
+                    ],
+                    'required' => ['order_id'],
+                ],
+            ],
+            [
+                'name'        => 'trigger_order_action',
+                'description' => 'Run an order action on a single order — this is how you RESEND emails (order invoice / details, new-order notification) and run plugin actions like resending gift-card coupons. The `action` must be a slug returned by list_order_actions; if you don\'t know it, call list_order_actions first. Executes the action the same way clicking it in the WooCommerce "Order actions" box would (sends the email, fires the plugin hook) and records a note on the order. Only trigger an action the user explicitly asked for.',
+                'input_schema' => [
+                    'type'       => 'object',
+                    'properties' => [
+                        'order_id' => ['type' => 'integer', 'description' => 'WooCommerce order ID.'],
+                        'action'   => ['type' => 'string', 'description' => 'Action slug from list_order_actions, e.g. "send_order_details" (email invoice to customer) or a plugin slug like "send_gift_cards" / "pwgc_resend_gift_cards".'],
+                    ],
+                    'required' => ['order_id', 'action'],
+                ],
+            ],
+            [
                 'name'        => 'get_admin_url',
                 'description' => 'Return the WordPress admin URL for a given resource so the user can open it in a new tab and act there directly. Use this whenever a request cannot be fulfilled by the available tools (e.g. delete order, refund, bulk action) — hand the user a deep link instead of stating limitations.',
                 'input_schema' => [
@@ -90,6 +113,20 @@ class Tools {
                         'id'       => ['type' => 'integer', 'description' => 'Resource id (order id, post id, user id). Required for order/post/user; ignored for *_list and dashboard.'],
                     ],
                     'required' => ['resource'],
+                ],
+            ],
+            [
+                'name'        => 'get_traffic_summary',
+                'description' => 'Get a site traffic / analytics summary (visitors, page views, top pages, top referrers) for a date range. Reads from whichever analytics plugin is installed on the site — Jetpack Stats, WP Statistics, Koko Analytics, Google Site Kit, MonsterInsights, or Statify — auto-detected; you do NOT choose the provider. Use for questions like "how many visitors this week", "kiek lankytojų šią savaitę", "сколько посетителей вчера", "most popular pages". If the result has `integration_pending: true`, the plugin is detected but full data isn\'t wired yet — tell the user it\'s detected and full numbers ship next release (use the `note`); do NOT invent numbers. If the result has an `error` saying no provider was detected, tell the user no analytics plugin is installed.',
+                'input_schema' => [
+                    'type'       => 'object',
+                    'properties' => [
+                        'date_range' => [
+                            'type'        => 'string',
+                            'description' => 'Date range to summarize. Defaults to this_week.',
+                            'enum'        => ['today', 'yesterday', 'this_week', 'last_7_days', 'last_30_days'],
+                        ],
+                    ],
                 ],
             ],
             [
@@ -148,7 +185,10 @@ class Tools {
             'update_order_status'   => [__CLASS__, 'update_order_status'],
             'add_order_note'        => [__CLASS__, 'add_order_note'],
             'find_customer_orders'  => [__CLASS__, 'find_customer_orders'],
+            'list_order_actions'    => [__CLASS__, 'list_order_actions'],
+            'trigger_order_action'  => [__CLASS__, 'trigger_order_action'],
             'get_admin_url'         => [__CLASS__, 'get_admin_url'],
+            'get_traffic_summary'   => [__CLASS__, 'get_traffic_summary'],
             // Generic content-backend dispatch (v0.4).
             // Routes to whichever registered backend claims target.kind.
             // Backends are pulled via apply_filters('wpchat_content_backends').
@@ -502,6 +542,153 @@ class Tools {
             'count'  => count($orders),
             'orders' => array_map([__CLASS__, 'summarize'], $orders),
         ];
+    }
+
+    // ============================================================
+    // Order actions — resend emails & run plugin order actions.
+    //
+    // Mirrors WooCommerce's "Order actions" meta box
+    // (WC_Meta_Box_Order_Actions): the same `woocommerce_order_actions`
+    // filter feeds the list, and triggering replicates core's save()
+    // switch so built-in emails AND plugin actions (e.g. PW Gift Cards
+    // "Resend gift cards") fire identically — without WPChat needing to
+    // know about any specific plugin.
+    // ============================================================
+
+    /**
+     * The order-action slugs available for this order: WC's three
+     * built-ins plus whatever plugins register via the same filter the
+     * admin meta box uses. Returns a list of {action, label}.
+     */
+    public static function order_actions_for(\WC_Order $order): array {
+        $defaults = [
+            'send_order_details'              => __('Email invoice / order details to customer', 'wpchat'),
+            'send_order_details_admin'        => __('Resend new order notification (to admin)', 'wpchat'),
+            'regenerate_download_permissions' => __('Regenerate download permissions', 'wpchat'),
+        ];
+        $actions = apply_filters('woocommerce_order_actions', $defaults, $order);
+        $out = [];
+        foreach ((array) $actions as $slug => $label) {
+            $out[] = [
+                'action' => (string) $slug,
+                'label'  => (string) (is_array($label) ? ($label['name'] ?? $slug) : $label),
+            ];
+        }
+        return $out;
+    }
+
+    public static function list_order_actions(array $args): array {
+        self::require_wc();
+        $order = wc_get_order((int) ($args['order_id'] ?? 0));
+        if (!$order) {
+            return ['error' => 'Order not found.'];
+        }
+        return [
+            'order_id' => $order->get_id(),
+            'actions'  => self::order_actions_for($order),
+        ];
+    }
+
+    public static function trigger_order_action(array $args): array {
+        self::require_wc();
+        $order = wc_get_order((int) ($args['order_id'] ?? 0));
+        if (!$order) {
+            return ['error' => 'Order not found.'];
+        }
+        // WC slugifies the action the same way before dispatch; match that
+        // so a slug from order_actions_for() round-trips exactly.
+        $action = sanitize_title((string) ($args['action'] ?? ''));
+        if ($action === '') {
+            return ['error' => 'action is required.'];
+        }
+
+        $available = self::order_actions_for($order);
+        $slugs     = array_column($available, 'action');
+        if (!in_array($action, $slugs, true)) {
+            return [
+                'error'             => "Unknown order action: $action",
+                'available_actions' => $available,
+            ];
+        }
+
+        if (!function_exists('WC') || !WC()->mailer()) {
+            return ['error' => 'WooCommerce mailer is unavailable on this site.'];
+        }
+
+        // Replicates WC_Meta_Box_Order_Actions::save(): built-in emails are
+        // sent directly; everything else dispatches the plugin hook.
+        switch ($action) {
+            case 'send_order_details':
+                do_action('woocommerce_before_resend_order_emails', $order, 'customer');
+                WC()->payment_gateways();
+                WC()->shipping();
+                WC()->mailer()->customer_invoice($order);
+                $order->add_order_note(__('Order details manually re-sent to customer via WPChat.', 'wpchat'), false, true);
+                do_action('woocommerce_after_resend_order_email', $order, 'customer');
+                break;
+
+            case 'send_order_details_admin':
+                do_action('woocommerce_before_resend_order_emails', $order, 'new_order');
+                WC()->payment_gateways();
+                WC()->shipping();
+                WC()->mailer()->emails['WC_Email_New_Order']->trigger($order->get_id(), $order);
+                do_action('woocommerce_after_resend_order_email', $order, 'new_order');
+                break;
+
+            case 'regenerate_download_permissions':
+                $data_store = \WC_Data_Store::load('customer-download');
+                $data_store->delete_by_order_id($order->get_id());
+                wc_downloadable_product_permissions($order->get_id(), true);
+                break;
+
+            default:
+                // Custom plugin action (e.g. PW Gift Cards resend). The plugin
+                // hooked on this is responsible for sending its own email and
+                // adding its own order note.
+                do_action('woocommerce_order_action_' . $action, $order);
+                break;
+        }
+
+        $label = '';
+        foreach ($available as $a) {
+            if ($a['action'] === $action) {
+                $label = $a['label'];
+                break;
+            }
+        }
+
+        return [
+            'ok'       => true,
+            'order_id' => $order->get_id(),
+            'action'   => $action,
+            'label'    => $label,
+        ];
+    }
+
+    /**
+     * Site traffic summary. Dispatches to whichever analytics plugin is
+     * detected (AnalyticsRouter::pick()). Mirrors the content-backend
+     * dispatch pattern: WPChat doesn't know about any specific analytics
+     * plugin — the router walks the registered providers (plus any added
+     * via the `wpchat_analytics_providers` filter) and returns the first
+     * available one. Returns a no-provider error (not a fatal) when none
+     * is detected so the assistant can tell the user instead of dead-ending.
+     */
+    public static function get_traffic_summary(array $args): array {
+        $provider = AnalyticsRouter::pick();
+        if (!$provider) {
+            return [
+                'error'    => 'No analytics plugin detected on this site.',
+                'detected' => AnalyticsRouter::detected(),
+            ];
+        }
+        $summary = $provider->traffic_summary($args);
+        // Hand the human-readable provider name back so the assistant can
+        // attribute the numbers ("per Jetpack Stats, …") without guessing.
+        if (is_array($summary) && !isset($summary['provider_label'])) {
+            $summary['provider_label'] = $provider->display_name();
+        }
+        return $summary;
     }
 
     /** Compact order representation. */

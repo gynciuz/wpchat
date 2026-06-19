@@ -290,21 +290,13 @@ class Onboarding {
     }
 
     private function analytics_status(): array {
-        // Until the AnalyticsRouter ships (separate task), we detect the
-        // common providers inline. This keeps the onboarding card useful
-        // even without the router class.
+        // Detection is owned by AnalyticsRouter (same providers the
+        // get_traffic_summary tool uses), so the onboarding card and the
+        // chat tool never disagree about what's installed. Map the router's
+        // {name, display_name} to the {id, name} shape the React card reads.
         $providers = [];
-        if (class_exists('Google\Site_Kit\Plugin')) {
-            $providers[] = ['id' => 'site-kit', 'name' => 'Google Site Kit'];
-        }
-        if (class_exists('Jetpack')) {
-            $providers[] = ['id' => 'jetpack', 'name' => 'Jetpack'];
-        }
-        if (class_exists('MonsterInsights_Lite') || class_exists('MonsterInsights')) {
-            $providers[] = ['id' => 'monsterinsights', 'name' => 'MonsterInsights'];
-        }
-        if (class_exists('WP_Statistics')) {
-            $providers[] = ['id' => 'wp-statistics', 'name' => 'WP Statistics'];
+        foreach (AnalyticsRouter::detected() as $p) {
+            $providers[] = ['id' => $p['name'], 'name' => $p['display_name']];
         }
         return [
             'detected'   => $providers,

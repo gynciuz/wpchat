@@ -29,6 +29,7 @@ require_once WPCHAT_DIR . 'includes/class-admin.php';
 require_once WPCHAT_DIR . 'includes/class-settings.php';
 require_once WPCHAT_DIR . 'includes/class-anthropic.php';
 require_once WPCHAT_DIR . 'includes/class-content-backends.php';
+require_once WPCHAT_DIR . 'includes/class-analytics-providers.php';
 require_once WPCHAT_DIR . 'includes/class-git-sync.php';
 require_once WPCHAT_DIR . 'includes/class-history.php';
 require_once WPCHAT_DIR . 'includes/class-tools.php';
