@@ -275,11 +275,18 @@ class Onboarding {
         $active = class_exists('WooCommerce') || function_exists('wc_get_orders');
         $version = $active && defined('WC_VERSION') ? WC_VERSION : null;
         $order_count = null;
-        if ($active && function_exists('wc_orders_count')) {
-            // wc_orders_count counts by status; we just want a rough "are there any orders" signal.
-            $order_count = (int) wp_count_posts('shop_order')->publish
-                        + (int) wp_count_posts('shop_order')->processing
-                        + (int) wp_count_posts('shop_order')->completed;
+        if ($active && function_exists('wc_orders_count') && function_exists('wc_get_order_statuses')) {
+            // Sum across all registered WC order statuses for a rough "are
+            // there any orders" signal. wc_orders_count() works with both
+            // HPOS and legacy post storage; wp_count_posts('shop_order')
+            // misses HPOS orders entirely and its properties are post-status
+            // names (publish, …) that don't match WC's wc-* order statuses —
+            // reading ->processing/->completed off it emits "undefined
+            // property" warnings that corrupt the REST JSON response.
+            $order_count = 0;
+            foreach (array_keys(wc_get_order_statuses()) as $status) {
+                $order_count += (int) wc_orders_count($status);
+            }
         }
         return [
             'active'      => $active,

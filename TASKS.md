@@ -102,6 +102,24 @@ architecture notes; this section is the short, checkable version.
 
 > Newest at the top. Work bottom-up. One commit per task. Use `[x]` to check off.
 
+[x](done 2026-06-21) **Fix wc_status() order-count crash found via manual testing.**
+    `Onboarding::wc_status()` read `wp_count_posts('shop_order')->processing/
+    ->completed`, which don't exist (WC statuses are `wc-*`; HPOS stores orders
+    outside the posts table). The "Undefined property" warnings leaked into the
+    onboarding/status JSON, breaking the frontend parse ("The string did not
+    match the expected pattern"). Now sums `wc_orders_count()` over
+    `wc_get_order_statuses()` (HPOS + legacy safe). Verified: endpoint 200,
+    order_count 6; full PHP suite green. Dev server also hardened with
+    display_errors=0 so stray warnings can't corrupt REST responses.
+
+[x](done 2026-06-19) **Run a local WordPress dev server to manually test the plugin.**
+    Live at http://localhost:8080 (admin/admin). WP 7.0 + WooCommerce + WPChat
+    (symlinked from the repo) at ~/wpchat-dev, served by WP-CLI's built-in server
+    on PHP 8.3 (WP-CLI's phar fatals on the system's PHP 8.5, so it's invoked
+    directly with the 8.3 binary). `/wpchat` redirects to login then renders the
+    app. Anthropic key still needs to be set in-app (Settings / onboarding) for
+    chat to work.
+
 [x](done 2026-06-19) **Add Playwright visual/E2E testing for the React app.**
     Added `@playwright/test` + Chromium, `app/playwright.config.ts` (Vite
     webServer + snapshot config), `app/e2e/harness.html` (mounts the real app
