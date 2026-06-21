@@ -28,6 +28,7 @@ final class Plugin {
         new Rest();
         new Upload();
         new Onboarding();
+        new Seo();
         new Frontend();
     }
 

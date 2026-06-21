@@ -102,6 +102,16 @@ architecture notes; this section is the short, checkable version.
 
 > Newest at the top. Work bottom-up. One commit per task. Use `[x]` to check off.
 
+[x](done 2026-06-22) **Add SEO audit + fix skills to the chat.** New `WPChat\Seo`
+    + `SeoBackend` (`includes/class-seo.php`): read-only `seo_audit` tool; fixes
+    via the content-backend pattern — kinds `seo_setting` (search_engine_visibility,
+    permalink_structure, ai_crawlers, llms_txt, site_title, tagline) and `seo_meta`
+    (seo_title, meta_description; Yoast/Rank Math/SEOPress; AIOSEO handoff).
+    robots_txt filter + virtual /llms.txt route. SEO section in the system prompt;
+    guides in docs/seo/. Tests: SeoAuditTest + SeoBackendTest (169 total, green).
+    Smoke-tested on the dev site: audit chat works, /robots.txt serves GPTBot/
+    ClaudeBot/PerplexityBot, /llms.txt 200.
+
 [x](done 2026-06-21) **Fix wc_status() order-count crash found via manual testing.**
     `Onboarding::wc_status()` read `wp_count_posts('shop_order')->processing/
     ->completed`, which don't exist (WC statuses are `wc-*`; HPOS stores orders

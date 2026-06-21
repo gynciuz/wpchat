@@ -116,6 +116,14 @@ class Tools {
                 ],
             ],
             [
+                'name'        => 'seo_audit',
+                'description' => 'Run a read-only SEO / AI-SEO (AEO/GEO) audit of this WordPress site. Returns a structured report: search-engine visibility, permalinks, HTTPS, active SEO plugin, sitemap, AI-crawler (robots.txt) access, llms.txt, site title/tagline, and PHP/MySQL versions — each with a status (ok/warn/fail/info), the current value, a recommendation, and a `fixable` flag. Items with fixable=true can be changed here via preview_content_change/apply_content_change on the `seo_setting` or `seo_meta` kinds; everything else (hosting, Core Web Vitals, schema, keyword research, Search Console submission, backlinks) is advisory — relay the recommendation and, if useful, a get_admin_url link. Call this FIRST whenever the user asks to audit/check/improve SEO.',
+                'input_schema' => [
+                    'type'       => 'object',
+                    'properties' => new \stdClass(),
+                ],
+            ],
+            [
                 'name'        => 'get_traffic_summary',
                 'description' => 'Get a site traffic / analytics summary (visitors, page views, top pages, top referrers) for a date range. Reads from whichever analytics plugin is installed on the site — Jetpack Stats, WP Statistics, Koko Analytics, Google Site Kit, MonsterInsights, or Statify — auto-detected; you do NOT choose the provider. Use for questions like "how many visitors this week", "kiek lankytojų šią savaitę", "сколько посетителей вчера", "most popular pages". If the result has `integration_pending: true`, the plugin is detected but full data isn\'t wired yet — tell the user it\'s detected and full numbers ship next release (use the `note`); do NOT invent numbers. If the result has an `error` saying no provider was detected, tell the user no analytics plugin is installed.',
                 'input_schema' => [
@@ -189,6 +197,7 @@ class Tools {
             'trigger_order_action'  => [__CLASS__, 'trigger_order_action'],
             'get_admin_url'         => [__CLASS__, 'get_admin_url'],
             'get_traffic_summary'   => [__CLASS__, 'get_traffic_summary'],
+            'seo_audit'             => [__CLASS__, 'seo_audit'],
             // Generic content-backend dispatch (v0.4).
             // Routes to whichever registered backend claims target.kind.
             // Backends are pulled via apply_filters('wpchat_content_backends').
@@ -689,6 +698,16 @@ class Tools {
             $summary['provider_label'] = $provider->display_name();
         }
         return $summary;
+    }
+
+    /**
+     * Read-only SEO / AI-SEO audit. Delegates to WPChat\Seo, which also owns
+     * the robots.txt filter + /llms.txt route that the fixes rely on. The
+     * fixes themselves run through the seo_setting / seo_meta content kinds
+     * (preview_content_change / apply_content_change), not a tool here.
+     */
+    public static function seo_audit(array $args): array {
+        return Seo::audit();
     }
 
     /** Compact order representation. */
