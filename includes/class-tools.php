@@ -182,6 +182,48 @@ class Tools {
                     'required' => ['target', 'field', 'value', 'confirmation'],
                 ],
             ],
+            [
+                'name'        => 'list_taxonomy_terms',
+                'description' => 'List the site\'s existing taxonomy terms — categories, tags, and any custom public taxonomies — with each term\'s name, slug, and post count, plus an `is_empty` flag per taxonomy. Use this BEFORE creating a post to suggest categories/tags the site already uses (reuse beats inventing new ones), and to detect when a site has no taxonomy yet (→ guide the user through choosing some). Omit `taxonomy` to get all; pass e.g. "category" or "post_tag" to scope.',
+                'input_schema' => [
+                    'type'       => 'object',
+                    'properties' => [
+                        'taxonomy' => ['type' => 'string', 'description' => 'Optional taxonomy slug (e.g. "category", "post_tag"). Omit for all public taxonomies.'],
+                    ],
+                ],
+            ],
+            [
+                'name'        => 'create_content',
+                'description' => 'Create a new WordPress post or page as a DRAFT (never public until published). Returns the new id, an edit link, and a preview link. Set categories/tags by name — missing ones are created (posts only; pages have no categories/tags). Attach images by attachment_id (from the chat upload markers): `featured_image` becomes the featured image; `image_ids` are appended into the body as image blocks. Optionally set `seo_title` (< 60 chars) and `seo_description` (~150–160 chars) — applied via the active SEO plugin. After creating, show the user the draft preview and ask whether to publish (then call publish_content).',
+                'input_schema' => [
+                    'type'       => 'object',
+                    'properties' => [
+                        'post_type'       => ['type' => 'string', 'description' => '"post" (default) or "page".'],
+                        'title'           => ['type' => 'string', 'description' => 'The post/page title.'],
+                        'content'         => ['type' => 'string', 'description' => 'Body content. Plain text/Markdown is wrapped into paragraph blocks; raw HTML is kept as-is.'],
+                        'excerpt'         => ['type' => 'string', 'description' => 'Optional short summary.'],
+                        'categories'      => ['type' => 'array', 'items' => ['type' => 'string'], 'description' => 'Category names (posts only). Missing ones are created.'],
+                        'tags'            => ['type' => 'array', 'items' => ['type' => 'string'], 'description' => 'Tag names (posts only). Missing ones are created.'],
+                        'featured_image'  => ['type' => 'integer', 'description' => 'attachment_id to set as the featured image.'],
+                        'image_ids'       => ['type' => 'array', 'items' => ['type' => 'integer'], 'description' => 'attachment_ids to append into the body as images.'],
+                        'seo_title'       => ['type' => 'string', 'description' => 'Optional SEO meta title (< 60 chars).'],
+                        'seo_description' => ['type' => 'string', 'description' => 'Optional SEO meta description (~150–160 chars).'],
+                    ],
+                    'required' => ['title'],
+                ],
+            ],
+            [
+                'name'        => 'publish_content',
+                'description' => 'Publish a draft post/page created with create_content. REQUIRES the user\'s confirmation phrase (yes/taip/да/tak/ok …) in `confirmation` — only publish after the user has seen the draft preview and agreed. This makes the content public.',
+                'input_schema' => [
+                    'type'       => 'object',
+                    'properties' => [
+                        'post_id'      => ['type' => 'integer', 'description' => 'The draft post/page id from create_content.'],
+                        'confirmation' => ['type' => 'string', 'description' => 'Verbatim confirmation phrase the user typed.'],
+                    ],
+                    'required' => ['post_id', 'confirmation'],
+                ],
+            ],
         ];
     }
 
@@ -204,6 +246,9 @@ class Tools {
             'list_content_blocks'   => [__CLASS__, 'list_content_blocks'],
             'preview_content_change' => [__CLASS__, 'preview_content_change'],
             'apply_content_change'  => [__CLASS__, 'apply_content_change'],
+            'list_taxonomy_terms'   => [__CLASS__, 'list_taxonomy_terms'],
+            'create_content'        => [__CLASS__, 'create_content'],
+            'publish_content'       => [__CLASS__, 'publish_content'],
         ];
     }
 
@@ -708,6 +753,206 @@ class Tools {
      */
     public static function seo_audit(array $args): array {
         return Seo::audit();
+    }
+
+    // ============================================================
+    // Content creation — draft posts/pages with images + taxonomy.
+    // ============================================================
+
+    /** Existing taxonomy terms, so the assistant can suggest reuse. */
+    public static function list_taxonomy_terms(array $args): array {
+        $only = isset($args['taxonomy']) ? sanitize_key((string) $args['taxonomy']) : '';
+        $taxes = $only !== ''
+            ? array_filter([get_taxonomy($only) ?: null])
+            : get_taxonomies(['public' => true], 'objects');
+
+        $out = [];
+        foreach ($taxes as $tax) {
+            if (in_array($tax->name, ['nav_menu', 'link_category', 'post_format'], true)) {
+                continue;
+            }
+            $terms = get_terms(['taxonomy' => $tax->name, 'hide_empty' => false, 'number' => 50, 'orderby' => 'count', 'order' => 'DESC']);
+            $items = [];
+            if (!is_wp_error($terms)) {
+                foreach ($terms as $t) {
+                    $items[] = ['name' => $t->name, 'slug' => $t->slug, 'count' => (int) $t->count];
+                }
+            }
+            $out[$tax->name] = [
+                'label'    => $tax->labels->name ?? $tax->name,
+                'is_empty' => count($items) === 0,
+                'terms'    => $items,
+            ];
+        }
+        return ['taxonomies' => $out];
+    }
+
+    /** Create a draft post or page. */
+    public static function create_content(array $args): array {
+        $requested = (string) ($args['post_type'] ?? 'post');
+        $post_type = in_array($requested, ['post', 'page'], true) ? $requested : 'post';
+
+        $type_obj = get_post_type_object($post_type);
+        $cap      = $type_obj->cap->edit_posts ?? 'edit_posts';
+        if (!current_user_can($cap)) {
+            return ['error' => "You don't have permission to create a {$post_type} on this site."];
+        }
+
+        $title = trim((string) ($args['title'] ?? ''));
+        if ($title === '') {
+            return ['error' => 'A title is required.'];
+        }
+
+        $content = self::build_post_content(
+            (string) ($args['content'] ?? ''),
+            is_array($args['image_ids'] ?? null) ? array_map('intval', $args['image_ids']) : []
+        );
+
+        $post_id = wp_insert_post([
+            'post_type'    => $post_type,
+            'post_status'  => 'draft',
+            'post_title'   => $title,
+            'post_content' => $content,
+            'post_excerpt' => (string) ($args['excerpt'] ?? ''),
+        ], true);
+
+        if (is_wp_error($post_id) || !$post_id) {
+            return ['error' => is_wp_error($post_id) ? $post_id->get_error_message() : 'Could not create the draft.'];
+        }
+
+        $applied = ['categories' => [], 'tags' => [], 'created_terms' => []];
+
+        // Categories / tags — posts only (pages are not taxonomy-bearing).
+        if ($post_type === 'post') {
+            if (!empty($args['categories']) && is_array($args['categories'])) {
+                $ids = [];
+                foreach ($args['categories'] as $name) {
+                    $name = trim((string) $name);
+                    if ($name === '') {
+                        continue;
+                    }
+                    $existing = term_exists($name, 'category');
+                    $id = $existing ? (int) (is_array($existing) ? $existing['term_id'] : $existing) : (int) wp_create_category($name);
+                    if ($id) {
+                        $ids[] = $id;
+                        $applied['categories'][] = $name;
+                        if (!$existing) {
+                            $applied['created_terms'][] = "category:{$name}";
+                        }
+                    }
+                }
+                if ($ids) {
+                    wp_set_post_categories($post_id, $ids);
+                }
+            }
+            if (!empty($args['tags']) && is_array($args['tags'])) {
+                $names = array_values(array_filter(array_map(fn($t) => trim((string) $t), $args['tags'])));
+                if ($names) {
+                    wp_set_post_terms($post_id, $names, 'post_tag'); // creates missing tags
+                    $applied['tags'] = $names;
+                }
+            }
+        }
+
+        // Featured image
+        $featured = (int) ($args['featured_image'] ?? 0);
+        if ($featured > 0 && get_post($featured)) {
+            set_post_thumbnail($post_id, $featured);
+        }
+
+        // SEO meta (best-effort; surfaces a note if no SEO plugin)
+        $seo_note = null;
+        foreach (['seo_title' => 'seo_title', 'seo_description' => 'meta_description'] as $arg => $field) {
+            if (!empty($args[$arg])) {
+                $res = Seo::set_post_seo($post_id, $field, (string) $args[$arg]);
+                if (!empty($res['error'])) {
+                    $seo_note = $res['error'];
+                }
+            }
+        }
+
+        return [
+            'ok'          => true,
+            'post_id'     => $post_id,
+            'post_type'   => $post_type,
+            'status'      => 'draft',
+            'title'       => $title,
+            'edit_url'    => get_edit_post_link($post_id, 'raw'),
+            'preview_url' => get_preview_post_link($post_id),
+            'applied'     => $applied,
+            'seo_note'    => $seo_note,
+            'next'        => 'Show the user the draft + preview link, then ask whether to publish. Publish only via publish_content with their confirmation.',
+        ];
+    }
+
+    /** Publish a draft created via create_content. Requires confirmation. */
+    public static function publish_content(array $args): array {
+        $post_id = (int) ($args['post_id'] ?? 0);
+        $post    = $post_id ? get_post($post_id) : null;
+        if (!$post) {
+            return ['error' => 'Post not found.'];
+        }
+        if (!ContentConfirmation::is_confirmed((string) ($args['confirmation'] ?? ''))) {
+            return ['error' => 'Not confirmed — ask the user to confirm before publishing, then pass their phrase.'];
+        }
+        $type_obj = get_post_type_object($post->post_type);
+        $cap      = $type_obj->cap->publish_posts ?? 'publish_posts';
+        if (!current_user_can($cap, $post_id)) {
+            return ['error' => "You don't have permission to publish this {$post->post_type}."];
+        }
+        $res = wp_update_post(['ID' => $post_id, 'post_status' => 'publish'], true);
+        if (is_wp_error($res)) {
+            return ['error' => $res->get_error_message()];
+        }
+        return [
+            'ok'      => true,
+            'post_id' => $post_id,
+            'status'  => 'publish',
+            'url'     => get_permalink($post_id),
+        ];
+    }
+
+    /**
+     * Build post_content from user/LLM content plus appended images. Plain
+     * text / Markdown-ish input is wrapped into paragraph blocks; content that
+     * already contains HTML tags is kept verbatim. Images become image blocks.
+     */
+    private static function build_post_content(string $content, array $image_ids): string {
+        $content = trim($content);
+        $body = '';
+        if ($content !== '') {
+            if (strpos($content, '<') !== false) {
+                $body = $content; // already HTML / block markup
+            } else {
+                foreach (preg_split('/\n{2,}/', $content) as $para) {
+                    $para = trim($para);
+                    if ($para === '') {
+                        continue;
+                    }
+                    $para = str_replace("\n", "<br>", esc_html($para));
+                    $body .= "<!-- wp:paragraph -->\n<p>{$para}</p>\n<!-- /wp:paragraph -->\n\n";
+                }
+            }
+        }
+        foreach ($image_ids as $id) {
+            $id = (int) $id;
+            if ($id <= 0 || !get_post($id)) {
+                continue;
+            }
+            $url = wp_get_attachment_url($id);
+            $alt = (string) get_post_meta($id, '_wp_attachment_image_alt', true);
+            if (!$url) {
+                continue;
+            }
+            $body .= sprintf(
+                "<!-- wp:image {\"id\":%d} -->\n<figure class=\"wp-block-image\"><img src=\"%s\" alt=\"%s\" class=\"wp-image-%d\"/></figure>\n<!-- /wp:image -->\n\n",
+                $id,
+                esc_url($url),
+                esc_attr($alt),
+                $id
+            );
+        }
+        return trim($body);
     }
 
     /** Compact order representation. */

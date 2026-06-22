@@ -33,6 +33,34 @@ test.describe("Chat", () => {
     await expect(page).toHaveScreenshot("chat-orders-table.png", { fullPage: true });
   });
 
+  test("attaches multiple images and shows a chip per file, then thumbnails", async ({ page }) => {
+    await installRoutes(page, {
+      chat: { text: "Created a draft post with your images.", tool_calls: [], conversation_id: "c1" },
+    });
+    await gotoApp(page, BOOT);
+
+    const png = Buffer.from(
+      "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==",
+      "base64"
+    );
+    await page.locator('input[type="file"]').first().setInputFiles([
+      { name: "first.png", mimeType: "image/png", buffer: png },
+      { name: "second.png", mimeType: "image/png", buffer: png },
+    ]);
+
+    // One chip per attached file.
+    await expect(page.getByText("first.png")).toBeVisible();
+    await expect(page.getByText("second.png")).toBeVisible();
+
+    const input = page.getByPlaceholder("Type or speak…");
+    await input.fill("Create a post with these photos");
+    await input.press("Enter");
+
+    // Both images render as thumbnails in the user bubble after upload.
+    await expect(page.getByRole("img", { name: "uploaded" })).toHaveCount(2);
+    await expect(page.getByText("Created a draft post with your images.")).toBeVisible();
+  });
+
   test("surfaces a backend error in the chat", async ({ page }) => {
     await installRoutes(page);
     // Override chat with a 500 so the error banner renders.

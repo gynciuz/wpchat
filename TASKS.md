@@ -102,6 +102,17 @@ architecture notes; this section is the short, checkable version.
 
 > Newest at the top. Work bottom-up. One commit per task. Use `[x]` to check off.
 
+[x](done 2026-06-22) **Create posts/pages with images + guided taxonomy/SEO.**
+    Fixed the upload bug: oversized file (over PHP upload_max_filesize) was
+    misreported as "No file provided" — now reports the size limit; dev server
+    raised to 12M. New tools: `create_content` (draft post/page; categories/tags
+    create-if-missing; featured + inline images; SEO title/desc), `publish_content`
+    (confirmed), `list_taxonomy_terms`. Frontend: multi-image attach (multiple
+    chips, upload-all, thumbnails). System-prompt consultative mini-tour for
+    unsure users + draft-first/offer-publish. Tests: CreateContentTest,
+    UploadErrorTest, Playwright multi-image (178 PHP + 5 E2E green). Smoke-tested
+    on dev site: consultancy flow + create_content + publish prompt all work.
+
 [x](done 2026-06-22) **Add SEO audit + fix skills to the chat.** New `WPChat\Seo`
     + `SeoBackend` (`includes/class-seo.php`): read-only `seo_audit` tool; fixes
     via the content-backend pattern — kinds `seo_setting` (search_engine_visibility,

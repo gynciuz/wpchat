@@ -45,13 +45,25 @@ class Upload {
     public function handle_upload(\WP_REST_Request $request): \WP_REST_Response {
         $files = $request->get_file_params();
         $file  = $files['file'] ?? null;
-        if (!is_array($file) || empty($file['tmp_name'])) {
+
+        // Field entirely absent → genuinely no file.
+        if (!is_array($file)) {
             return new \WP_REST_Response(['error' => 'No file provided. Use multipart field name "file".'], 400);
         }
 
-        if (!empty($file['error']) && $file['error'] !== UPLOAD_ERR_OK) {
-            $msg = self::php_upload_error_message((int) $file['error']);
-            return new \WP_REST_Response(['error' => $msg], 400);
+        // A PHP-level upload error must be reported BEFORE the tmp_name check:
+        // a file larger than `upload_max_filesize` arrives with error=INI_SIZE
+        // and an EMPTY tmp_name, which would otherwise be misreported as
+        // "No file provided". Surface the real reason (e.g. too large) instead.
+        if (!empty($file['error']) && (int) $file['error'] !== UPLOAD_ERR_OK) {
+            $code   = (int) $file['error'];
+            $status = ($code === UPLOAD_ERR_INI_SIZE || $code === UPLOAD_ERR_FORM_SIZE) ? 413 : 400;
+            return new \WP_REST_Response(['error' => self::php_upload_error_message($code)], $status);
+        }
+
+        // No error code but no temp file → nothing usable.
+        if (empty($file['tmp_name'])) {
+            return new \WP_REST_Response(['error' => 'No file provided. Use multipart field name "file".'], 400);
         }
 
         if (($file['size'] ?? 0) > self::MAX_SIZE_BYTES) {
@@ -157,7 +169,11 @@ class Upload {
     private static function php_upload_error_message(int $code): string {
         switch ($code) {
             case UPLOAD_ERR_INI_SIZE:
-            case UPLOAD_ERR_FORM_SIZE:   return 'File exceeds the server upload size limit.';
+            case UPLOAD_ERR_FORM_SIZE:
+                return sprintf(
+                    'File exceeds the server upload limit (PHP upload_max_filesize = %s). Compress the image or raise upload_max_filesize / post_max_size in php.ini.',
+                    ini_get('upload_max_filesize') ?: '2M'
+                );
             case UPLOAD_ERR_PARTIAL:     return 'File was only partially uploaded.';
             case UPLOAD_ERR_NO_FILE:     return 'No file was uploaded.';
             case UPLOAD_ERR_NO_TMP_DIR:  return 'Server has no temporary upload directory.';

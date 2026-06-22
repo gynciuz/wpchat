@@ -111,6 +111,7 @@ interface RouteHandlers {
   onboardingStatus?: unknown;
   conversations?: unknown;
   orderStatuses?: unknown;
+  upload?: unknown;
 }
 
 /**
@@ -127,6 +128,18 @@ export async function installRoutes(page: Page, handlers: RouteHandlers = {}): P
     if (path.endsWith("/actions/order-statuses")) return send(handlers.orderStatuses ?? ORDER_STATUSES);
     if (path.endsWith("/onboarding/status")) return send(handlers.onboardingStatus ?? ONBOARDING_STATUS);
     if (path.endsWith("/onboarding/complete")) return send({ ok: true });
+    if (path.endsWith("/upload")) {
+      return send(
+        handlers.upload ?? {
+          attachment_id: 1234,
+          url: "https://example.test/wp-content/uploads/img.png",
+          filename: "img.png",
+          width: 1,
+          height: 1,
+          mime_type: "image/png",
+        }
+      );
+    }
     if (path.endsWith("/chat")) return send(handlers.chat ?? { text: "ok", tool_calls: [], conversation_id: "c1" });
     return send({});
   });

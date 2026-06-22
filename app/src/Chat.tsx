@@ -31,8 +31,8 @@ interface ChatMessage {
   role: "user" | "assistant";
   text: string;
   toolCalls?: ToolCall[];
-  /** Inline thumbnail rendered next to a user message that uploaded an image. */
-  attachmentPreviewUrl?: string;
+  /** Inline thumbnails for image(s) uploaded with this user message. */
+  attachmentPreviewUrls?: string[];
 }
 
 interface PendingAttachment {
@@ -59,7 +59,7 @@ export function Chat({ boot }: { boot?: Boot }) {
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [attachment, setAttachment] = useState<PendingAttachment | null>(null);
+  const [attachments, setAttachments] = useState<PendingAttachment[]>([]);
   const [attachmentUploading, setAttachmentUploading] = useState(false);
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [historyOpen, setHistoryOpen] = useState(false);
@@ -71,14 +71,24 @@ export function Chat({ boot }: { boot?: Boot }) {
     endRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, busy]);
 
-  function clearAttachment() {
-    if (attachment) URL.revokeObjectURL(attachment.previewUrl);
-    setAttachment(null);
+  function clearAttachmentAt(index: number) {
+    setAttachments((prev) => {
+      const target = prev[index];
+      if (target) URL.revokeObjectURL(target.previewUrl);
+      return prev.filter((_, i) => i !== index);
+    });
   }
 
-  function pickAttachment(file: File) {
-    if (attachment) URL.revokeObjectURL(attachment.previewUrl);
-    setAttachment({ file, previewUrl: URL.createObjectURL(file) });
+  function clearAttachments() {
+    setAttachments((prev) => {
+      prev.forEach((a) => URL.revokeObjectURL(a.previewUrl));
+      return [];
+    });
+  }
+
+  function pickAttachments(files: File[]) {
+    const picked = files.map((file) => ({ file, previewUrl: URL.createObjectURL(file) }));
+    if (picked.length) setAttachments((prev) => [...prev, ...picked]);
   }
 
   async function uploadAttachment(file: File): Promise<UploadResult> {
@@ -98,36 +108,40 @@ export function Chat({ boot }: { boot?: Boot }) {
 
   async function sendText(rawText: string) {
     const text = rawText.trim();
-    if (!text && !attachment) return;
+    if (!text && attachments.length === 0) return;
     if (busy || loadingConversation || !boot) return;
 
     let finalText = text;
-    let previewForUser: string | undefined;
+    let previewsForUser: string[] | undefined;
 
-    // If there's a pending attachment, upload it before composing the
-    // message. The marker line on the first line tells the LLM the
-    // attachment id to use; the user sees the thumbnail beside their
-    // bubble instead of the raw marker.
-    if (attachment) {
+    // Upload any pending attachments before composing the message. Each
+    // upload contributes a marker line telling the LLM that attachment's id;
+    // the user sees thumbnails beside their bubble instead of raw markers.
+    if (attachments.length > 0) {
       setAttachmentUploading(true);
       try {
-        const uploaded = await uploadAttachment(attachment.file);
-        finalText = `[Uploaded ${uploaded.filename} → attachment ${uploaded.attachment_id}]` +
-          (text ? `\n${text}` : "");
-        previewForUser = uploaded.url;
+        const markers: string[] = [];
+        const previews: string[] = [];
+        for (const att of attachments) {
+          const uploaded = await uploadAttachment(att.file);
+          markers.push(`[Uploaded ${uploaded.filename} → attachment ${uploaded.attachment_id}]`);
+          previews.push(uploaded.url);
+        }
+        finalText = [...markers, ...(text ? [text] : [])].join("\n");
+        previewsForUser = previews;
       } catch (err) {
         setError(err instanceof Error ? err.message : "Upload failed");
         setAttachmentUploading(false);
         return;
       }
       setAttachmentUploading(false);
-      clearAttachment();
+      clearAttachments();
     }
 
     const newUser: ChatMessage = {
       role: "user",
       text: finalText,
-      attachmentPreviewUrl: previewForUser,
+      attachmentPreviewUrls: previewsForUser,
     };
     const history: WireMessage[] = [...messages, newUser].map((m) => ({
       role: m.role,
@@ -284,10 +298,10 @@ export function Chat({ boot }: { boot?: Boot }) {
             setInput={setInput}
             onSend={handleSend}
             busy={busy || loadingConversation || attachmentUploading}
-            attachment={attachment}
+            attachments={attachments}
             attachmentUploading={attachmentUploading}
-            onAttachPick={pickAttachment}
-            onAttachClear={clearAttachment}
+            onAttachPick={pickAttachments}
+            onAttachClearAt={clearAttachmentAt}
             onChipSelect={(q) => sendText(q)}
           />
         )}
@@ -305,20 +319,25 @@ export function Chat({ boot }: { boot?: Boot }) {
             >
               {m.role === "user" ? (
                 <div className="flex max-w-[88%] flex-col items-end gap-1.5 self-end">
-                  {m.attachmentPreviewUrl && (
-                    <a
-                      href={m.attachmentPreviewUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="block overflow-hidden border border-border/40"
-                      style={{ borderRadius: 10 }}
-                    >
-                      <img
-                        src={m.attachmentPreviewUrl}
-                        alt="uploaded"
-                        className="block h-32 w-auto object-cover"
-                      />
-                    </a>
+                  {m.attachmentPreviewUrls && m.attachmentPreviewUrls.length > 0 && (
+                    <div className="flex flex-wrap justify-end gap-1.5">
+                      {m.attachmentPreviewUrls.map((url, ai) => (
+                        <a
+                          key={ai}
+                          href={url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="block overflow-hidden border border-border/40"
+                          style={{ borderRadius: 10 }}
+                        >
+                          <img
+                            src={url}
+                            alt="uploaded"
+                            className="block h-32 w-auto object-cover"
+                          />
+                        </a>
+                      ))}
+                    </div>
                   )}
                   <div
                     className="whitespace-pre-wrap bg-primary px-3.5 py-2.5 text-sm leading-relaxed text-primary-foreground tabular-nums"
@@ -402,41 +421,48 @@ export function Chat({ boot }: { boot?: Boot }) {
       )}
 
       <AnimatePresence>
-        {messages.length > 0 && attachment && (
+        {messages.length > 0 && attachments.length > 0 && (
           <motion.div
-            key="att-chip"
+            key="att-chips"
             initial={{ opacity: 0, y: 6 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 6 }}
             transition={{ duration: 0.18 }}
-            className="flex items-center gap-2 self-stretch border border-border/40 bg-secondary/40 px-2 py-1.5"
-            style={{ borderRadius: 10 }}
+            className="flex flex-col gap-1.5 self-stretch"
           >
-            <img
-              src={attachment.previewUrl}
-              alt=""
-              className="size-10 shrink-0 object-cover"
-              style={{ borderRadius: 6 }}
-            />
-            <div className="min-w-0 flex-1 text-xs">
-              <div className="truncate font-medium text-foreground">{attachment.file.name}</div>
-              <div className="text-[10.5px] text-muted-foreground">
-                {attachmentUploading
-                  ? "Įkeliama…"
-                  : `${(attachment.file.size / 1024).toFixed(0)} KB · paspauskite Siųsti, kad pridėtumėte`}
+            {attachments.map((att, i) => (
+              <div
+                key={i}
+                className="flex items-center gap-2 border border-border/40 bg-secondary/40 px-2 py-1.5"
+                style={{ borderRadius: 10 }}
+              >
+                <img
+                  src={att.previewUrl}
+                  alt=""
+                  className="size-10 shrink-0 object-cover"
+                  style={{ borderRadius: 6 }}
+                />
+                <div className="min-w-0 flex-1 text-xs">
+                  <div className="truncate font-medium text-foreground">{att.file.name}</div>
+                  <div className="text-[10.5px] text-muted-foreground">
+                    {attachmentUploading
+                      ? "Įkeliama…"
+                      : `${(att.file.size / 1024).toFixed(0)} KB`}
+                  </div>
+                </div>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => clearAttachmentAt(i)}
+                  disabled={attachmentUploading}
+                  aria-label="Remove attachment"
+                  className="size-7 text-muted-foreground"
+                >
+                  <X className="size-4" />
+                </Button>
               </div>
-            </div>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              onClick={clearAttachment}
-              disabled={attachmentUploading}
-              aria-label="Remove attachment"
-              className="size-7 text-muted-foreground"
-            >
-              <X className="size-4" />
-            </Button>
+            ))}
           </motion.div>
         )}
       </AnimatePresence>
@@ -448,14 +474,14 @@ export function Chat({ boot }: { boot?: Boot }) {
           onChange={setInput}
           placeholder={busy ? "Waiting for assistant…" : "Type…"}
           disabled={busy}
-          onAttachPick={pickAttachment}
+          onAttachPick={pickAttachments}
           attachDisabled={busy || attachmentUploading}
         />
 
         <Button
           type="submit"
           size="icon"
-          disabled={!input.trim() || busy}
+          disabled={(!input.trim() && attachments.length === 0) || busy}
           className="size-10 shrink-0"
           aria-label="Send message"
         >
@@ -631,7 +657,7 @@ interface InlineInputProps {
   onChange: (v: string) => void;
   placeholder?: string;
   disabled?: boolean;
-  onAttachPick: (file: File) => void;
+  onAttachPick: (files: File[]) => void;
   attachDisabled?: boolean;
   inputRef?: React.Ref<HTMLInputElement>;
   autoFocus?: boolean;
@@ -657,10 +683,11 @@ function InlineInput(props: InlineInputProps) {
         ref={fileRef}
         type="file"
         accept="image/jpeg,image/png,image/webp"
+        multiple
         className="hidden"
         onChange={(e) => {
-          const f = e.target.files?.[0];
-          if (f) props.onAttachPick(f);
+          const files = e.target.files ? Array.from(e.target.files) : [];
+          if (files.length) props.onAttachPick(files);
           e.target.value = "";
         }}
       />
@@ -696,10 +723,10 @@ interface EmptyHeroProps {
   setInput: (v: string) => void;
   onSend: (e: FormEvent) => void;
   busy: boolean;
-  attachment: PendingAttachment | null;
+  attachments: PendingAttachment[];
   attachmentUploading: boolean;
-  onAttachPick: (file: File) => void;
-  onAttachClear: () => void;
+  onAttachPick: (files: File[]) => void;
+  onAttachClearAt: (index: number) => void;
   onChipSelect: (q: string) => void;
 }
 
@@ -727,36 +754,41 @@ function EmptyHero(props: EmptyHeroProps) {
         {title}
       </h2>
 
-      {props.attachment && (
-        <div
-          className="flex w-full max-w-xl items-center gap-2 border border-border/40 bg-secondary/40 px-2 py-1.5"
-          style={{ borderRadius: 10 }}
-        >
-          <img
-            src={props.attachment.previewUrl}
-            alt=""
-            className="size-10 shrink-0 object-cover"
-            style={{ borderRadius: 6 }}
-          />
-          <div className="min-w-0 flex-1 text-xs">
-            <div className="truncate font-medium text-foreground">{props.attachment.file.name}</div>
-            <div className="text-[10.5px] text-muted-foreground">
-              {props.attachmentUploading
-                ? "Įkeliama…"
-                : `${(props.attachment.file.size / 1024).toFixed(0)} KB`}
+      {props.attachments.length > 0 && (
+        <div className="flex w-full max-w-xl flex-col gap-1.5">
+          {props.attachments.map((att, i) => (
+            <div
+              key={i}
+              className="flex items-center gap-2 border border-border/40 bg-secondary/40 px-2 py-1.5"
+              style={{ borderRadius: 10 }}
+            >
+              <img
+                src={att.previewUrl}
+                alt=""
+                className="size-10 shrink-0 object-cover"
+                style={{ borderRadius: 6 }}
+              />
+              <div className="min-w-0 flex-1 text-xs">
+                <div className="truncate font-medium text-foreground">{att.file.name}</div>
+                <div className="text-[10.5px] text-muted-foreground">
+                  {props.attachmentUploading
+                    ? "Įkeliama…"
+                    : `${(att.file.size / 1024).toFixed(0)} KB`}
+                </div>
+              </div>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                onClick={() => props.onAttachClearAt(i)}
+                disabled={props.attachmentUploading}
+                aria-label="Remove attachment"
+                className="size-7 text-muted-foreground"
+              >
+                <X className="size-4" />
+              </Button>
             </div>
-          </div>
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            onClick={props.onAttachClear}
-            disabled={props.attachmentUploading}
-            aria-label="Remove attachment"
-            className="size-7 text-muted-foreground"
-          >
-            <X className="size-4" />
-          </Button>
+          ))}
         </div>
       )}
 
@@ -775,7 +807,7 @@ function EmptyHero(props: EmptyHeroProps) {
         <Button
           type="submit"
           size="icon"
-          disabled={(!props.input.trim() && !props.attachment) || props.busy}
+          disabled={(!props.input.trim() && props.attachments.length === 0) || props.busy}
           className="size-11 shrink-0"
           aria-label="Send message"
         >
