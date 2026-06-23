@@ -41,6 +41,15 @@ same slug can't silently hijack your update channel.
   the content / image-replacement / admin-handoff features)
 - An Anthropic API key
 
+## Pricing
+
+WPChat itself is **free and open-source (MIT)**. You **bring your own
+Anthropic API key** and are billed directly by Anthropic for the tokens
+your chats use — WPChat collects no payment and stores no card details,
+so there is nothing to refund. A hosted **WPChat Cloud** tier (no key
+setup required) is on the roadmap as a waitlist; pricing will be
+announced if and when it launches.
+
 ## What it does
 
 **Out of the box on any WP+WC install:**
@@ -95,15 +104,32 @@ the plugin has more public users.
 
 ## Roadmap
 
-See [`docs/PLAN.md`](./docs/PLAN.md) (or `~/.claude-personal/plans/snug-chasing-bunny.md`
-if you're the maintainer) for the detailed release plan. Highlights:
+See the [changelog in `readme.txt`](./readme.txt) for shipped releases.
+Highlights:
 
-- **v0.5.x** — image upload + team-member photo replacement (done),
-  borderless input + 📎 + underline chips (done), distribution via PUC
-  (this release), first-run onboarding wizard (next).
-- **v0.6.x** — analytics provider router (auto-detect Site Kit /
-  Jetpack Stats / etc. for traffic + sales summaries), embedded video.
+- **v0.5.x** (done) — image upload + photo replacement, first-run
+  onboarding wizard, analytics provider router (Site Kit / Jetpack /
+  WP Statistics / …), SEO/AEO audit + fixes, content creation.
+- **v0.6.0** (this release) — order-mutation confirmations, in-product
+  Help + "Report a problem", error telemetry, live API-key validation,
+  privacy disclosure, packaging + CI guards.
+- **Next** — multiple LLM providers (OpenAI / Gemini behind a provider
+  abstraction), hosted **WPChat Cloud** tier (Stripe), more guided
+  handoffs (comments, broken links).
 - **v0.7+** — WP.org plugin directory submission, more content kinds.
+
+## Privacy & data handling
+
+WPChat sends the content of your chat requests — which can include **order
+and customer data** — to **Anthropic** (`api.anthropic.com`) to generate
+replies. Your conversation history is stored only in your own site's
+database; your API key is never exposed to the browser. Optional,
+PII-free error telemetry (on by default, toggle in **Settings → Privacy
+& diagnostics**) and an explicit "Report a problem" button are the only
+channels back to the developer.
+
+If you operate under GDPR or similar, disclose this processing in your
+own privacy policy. Full details: **[PRIVACY.md](./PRIVACY.md)**.
 
 ## License
 

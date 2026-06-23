@@ -289,29 +289,25 @@ function buildSteps(status: OnboardingStatus | null, boot: Boot): Step[] {
     ),
   });
 
-  // If the user picked the Cloud waitlist, we don't ask for an
-  // Anthropic key (they're not bringing one) or a model (we'll
-  // pick on their behalf when the service opens). Continue
-  // straight to the capability diagnostics + summary.
-  const usingCloud = status.provider?.current === "cloud-waitlist";
-
-  if (!usingCloud) {
-    if (!status.apiKey.ok) {
-      steps.push({
-        id: "api-key",
-        render: ({ status, boot, onUpdateStatus, onNext }) => (
-          <ApiKeyCard status={status} boot={boot} onUpdateStatus={onUpdateStatus} onAdvance={onNext} />
-        ),
-      });
-    }
-
+  // WPChat Cloud isn't live yet — joining the waitlist is additive, NOT a
+  // substitute for setup. Everyone still needs an Anthropic key + model to
+  // actually use WPChat today, so we always walk through these steps (the
+  // waitlist just means "ping me when Cloud opens").
+  if (!status.apiKey.ok) {
     steps.push({
-      id: "model",
-      render: ({ status, boot, onUpdateStatus }) => (
-        <ModelCard status={status} boot={boot} onUpdateStatus={onUpdateStatus} />
+      id: "api-key",
+      render: ({ status, boot, onUpdateStatus, onNext }) => (
+        <ApiKeyCard status={status} boot={boot} onUpdateStatus={onUpdateStatus} onAdvance={onNext} />
       ),
     });
   }
+
+  steps.push({
+    id: "model",
+    render: ({ status, boot, onUpdateStatus }) => (
+      <ModelCard status={status} boot={boot} onUpdateStatus={onUpdateStatus} />
+    ),
+  });
 
   if (!status.permissions.ok) {
     steps.push({

@@ -2,9 +2,9 @@
 Contributors: gynciuz
 Tags: woocommerce, chat, ai, claude, orders
 Requires at least: 6.5
-Tested up to: 6.6
+Tested up to: 6.8
 Requires PHP: 8.1
-Stable tag: 0.5.13
+Stable tag: 0.6.0
 License: MIT
 License URI: https://opensource.org/licenses/MIT
 
@@ -26,6 +26,19 @@ Phase 1 (MVP):
 
 Bring your own Anthropic API key.
 
+== Privacy ==
+
+WPChat sends the content of your chat requests to Anthropic
+(api.anthropic.com) to generate replies. This can include order and
+customer data (names, emails) when you ask about orders. Your
+conversation history is stored only in your own site's database, and your
+API key is never exposed to the browser. Optional, PII-free error
+telemetry (on by default, switchable in Settings → Privacy & diagnostics)
+and an explicit "Report a problem" button are the only data sent to the
+plugin developer. If you operate under GDPR or similar, disclose this
+processing in your own site's privacy policy. See PRIVACY.md for full
+details.
+
 == Installation ==
 
 1. Upload the plugin ZIP via Plugins → Add New → Upload.
@@ -33,17 +46,58 @@ Bring your own Anthropic API key.
 3. WPChat → Settings → paste your Anthropic API key.
 4. WPChat → Chat → type.
 
+== Frequently Asked Questions ==
+
+= Do I need an account or subscription? =
+No. WPChat is free and open-source. You bring your own Anthropic API key
+and pay Anthropic directly for usage. There is no WPChat subscription
+today (a hosted "WPChat Cloud" tier is on a waitlist).
+
+= How do I get an Anthropic API key? =
+Go to console.anthropic.com → sign in → Settings → API Keys → Create Key,
+then paste it into WPChat's first-run setup or WPChat → Settings. Keys
+start with "sk-ant-". WPChat validates the key when you save it.
+
+= How much does it cost to run? =
+You pay Anthropic for the tokens each chat uses — typically a few cents
+per request, depending on the model you pick (Haiku is cheapest, Opus the
+most capable). You can see and cap spend in your Anthropic console.
+
+= Does it work without WooCommerce? =
+Yes — the content, SEO, image and admin-handoff features work on any
+WordPress site. The order tools require WooCommerce.
+
+= Is my data safe? =
+Your requests are sent to Anthropic to generate replies and can include
+order/customer data; your conversation history stays on your own site.
+See the Privacy section above and PRIVACY.md for full details.
+
+= Something isn't working — how do I get help? =
+Open the Help panel in the chat (footer) — it answers common questions,
+and "Report a problem" sends the details to the developer.
+
 == Changelog ==
 
+= 0.6.0 =
+Public-launch readiness release.
+* **Order mutations now confirm before acting.** Changing an order's status, running an order action (resend email), or adding a customer-visible note asks you to confirm first — same Confirm/Cancel flow as content edits. The order-table 3-dot menus stay one-click (the click is the confirmation). Private notes are unchanged.
+* **In-product Help + "Report a problem".** A new Help panel answers "how do I…/why isn't X working" from a built-in FAQ (free, no tools), and a Report-a-problem button sends your recent chat + the error straight to the developer. New `POST /wpchat/v1/support` route; `/chat` gains an ephemeral `mode: 'support'`.
+* **Error telemetry so failures aren't invisible.** Production errors are logged to a capped local buffer and, if you leave the default-on toggle enabled (WPChat → Settings → Privacy & diagnostics), a PII-free report is sent to the developer. No order or customer data.
+* **API key is validated at setup.** Onboarding now does a live auth check, so a typo'd or revoked key is caught immediately instead of failing at first chat. Fails open on transient network errors.
+* **Honest billing copy.** Removed the unverified "€10/mo" claim from the WPChat Cloud tile; it's framed as a Stripe subscription coming later with a waitlist. Cloud-waitlist no longer skips key setup (you still need a key today). Waitlist signups now reach the developer.
+* **Privacy disclosure.** New PRIVACY.md + an onboarding data-handling note: WPChat sends request content (which can include order/customer data) to Anthropic. README/readme.txt updated.
+* **Packaging + CI guards.** New `bin/release.sh` builds a clean ZIP and asserts the version matches across files; CI verifies the committed `build/` is current and versions agree.
+* New components: Support panel (help chat + report). New class: `WPChat\Telemetry`. New tests: Telemetry, Support, order-confirmation, key-rejection.
+
 = 0.5.13 =
-* **Provider step in onboarding.** A new card right after Welcome lets you choose how WPChat reaches the AI: **Bring your own Anthropic API key** (free; you're billed by Anthropic) or **WPChat Cloud — Coming soon** (€10/mo for €5 of tokens, Stripe-billed; currently a waitlist). Picking BYO continues to the existing API-key + Model picker steps. Picking Cloud-waitlist skips both (no key needed yet) and captures an optional email so we can ping you when the tier opens.
+* **Provider step in onboarding.** A new card right after Welcome lets you choose how WPChat reaches the AI: **Bring your own Anthropic API key** (free; you're billed by Anthropic) or **WPChat Cloud — Coming later** (a hosted tier, currently a waitlist; pricing announced at launch). Picking BYO continues to the existing API-key + Model picker steps. Joining the Cloud waitlist captures an optional email so we can ping you when the tier opens — you still set up a key to use WPChat today.
 * New REST routes: `POST /wpchat/v1/onboarding/provider` (body `{provider: 'byo'|'cloud-waitlist', email?: string}`); status payload gains a `provider` block with `current`, `cloudAvailable`, `cloudWaitlistOpen` flags.
 * Summary card adapts to the choice — BYO sees "Provider: Anthropic (your key)"; Cloud-waitlist sees "Provider: WPChat Cloud (waitlisted)" and the API-key row is omitted from the matrix.
 * New site options: `wpchat_provider_choice` + `wpchat_cloud_waitlist`.
 * Locale-aware for LT / RU / PL / EN.
 * New tests: OnboardingProviderTest covering default, persistence, validation, waitlist email capture, and confirmation that BYO doesn't touch the waitlist.
 
-This ships the choice UI now. The actual Cloud service (Stripe + proxy + account mgmt) is a separate multi-week project still ahead; the cloud-waitlist path is forward-compatible with the eventual live service.
+This ships the choice UI now. The actual Cloud service (hosted proxy + billing + account mgmt) is a separate project still ahead; the cloud-waitlist path is forward-compatible with the eventual live service. No payment is collected today — WPChat is free and you bring your own Anthropic key.
 
 = 0.5.12 =
 * **Onboarding's "What chat can edit" card now shows every kind.** Previously only custom site-specific kinds appeared (the four core wp_* types were summarised by count only). Now the full list renders, so admins see exactly what scope WPChat will touch on this site.

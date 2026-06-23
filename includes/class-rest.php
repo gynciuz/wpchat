@@ -15,6 +15,10 @@ class Rest {
 
     const NAMESPACE = 'wpchat/v1';
 
+    /** Per-user chat rate limit (bounds API cost from a runaway/abusive account). */
+    const RATE_LIMIT_MAX    = 30; // requests…
+    const RATE_LIMIT_WINDOW = 60; // …per this many seconds.
+
     public function __construct() {
         add_action('rest_api_init', [$this, 'register']);
     }
@@ -33,7 +37,18 @@ class Rest {
                     'required' => false,
                     'type'     => 'string',
                 ],
+                'mode' => [
+                    'required' => false,
+                    'type'     => 'string',
+                ],
             ],
+        ]);
+        // Explicit "Report a problem" — packages the conversation + error and
+        // routes it to the developer (collector endpoint or wp_mail).
+        register_rest_route(self::NAMESPACE, '/support', [
+            'methods'             => 'POST',
+            'permission_callback' => [$this, 'check_permission'],
+            'callback'            => [$this, 'handle_support_report'],
         ]);
         register_rest_route(self::NAMESPACE, '/conversations', [
             'methods'             => 'GET',
@@ -85,39 +100,67 @@ class Rest {
         $messages = array_map([$this, 'sanitize_message'], $messages);
         $user_id  = get_current_user_id();
 
+        // Per-user rate limit — caps API spend if an account is compromised or
+        // a client loops. Tunable via the wpchat_rate_limit_max filter.
+        $max = (int) apply_filters('wpchat_rate_limit_max', self::RATE_LIMIT_MAX);
+        if ($max > 0) {
+            $rl_key = 'wpchat_rl_' . $user_id;
+            $count  = get_transient($rl_key);
+            if ($count === false) {
+                set_transient($rl_key, 1, self::RATE_LIMIT_WINDOW);
+            } elseif ((int) $count >= $max) {
+                return new \WP_REST_Response([
+                    'error' => __('You are sending requests too quickly — please wait a moment and try again.', 'wpchat'),
+                ], 429);
+            } else {
+                set_transient($rl_key, (int) $count + 1, self::RATE_LIMIT_WINDOW);
+            }
+        }
+
+        // Support mode: a free help assistant. NO tools (it only answers
+        // "how do I…/why isn't X working" from the bundled FAQ), and it is
+        // ephemeral — not persisted into the order-management history.
+        $is_support = ($request->get_param('mode') === 'support');
+
         $conversation_id = (string) $request->get_param('conversation_id');
         if (!preg_match('/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/', $conversation_id)) {
-            $conversation_id = History::start_or_continue($user_id);
+            $conversation_id = $is_support ? '' : History::start_or_continue($user_id);
         }
 
         // Persist the latest user message before calling the LLM so we have
-        // a record even if the LLM call errors mid-flight.
-        $latest = end($messages);
-        if (is_array($latest) && ($latest['role'] ?? '') === 'user') {
-            History::append($user_id, $conversation_id, 'user', (string) $latest['content'], []);
+        // a record even if the LLM call errors mid-flight. (Skipped in support
+        // mode so help chatter never pollutes the conversation history.)
+        if (!$is_support) {
+            $latest = end($messages);
+            if (is_array($latest) && ($latest['role'] ?? '') === 'user') {
+                History::append($user_id, $conversation_id, 'user', (string) $latest['content'], []);
+            }
         }
 
         try {
             $result = Anthropic::run_with_tools(
                 $messages,
-                Tools::definitions(),
-                Tools::implementations(),
+                $is_support ? [] : Tools::definitions(),
+                $is_support ? [] : Tools::implementations(),
                 [
-                    'system' => $this->system_prompt(),
+                    'system' => $is_support ? $this->support_prompt() : $this->system_prompt(),
                     'model'  => Settings::get_model(),
                 ]
             );
         } catch (\Throwable $e) {
+            Telemetry::log($is_support ? 'support_chat_failed' : 'chat_failed', ['message' => $e->getMessage()]);
             return new \WP_REST_Response(['error' => $e->getMessage(), 'conversation_id' => $conversation_id], 500);
         }
 
-        History::append(
-            $user_id,
-            $conversation_id,
-            'assistant',
-            (string) ($result['text'] ?? ''),
-            is_array($result['tool_calls'] ?? null) ? $result['tool_calls'] : []
-        );
+        if (!$is_support) {
+            History::append(
+                $user_id,
+                $conversation_id,
+                'assistant',
+                (string) ($result['text'] ?? ''),
+                is_array($result['tool_calls'] ?? null) ? $result['tool_calls'] : []
+            );
+        }
 
         return new \WP_REST_Response([
             'text'            => $result['text'],
@@ -125,6 +168,43 @@ class Rest {
             'tool_calls'      => $result['tool_calls'],
             'conversation_id' => $conversation_id,
         ], 200);
+    }
+
+    /**
+     * Deliver a "Report a problem" submission to the developer. Packages the
+     * user's note, the last error they hit, and the recent conversation (which
+     * the user is explicitly choosing to send) plus environment info.
+     */
+    public function handle_support_report(\WP_REST_Request $request): \WP_REST_Response {
+        $body    = $request->get_json_params();
+        $note    = isset($body['note']) ? sanitize_textarea_field((string) $body['note']) : '';
+        $error   = isset($body['error']) ? sanitize_text_field((string) $body['error']) : '';
+        $user_id = get_current_user_id();
+
+        // Prefer server-side history (authoritative) over client-sent text.
+        $convo = '';
+        $recent = [];
+        if (!empty($body['conversation_id']) && is_string($body['conversation_id'])
+            && preg_match('/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/', $body['conversation_id'])) {
+            $convo = $body['conversation_id'];
+            $full  = History::get_conversation($user_id, $convo);
+            // Last 10 turns is plenty of context without dumping everything.
+            $recent = array_slice($full, -10);
+        }
+
+        $user = wp_get_current_user();
+        $ok = Telemetry::send_report([
+            'note'            => $note,
+            'error'           => $error,
+            'conversation_id' => $convo,
+            'messages'        => $recent,
+            'reporter'        => [
+                'login' => $user ? $user->user_login : '',
+                'email' => $user ? $user->user_email : '',
+            ],
+        ]);
+
+        return new \WP_REST_Response(['ok' => $ok], $ok ? 200 : 502);
     }
 
     public function handle_list_conversations(\WP_REST_Request $request): \WP_REST_Response {
@@ -147,11 +227,13 @@ class Rest {
 
         try {
             $result = Tools::update_order_status([
-                'order_id' => $id,
-                'status'   => $status,
-                'note'     => $note,
+                'order_id'   => $id,
+                'status'     => $status,
+                'note'       => $note,
+                '_confirmed' => true, // the 3-dot-menu click is the confirmation.
             ]);
         } catch (\Throwable $e) {
+            Telemetry::log('order_status_action_failed', ['message' => $e->getMessage(), 'tool' => 'update_order_status']);
             return new \WP_REST_Response(['error' => $e->getMessage()], 503);
         }
 
@@ -181,8 +263,10 @@ class Rest {
                 'order_id'         => $id,
                 'note'             => $note,
                 'customer_visible' => $visible,
+                '_confirmed'       => true, // the 3-dot-menu click is the confirmation.
             ]);
         } catch (\Throwable $e) {
+            Telemetry::log('order_note_action_failed', ['message' => $e->getMessage(), 'tool' => 'add_order_note']);
             return new \WP_REST_Response(['error' => $e->getMessage()], 503);
         }
 
@@ -221,6 +305,54 @@ class Rest {
             'role'    => $role,
             'content' => $message['content'] ?? '',
         ];
+    }
+
+    /**
+     * Support/help assistant prompt. Used in `mode: 'support'` with NO tools —
+     * it only answers questions about WPChat itself from the FAQ below. When it
+     * can't resolve something, it points the user at "Report a problem".
+     */
+    private function support_prompt(): string {
+        $site   = get_bloginfo('name');
+        $locale = get_locale();
+        $wc      = function_exists('wc_get_order_statuses') ? 'active' : 'not active';
+        $has_key = Settings::get_api_key() ? 'configured' : 'NOT configured';
+
+        return <<<PROMPT
+You are WPChat Help — a friendly support assistant for the WPChat WordPress plugin, embedded on the site "{$site}" (locale: {$locale}). You ONLY answer questions about using WPChat. You have NO tools and cannot change anything on the site — you explain, guide, and troubleshoot in plain language.
+
+# Rules
+- Reply in the user's language (mirror what they wrote).
+- Be concise and concrete. Give the exact menu path or click, not vague advice.
+- You cannot perform actions here. If they want something done, tell them to use the main chat (close Help) or the WordPress admin.
+- If you cannot resolve their issue, or it looks like a bug, tell them to click **"Report a problem"** (in this Help panel) — it sends the details straight to the developer.
+- Never invent features. If unsure whether WPChat can do something, say so and suggest Report a problem.
+
+# This site right now
+- Anthropic API key: {$has_key}
+- WooCommerce: {$wc}
+
+# FAQ — ground your answers in these facts
+**What is WPChat?** A chat-based admin assistant for WooCommerce + WordPress content. Type a request in any language ("mark order 2833 completed", "write a post about X") and it calls the right WP/WC functions for you.
+
+**Getting an Anthropic API key.** WPChat needs one. Go to console.anthropic.com → sign in → Settings → API Keys → Create Key → copy it → paste into WPChat → Settings (or the onboarding step). Keys start with "sk-ant-". You are billed by Anthropic for usage, not by WPChat.
+
+**Cost.** WPChat itself is free. You pay Anthropic directly for the tokens your chats use — typically a few cents per request. There is no WPChat subscription today; a hosted "WPChat Cloud" tier is on a waitlist.
+
+**"API key not configured" error.** The key isn't set or is wrong. Re-paste it in WPChat → Settings. If it still fails, the key may be revoked or out of credit — check console.anthropic.com → Billing.
+
+**What it can do:** list/search orders, change an order's status, add order notes, resend order emails (with a confirmation step), create posts/pages as drafts and publish them, edit content and SEO title/description, run an SEO audit, and show a traffic summary. Order/customer edits beyond these are handed off as a deep link to wp-admin.
+
+**What it can't do (yet):** bulk actions (by design — one item at a time for safety), deleting things, managing products/stock, moderating comments, managing users — for these it gives you a direct admin link instead.
+
+**Confirmations.** Changing an order's status, sending a customer email, or publishing a draft asks you to confirm first (a Confirm/Cancel button or typing "yes"). This is a safety feature.
+
+**Privacy.** Your requests (which can include order/customer data) are sent to Anthropic to generate replies. WPChat stores your conversation history on your own site only. See the plugin README for details.
+
+**Languages.** WPChat works in Lithuanian, Russian, Polish, and English — type in any of them.
+
+If the answer isn't here, be honest and recommend Report a problem.
+PROMPT;
     }
 
     private function system_prompt(): string {
@@ -273,6 +405,7 @@ The user is a busy shop owner, not an engineer. They don't know about slugs, RES
 1. **No bulk destructive ops via this chat.** If the user asks "cancel all pending orders" / "delete every voucher" / "trash all posts", refuse and instead give them the WP admin bulk-action URL via `get_admin_url(resource='orders_list')`. The plugin tools intentionally take ONE id at a time and there is no exception. This is a safety feature we sell on, not a limitation to work around.
 2. **For genuinely destructive operations** (delete order, delete user, delete page) — when those tools land in later versions — require the user to type the LITERAL word `DELETE` (or `IŠTRINTI` in Lithuanian, `УДАЛИТЬ` in Russian). The standard "yes/taip/да" whitelist is NOT enough for delete. Render the required word inside backticks in the preview so the user can see exactly what to type.
 3. **Never call apply_content_change without a preview + confirmation in the immediately preceding turns.**
+4. **Confirm before mutating an order.** `update_order_status`, `trigger_order_action`, and a customer-visible `add_order_note` all email the customer or fire side-effects. Call the tool once WITHOUT `confirmation` — it returns `needs_confirmation` with the details — then state plainly what you're about to do, wait for the user's go-ahead, and call again passing their phrase in `confirmation`. (Private notes don't need this.) The 3-dot menus on the order table are pre-confirmed by the click, so this only applies to chat requests.
 
 # Language
 - Order status labels, customer names, product titles etc. are stored in the site's content language.
@@ -297,6 +430,7 @@ Always map the user's word to the corresponding slug below before calling `updat
 | "panaudotas" / "использован" / "used" / "wykorzystany"                     | `panaudotas` (custom — only if listed above) |
 
 # Orders — guidelines
+- **Confirm first (see guardrail 4).** For a status change, a resend/order action, or a customer-emailed note: call the tool once, relay the `needs_confirmation` summary in one short sentence in the user's language, and only re-call with `confirmation` once they agree. The user may confirm by clicking the Confirm button or by typing yes/taip/да/ok — pass whatever they typed verbatim.
 - Combine work in one round: status change + note via `update_order_status`'s `note` parameter, not two separate calls.
 - Order numbers users mention can be integers; pass them as integers.
 - For partial-use voucher notes ("dalinai 30 eur, liko 20" / "использовано 30 €, осталось 20"), capture the amounts in the note exactly as the user said (keep the language they used).
@@ -304,6 +438,13 @@ Always map the user's word to the corresponding slug below before calling `updat
 - **DO NOT render markdown tables of orders or order lists when calling `list_orders` or `find_customer_orders`.** The chat UI already renders the structured order data as an interactive React table above your text reply (with per-row 3-dot menus for status change + admin link). Your text should be a SHORT prose summary only — e.g. "Štai 10 paskutinių užsakymų — 3 panaudoti, 4 neapmokėti, viso 870 €." NOT a markdown table reproduction of what's already shown.
 - **Resending emails & order actions:** when the user asks to (re)send an order email or run an order action — "resend the invoice", "pakartok dovanų kupono siuntimą", "resend gift card", "resend new order notification" — DO IT with the tools; don't hand the user a manual click-path. First call `list_order_actions(order_id)` to see the exact action slugs available on that order (built-in emails plus plugin actions like PW Gift Cards "Resend gift cards"), then call `trigger_order_action(order_id, action)` with the matching slug. Only trigger the action the user explicitly asked for; if several plausibly match, ask which one. After it runs, confirm in one short sentence which email/action was sent and to whom. Only fall back to `get_admin_url` if no matching action is listed.
 - For requests outside what the tools cover (delete, refund, bulk action, customer edit, product edit, etc.) → `get_admin_url(resource='order', id=<n>)` or `get_admin_url(resource='orders_list')` and hand the link to the user with a concrete next step.
+
+# Handing off the things WPChat can't do directly
+There is no tool for comments, broken links, plugin/theme updates, product/stock, or user management — but NEVER dead-end on "I can't". Hand off with the right deep link + the exact next click, in the user's language:
+- Comments (approve / reply / moderate) → `get_admin_url(resource='comments')` (pass `id` for one comment). Tell them to approve/reply there.
+- Broken links, 404s, "site is slow/broken", maintenance, "what updates are available" → `get_admin_url(resource='site_health')` (or `resource='plugins'` for plugin updates).
+- Products / stock / inventory → `get_admin_url(resource='dashboard')` is a last resort; prefer telling them it's WooCommerce → Products. Only the order tools exist here.
+- Users / roles → `get_admin_url(resource='user', id=<n>)` or `resource='users_list'`.
 
 # Site analytics / traffic
 When the user asks about visitors, traffic, page views, popular/most-visited pages, or referrers ("kiek lankytojų šią savaitę?", "how many visitors this week?", "сколько посетителей вчера?", "which pages are most popular?"), call `get_traffic_summary` with the matching `date_range` (today / yesterday / this_week / last_7_days / last_30_days). The tool auto-detects the site's analytics plugin — you do NOT pick a provider.

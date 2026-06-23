@@ -45,26 +45,28 @@ class Tools {
             ],
             [
                 'name'        => 'update_order_status',
-                'description' => 'Change an order\'s status. Optionally append a private note explaining the change.',
+                'description' => 'Change an order\'s status. Optionally append a private note explaining the change. REQUIRES user confirmation: call once WITHOUT `confirmation` to get a `needs_confirmation` summary, show the user what will change (it may email the customer) and wait for their go-ahead, then call again passing their verbatim phrase in `confirmation`.',
                 'input_schema' => [
                     'type'       => 'object',
                     'properties' => [
-                        'order_id' => ['type' => 'integer'],
-                        'status'   => ['type' => 'string', 'description' => 'Status slug without wc- prefix (e.g. "completed", "panaudotas").'],
-                        'note'     => ['type' => 'string', 'description' => 'Optional private note to add along with the status change.'],
+                        'order_id'     => ['type' => 'integer'],
+                        'status'       => ['type' => 'string', 'description' => 'Status slug without wc- prefix (e.g. "completed", "panaudotas").'],
+                        'note'         => ['type' => 'string', 'description' => 'Optional private note to add along with the status change.'],
+                        'confirmation' => ['type' => 'string', 'description' => 'Verbatim confirmation phrase the user typed (yes/taip/да/tak/ok …). Omit on the first call to trigger the confirmation prompt.'],
                     ],
                     'required' => ['order_id', 'status'],
                 ],
             ],
             [
                 'name'        => 'add_order_note',
-                'description' => 'Append a note to an order. Private notes are visible only to admins; customer-visible notes are emailed to the customer.',
+                'description' => 'Append a note to an order. Private notes are visible only to admins; customer-visible notes are emailed to the customer. Private notes run immediately. A customer-visible note REQUIRES confirmation: call once without `confirmation` to get a `needs_confirmation` summary, confirm the wording with the user, then call again with their phrase in `confirmation`.',
                 'input_schema' => [
                     'type'       => 'object',
                     'properties' => [
                         'order_id'         => ['type' => 'integer'],
                         'note'             => ['type' => 'string'],
                         'customer_visible' => ['type' => 'boolean', 'description' => 'If true, send the note to the customer via email. Default false (private).'],
+                        'confirmation'     => ['type' => 'string', 'description' => 'Verbatim confirmation phrase the user typed. Only needed for customer-visible notes; omit on the first call to trigger the prompt.'],
                     ],
                     'required' => ['order_id', 'note'],
                 ],
@@ -93,12 +95,13 @@ class Tools {
             ],
             [
                 'name'        => 'trigger_order_action',
-                'description' => 'Run an order action on a single order — this is how you RESEND emails (order invoice / details, new-order notification) and run plugin actions like resending gift-card coupons. The `action` must be a slug returned by list_order_actions; if you don\'t know it, call list_order_actions first. Executes the action the same way clicking it in the WooCommerce "Order actions" box would (sends the email, fires the plugin hook) and records a note on the order. Only trigger an action the user explicitly asked for.',
+                'description' => 'Run an order action on a single order — this is how you RESEND emails (order invoice / details, new-order notification) and run plugin actions like resending gift-card coupons. The `action` must be a slug returned by list_order_actions; if you don\'t know it, call list_order_actions first. Executes the action the same way clicking it in the WooCommerce "Order actions" box would (sends the email, fires the plugin hook) and records a note on the order. Only trigger an action the user explicitly asked for. REQUIRES confirmation: call once without `confirmation` to get a `needs_confirmation` summary, confirm with the user that the email/action should be sent, then call again with their phrase in `confirmation`.',
                 'input_schema' => [
                     'type'       => 'object',
                     'properties' => [
-                        'order_id' => ['type' => 'integer', 'description' => 'WooCommerce order ID.'],
-                        'action'   => ['type' => 'string', 'description' => 'Action slug from list_order_actions, e.g. "send_order_details" (email invoice to customer) or a plugin slug like "send_gift_cards" / "pwgc_resend_gift_cards".'],
+                        'order_id'     => ['type' => 'integer', 'description' => 'WooCommerce order ID.'],
+                        'action'       => ['type' => 'string', 'description' => 'Action slug from list_order_actions, e.g. "send_order_details" (email invoice to customer) or a plugin slug like "send_gift_cards" / "pwgc_resend_gift_cards".'],
+                        'confirmation' => ['type' => 'string', 'description' => 'Verbatim confirmation phrase the user typed. Omit on the first call to trigger the confirmation prompt.'],
                     ],
                     'required' => ['order_id', 'action'],
                 ],
@@ -109,7 +112,7 @@ class Tools {
                 'input_schema' => [
                     'type'       => 'object',
                     'properties' => [
-                        'resource' => ['type' => 'string', 'description' => 'One of: order, orders_list, post, pages_list, user, users_list, dashboard.'],
+                        'resource' => ['type' => 'string', 'description' => 'One of: order, orders_list, post, pages_list, user, users_list, comments (comment moderation; optional id = one comment), site_health (maintenance / broken links / 404s / updates), plugins, dashboard.'],
                         'id'       => ['type' => 'integer', 'description' => 'Resource id (order id, post id, user id). Required for order/post/user; ignored for *_list and dashboard.'],
                     ],
                     'required' => ['resource'],
@@ -477,6 +480,24 @@ class Tools {
         return self::detail($order);
     }
 
+    /**
+     * Confirmation gate for order-mutating tools. Returns true when the LLM
+     * must pause and get the user's go-ahead before the action runs.
+     *
+     * The direct-action REST routes (the order-table 3-dot menus) pass
+     * `_confirmed => true` because the click itself IS the confirmation — so
+     * only the chat/LLM path is gated. On that path the model first calls the
+     * tool with no `confirmation`, gets a `needs_confirmation` response, shows
+     * the user what will happen, and re-calls with their phrase once they agree
+     * (validated by the same multilingual whitelist as content edits).
+     */
+    private static function needs_confirmation(array $args): bool {
+        if (!empty($args['_confirmed'])) {
+            return false;
+        }
+        return !ContentConfirmation::is_confirmed((string) ($args['confirmation'] ?? ''));
+    }
+
     public static function update_order_status(array $args): array {
         self::require_wc();
         $order = wc_get_order((int) ($args['order_id'] ?? 0));
@@ -492,6 +513,17 @@ class Tools {
             return ['error' => 'Unknown status: ' . $status, 'available_statuses' => $valid];
         }
         $note = isset($args['note']) ? (string) $args['note'] : '';
+        // Confirm before mutating — a status change can email the customer.
+        if (self::needs_confirmation($args)) {
+            return [
+                'needs_confirmation' => true,
+                'order_id'    => $order->get_id(),
+                'from_status' => self::unprefixed_status($order->get_status()),
+                'to_status'   => $status,
+                'note'        => $note !== '' ? $note : null,
+                'message'     => 'Tell the user you will change order #' . $order->get_id() . ' to "' . $status . '" (this may notify the customer by email) and ask them to confirm. Then call update_order_status again with their confirmation phrase in `confirmation`.',
+            ];
+        }
         $order->update_status($status, $note);
         return [
             'ok'         => true,
@@ -512,6 +544,17 @@ class Tools {
             return ['error' => 'Note text is required.'];
         }
         $customer_visible = !empty($args['customer_visible']);
+        // A private note is internal and low-risk, so it runs straight away.
+        // A customer-visible note is emailed to the customer — confirm first.
+        if ($customer_visible && self::needs_confirmation($args)) {
+            return [
+                'needs_confirmation' => true,
+                'order_id'         => $order->get_id(),
+                'customer_visible' => true,
+                'note'             => $note,
+                'message'          => 'This note will be EMAILED to the customer of order #' . $order->get_id() . '. Show them the note text, ask them to confirm, then call add_order_note again with their confirmation phrase in `confirmation`.',
+            ];
+        }
         $note_id = $order->add_order_note($note, $customer_visible);
         return [
             'ok'               => true,
@@ -559,11 +602,25 @@ class Tools {
             case 'users_list':
                 return ['url' => admin_url('users.php'), 'resource' => 'users_list'];
 
+            case 'comments':
+                // Moderation queue. Optional id deep-links to one comment's row.
+                return $id
+                    ? ['url' => admin_url('comment.php?action=editcomment&c=' . $id), 'resource' => 'comments', 'id' => $id]
+                    : ['url' => admin_url('edit-comments.php'), 'resource' => 'comments'];
+
+            case 'site_health':
+                // For maintenance / broken-link / 404 / update requests there is
+                // no tool — hand the user the right diagnostics screen.
+                return ['url' => admin_url('site-health.php'), 'resource' => 'site_health'];
+
+            case 'plugins':
+                return ['url' => admin_url('plugins.php'), 'resource' => 'plugins'];
+
             case 'dashboard':
                 return ['url' => $admin, 'resource' => 'dashboard'];
         }
 
-        return ['error' => "Unknown resource: $resource", 'allowed' => ['order', 'orders_list', 'post', 'pages_list', 'user', 'users_list', 'dashboard']];
+        return ['error' => "Unknown resource: $resource", 'allowed' => ['order', 'orders_list', 'post', 'pages_list', 'user', 'users_list', 'comments', 'site_health', 'plugins', 'dashboard']];
     }
 
     public static function find_customer_orders(array $args): array {
@@ -669,6 +726,25 @@ class Tools {
             return ['error' => 'WooCommerce mailer is unavailable on this site.'];
         }
 
+        $label = '';
+        foreach ($available as $a) {
+            if ($a['action'] === $action) {
+                $label = $a['label'];
+                break;
+            }
+        }
+
+        // Order actions send emails / fire plugin side-effects — confirm first.
+        if (self::needs_confirmation($args)) {
+            return [
+                'needs_confirmation' => true,
+                'order_id' => $order->get_id(),
+                'action'   => $action,
+                'label'    => $label,
+                'message'  => 'This will run "' . ($label !== '' ? $label : $action) . '" on order #' . $order->get_id() . ' (it sends an email / fires the plugin action). Confirm with the user, then call trigger_order_action again with their confirmation phrase in `confirmation`.',
+            ];
+        }
+
         // Replicates WC_Meta_Box_Order_Actions::save(): built-in emails are
         // sent directly; everything else dispatches the plugin hook.
         switch ($action) {
@@ -701,14 +777,6 @@ class Tools {
                 // adding its own order note.
                 do_action('woocommerce_order_action_' . $action, $order);
                 break;
-        }
-
-        $label = '';
-        foreach ($available as $a) {
-            if ($a['action'] === $action) {
-                $label = $a['label'];
-                break;
-            }
         }
 
         return [

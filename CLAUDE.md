@@ -10,7 +10,7 @@ Two halves:
 - **PHP plugin** (`includes/`, `wpchat.php`) — REST API, the Anthropic tool-use loop, all tools.
 - **React app** (`app/`) — the `/wpchat` SPA, built with Vite into `build/` and served by the PHP `Frontend` class.
 
-The plugin auto-updates from GitHub Releases via the vendored Plugin Update Checker (`vendor-puc/`) — there is no WP.org listing. The version must be bumped in **both** `wpchat.php` (header `Version:` and `WPCHAT_VERSION`) when releasing.
+The plugin auto-updates from GitHub Releases via the vendored Plugin Update Checker (`vendor-puc/`) — there is no WP.org listing. The version must be bumped in **all four** places when releasing: `wpchat.php` (header `Version:` **and** `WPCHAT_VERSION`) and `readme.txt` (`Stable tag:` **and** a matching `= X.Y.Z =` changelog heading). `bin/release.sh` asserts these agree, rebuilds the app, and packages a clean `wpchat-vX.Y.Z.zip` via `git archive` (honoring `.gitattributes` export-ignore); the CI `release-guard` job enforces version consistency + that committed `build/` is current.
 
 ## Commands
 
@@ -20,6 +20,7 @@ cd app && pnpm install
 pnpm build          # tsc -b && vite build → outputs to ../build/ (committed)
 pnpm dev            # vite dev server
 pnpm lint           # eslint
+pnpm test:e2e       # Playwright E2E
 
 # PHP tests (require MySQL + WP test scaffold installed once)
 composer install
@@ -50,13 +51,17 @@ The `build/` output is committed to the repo because the released ZIP serves pre
 - Order tools (`list_orders`, `get_order`, `update_order_status`, `add_order_note`, `find_customer_orders`, `list_order_actions`, `trigger_order_action`) call WC functions directly (no REST roundtrip). Each takes a single id — bulk destructive ops are intentionally impossible (a sold safety feature, enforced in the system prompt).
 - `get_admin_url` is the "smart handoff" — when no tool can do the job, the assistant returns a deep link instead of refusing.
 - Content tools (`list_content_blocks`, `preview_content_change`, `apply_content_change`) route through the content-backend system. **Two-step preview→apply is mandatory** and enforced by the system prompt; confirmation phrases are validated by `ContentConfirmation::is_confirmed` (multilingual whitelist).
+- Content-creation tools (`list_taxonomy_terms`, `create_content`, `publish_content`) create posts/pages **draft-first**: `create_content` builds a draft (categories/tags by name, `featured_image`/`image_ids` from upload markers, optional `seo_title`/`seo_description`), and `publish_content` publishes it only after a multilingual confirmation phrase. `list_taxonomy_terms` is called first to reuse existing terms.
+- SEO/analytics tools (`seo_audit`, `get_traffic_summary`) are read-only. `seo_audit` (`class-seo.php`) returns a structured SEO/AEO/GEO report with `fixable` flags that route to the `seo_setting`/`seo_meta` content kinds; `get_traffic_summary` reads from the analytics-providers system over a `date_range` enum.
+
+> Note: there is **no "skills" registry** — the commit-message word "skills" just means chat capabilities implemented as Anthropic tools + content backends following the patterns above.
 
 ### The system prompt is dynamic (`Rest::system_prompt`)
 It is rebuilt per-request and encodes most of the product behavior: the live WC order-status list, a multilingual status→slug map, the registered content kinds (filtered by site-disabled kinds and the current user's caps), guardrails, and language rules. **Behavioral changes usually mean editing this prompt, not adding code.** Scenario tests in `tests/Scenarios/` lock in these behaviors.
 
 ### Extensibility via filters (the key design pattern)
 - `wpchat_content_backends` — register `ContentBackend` implementations (`includes/class-content-backends.php`). The default `WPContentBackend` handles `wp_post` / `wp_page_slug` / `wp_post_meta` / `wp_term`. `ContentRouter` dispatches each tool call to whichever backend claims the target `kind`. Custom backends (e.g. a `team_member` kind writing static HTML) live in separate site plugins.
-- `wpchat_analytics_providers` — register `AnalyticsProvider` implementations (`includes/class-analytics-providers.php`). `AnalyticsRouter` auto-detects the first available host plugin (Site Kit, Jetpack Stats, MonsterInsights, …).
+- `wpchat_analytics_providers` — register `AnalyticsProvider` implementations (`includes/class-analytics-providers.php`). `AnalyticsRouter` auto-detects the first available host plugin (Site Kit, Jetpack Stats, MonsterInsights, WP Statistics, Koko Analytics, Statify).
 - `wpchat_anthropic_http_response` — returning non-null short-circuits the real HTTP call. **This is the test seam** — `tests/MockAnthropic.php` enqueues scripted Anthropic responses so real tools run against real WP while the LLM is deterministic and free.
 
 ### Per-kind capability gating
@@ -70,11 +75,13 @@ Content edits are gated at three layers: hidden from the system prompt if disabl
 - `History` (`includes/class-history.php`) — custom `{prefix}wpchat_messages` table; conversations grouped by a 30-min idle gap. `History::migrate()` runs on activation and in the test bootstrap.
 - `Onboarding` (`includes/class-onboarding.php`) — first-run wizard; its REST routes set API key, model, provider choice, and site-disabled kinds. `Onboarding::should_show_for_user` decides `boot.mode`.
 - `Upload` (`includes/class-upload.php`) — `wpchat/v1/upload`, image-only (JPEG/PNG/WebP ≤10MB), mime-sniffed via finfo. Returns an attachment id the chat references via an `[Uploaded … → attachment N]` marker line.
+- `Seo` / `SeoBackend` (`includes/class-seo.php`) — the SEO/AEO subsystem (no REST routes). `Seo` powers the `seo_audit` tool, hooks `robots_txt` to open the site to AI answer-engine crawlers (GPTBot/ClaudeBot/PerplexityBot, opt-in via the `wpchat_seo_allow_ai_crawlers` option), and serves a virtual `/llms.txt` on `init` (from the `wpchat_llms_txt` option — no filesystem write). `SeoBackend` registers via the `wpchat_content_backends` filter and adds two editable kinds: `seo_setting` (site options like visibility/permalinks/title/tagline, cap `manage_options`) and `seo_meta` (per-post title/meta-description via the active SEO plugin — Yoast / Rank Math / SEOPress, cap `edit_posts`). Both flow through the standard preview→apply pipeline.
 - Direct-action REST routes (`wpchat/v1/actions/order/...`) bypass the LLM entirely — the order-table 3-dot menus mutate status/notes via `Tools` methods directly, with zero API spend.
 
 ### Frontend notes
-- React 19 + Vite 8 + Tailwind v4 + shadcn/ui (`app/src/components/ui/`); `@` aliases `app/src/`. The page is always dark mode. Markdown via `react-markdown` + `remark-gfm`.
+- React 19 + Vite 8 + Tailwind v4 + shadcn/ui (`app/src/components/ui/`) + Framer Motion (`motion`); `@` aliases `app/src/`. The page is always dark mode. Markdown via `react-markdown` + `remark-gfm`.
 - Key files: `Chat.tsx`, `OrdersTable.tsx`, `HistoryDrawer.tsx`, `QuickChips.tsx`, and `Onboarding/` (`Wizard.tsx` + `cards/`).
+- `OrdersTable` is the **only** rich card — all other tool output (SEO audits, traffic, content/taxonomy results, draft confirmations) renders as plain markdown. The Confirm/Cancel bar is generic and name-prefix-driven (appears when tool calls include a `preview_*` with no following `apply_*`), so new preview kinds need no React changes.
 
 ## Conventions
 - PHP 8.1+ (typed properties, enums, `str_starts_with`). All classes are namespaced `WPChat\`; every file starts with the `if (!defined('ABSPATH')) exit;` guard.

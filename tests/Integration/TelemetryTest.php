@@ -1,0 +1,80 @@
+<?php
+/**
+ * Telemetry — local error ring buffer, opt-in flag, and explicit report
+ * delivery (endpoint POST with wp_mail fallback).
+ *
+ * @package WPChat\Tests
+ */
+
+namespace WPChat\Tests\Integration;
+
+use WPChat\Telemetry;
+use WPChat\Settings;
+use WPChat\Tests\TestCase;
+
+class TelemetryTest extends TestCase {
+
+    protected function setUp(): void {
+        parent::setUp();
+        \delete_option(Telemetry::LOG_OPTION);
+    }
+
+    public function test_log_appends_to_local_ring_buffer(): void {
+        Telemetry::log('chat_failed', ['message' => 'boom', 'tool' => 'list_orders']);
+        $recent = Telemetry::recent();
+        $this->assertCount(1, $recent);
+        $this->assertSame('chat_failed', $recent[0]['event']);
+        $this->assertSame('boom', $recent[0]['message']);
+        $this->assertSame('list_orders', $recent[0]['tool']);
+    }
+
+    public function test_ring_buffer_is_capped(): void {
+        for ($i = 0; $i < Telemetry::MAX_ENTRIES + 10; $i++) {
+            Telemetry::log('e', ['message' => "m$i"]);
+        }
+        $recent = Telemetry::recent(1000);
+        $this->assertCount(Telemetry::MAX_ENTRIES, $recent);
+        // Oldest dropped: the last entry is the most recent.
+        $this->assertSame('m' . (Telemetry::MAX_ENTRIES + 9), end($recent)['message']);
+    }
+
+    public function test_telemetry_enabled_defaults_true_then_respects_optout(): void {
+        \delete_option(Settings::OPTION);
+        $this->assertTrue(Telemetry::telemetry_enabled(), 'Absent setting = default on.');
+
+        \update_option(Settings::OPTION, ['telemetry' => false]);
+        $this->assertFalse(Telemetry::telemetry_enabled());
+
+        \update_option(Settings::OPTION, ['telemetry' => true]);
+        $this->assertTrue(Telemetry::telemetry_enabled());
+    }
+
+    public function test_log_never_throws(): void {
+        // Even with a totally broken option store shape, log() must swallow.
+        \update_option(Telemetry::LOG_OPTION, 'not-an-array');
+        Telemetry::log('weird', ['message' => 'x']);
+        $this->assertIsArray(Telemetry::recent());
+    }
+
+    public function test_send_report_falls_back_to_email_when_no_endpoint(): void {
+        // No WPCHAT_SUPPORT_ENDPOINT constant in the test env → email path.
+        $captured = [];
+        $filter = function ($null, $atts) use (&$captured) {
+            $captured = $atts;
+            return true; // short-circuit actual sending
+        };
+        \add_filter('pre_wp_mail', $filter, 10, 2);
+
+        $ok = Telemetry::send_report([
+            'summary'  => 'It broke',
+            'messages' => [['role' => 'user', 'content' => 'help']],
+        ]);
+
+        \remove_filter('pre_wp_mail', $filter, 10);
+
+        $this->assertTrue($ok, 'Report should be delivered via wp_mail fallback.');
+        $this->assertSame(Telemetry::support_email(), is_array($captured['to']) ? $captured['to'][0] : $captured['to']);
+        $this->assertStringContainsString('WPChat', $captured['subject']);
+        $this->assertStringContainsString('It broke', $captured['message']);
+    }
+}

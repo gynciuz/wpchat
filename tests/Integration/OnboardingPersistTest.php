@@ -31,6 +31,33 @@ class OnboardingPersistTest extends TestCase {
         $this->assertSame(400, $response->get_status());
     }
 
+    public function test_api_key_save_rejects_when_anthropic_returns_401(): void {
+        // Must run before the constant-defining test below (constants persist
+        // across the process and would force a 409 instead). Simulate Anthropic
+        // rejecting the key: a higher-priority filter wins over MockAnthropic's
+        // 200 default for this single validation call.
+        $reject = function () {
+            return [
+                'response' => ['code' => 401, 'message' => 'Unauthorized'],
+                'body'     => json_encode(['error' => ['message' => 'invalid x-api-key']]),
+                'headers'  => [],
+            ];
+        };
+        \add_filter('wpchat_anthropic_http_response', $reject, 99, 2);
+
+        $request = new \WP_REST_Request('POST', '/wpchat/v1/onboarding/api-key');
+        $request->set_header('Content-Type', 'application/json');
+        $request->set_body(json_encode(['key' => 'sk-ant-looks-valid-but-revoked']));
+        $response = \rest_get_server()->dispatch($request);
+
+        \remove_filter('wpchat_anthropic_http_response', $reject, 99);
+
+        $this->assertSame(400, $response->get_status());
+        // The bad key must NOT have been persisted.
+        $options = \get_option('wpchat_settings');
+        $this->assertNotSame('sk-ant-looks-valid-but-revoked', $options['anthropic_api_key'] ?? '');
+    }
+
     public function test_api_key_save_rejects_when_constant_defined(): void {
         // Constants can't be undefined; if it's not already defined, define it.
         // Other tests don't set it, so this is the first define.

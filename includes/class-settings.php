@@ -60,16 +60,39 @@ class Settings {
             'wpchat-settings',
             'wpchat_settings_section_api'
         );
+
+        add_settings_section(
+            'wpchat_settings_section_privacy',
+            __('Privacy & diagnostics', 'wpchat'),
+            function () {
+                echo '<p>' . esc_html__('WPChat sends the content of your requests (which can include order and customer data) to Anthropic to generate replies. See the plugin README for the full data-handling note.', 'wpchat') . '</p>';
+            },
+            'wpchat-settings'
+        );
+
+        add_settings_field(
+            'telemetry',
+            __('Error reporting', 'wpchat'),
+            [$this, 'field_telemetry'],
+            'wpchat-settings',
+            'wpchat_settings_section_privacy'
+        );
     }
 
     public function sanitize($input): array {
         $output = (array) get_option(self::OPTION, []);
-        if (isset($input['anthropic_api_key'])) {
+        // Write-only key field: only overwrite when a new value is supplied,
+        // so submitting the form with the (intentionally blank) field doesn't
+        // wipe the stored key.
+        if (!empty($input['anthropic_api_key'])) {
             $output['anthropic_api_key'] = sanitize_text_field($input['anthropic_api_key']);
         }
         if (isset($input['model'])) {
             $output['model'] = sanitize_text_field($input['model']);
         }
+        // Checkbox: present in POST = on, absent = off. The settings form
+        // always submits the privacy section, so treat the missing key as off.
+        $output['telemetry'] = !empty($input['telemetry']);
         return $output;
     }
 
@@ -77,14 +100,17 @@ class Settings {
         $options = get_option(self::OPTION, []);
         $value   = $options['anthropic_api_key'] ?? '';
         $masked  = $value ? str_repeat('•', 8) . substr($value, -4) : '';
+        // Write-only: the stored key is never echoed back into the field —
+        // only a masked hint is shown. Submitting blank keeps the current key.
         printf(
-            '<input type="password" name="%s[anthropic_api_key]" value="%s" class="regular-text" autocomplete="off" placeholder="sk-ant-..." />',
+            '<input type="password" name="%s[anthropic_api_key]" value="" class="regular-text" autocomplete="off" placeholder="%s" />',
             esc_attr(self::OPTION),
-            esc_attr($value)
+            esc_attr($value ? __('Leave blank to keep current key', 'wpchat') : 'sk-ant-...')
         );
         if ($masked) {
             echo '<p class="description">' . esc_html__('Current key:', 'wpchat') . ' <code>' . esc_html($masked) . '</code></p>';
         }
+        echo '<p class="description">' . esc_html__('Tip: for the strongest security, set WPCHAT_ANTHROPIC_API_KEY in wp-config.php instead — it is never written to the database.', 'wpchat') . '</p>';
     }
 
     public function field_model(): void {
@@ -92,7 +118,7 @@ class Settings {
         $value   = $options['model'] ?? 'claude-sonnet-4-6';
         $models  = [
             'claude-sonnet-4-6' => 'Claude Sonnet 4.6 (recommended)',
-            'claude-opus-4-7'   => 'Claude Opus 4.7 (highest quality, slower)',
+            'claude-opus-4-8'   => 'Claude Opus 4.8 (highest quality, slower)',
             'claude-haiku-4-5'  => 'Claude Haiku 4.5 (fastest, cheapest)',
         ];
         printf('<select name="%s[model]">', esc_attr(self::OPTION));
@@ -105,6 +131,16 @@ class Settings {
             );
         }
         echo '</select>';
+    }
+
+    public function field_telemetry(): void {
+        $enabled = Telemetry::telemetry_enabled();
+        printf(
+            '<label><input type="checkbox" name="%s[telemetry]" value="1" %s /> %s</label>',
+            esc_attr(self::OPTION),
+            checked($enabled, true, false),
+            esc_html__('Send anonymous error reports (no order or customer data) so the developer can fix failures you hit. You can turn this off any time.', 'wpchat')
+        );
     }
 
     /**

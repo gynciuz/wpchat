@@ -37,6 +37,21 @@ class AdminUrlTest extends TestCase {
         $this->assertStringContainsString('action=edit', $result['url']);
     }
 
+    public function test_comments_returns_moderation_url(): void {
+        $result = Tools::get_admin_url(['resource' => 'comments']);
+        $this->assertStringContainsString('edit-comments.php', $result['url']);
+    }
+
+    public function test_comments_with_id_deep_links_to_one_comment(): void {
+        $result = Tools::get_admin_url(['resource' => 'comments', 'id' => 42]);
+        $this->assertStringContainsString('comment.php?action=editcomment&c=42', $result['url']);
+    }
+
+    public function test_site_health_returns_maintenance_url(): void {
+        $result = Tools::get_admin_url(['resource' => 'site_health']);
+        $this->assertStringContainsString('site-health.php', $result['url']);
+    }
+
     public function test_missing_id_returns_error(): void {
         $result = Tools::get_admin_url(['resource' => 'order']);
         $this->assertArrayHasKey('error', $result);

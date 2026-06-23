@@ -18,12 +18,12 @@ export function SummaryCard({ status, boot }: Props) {
   const cloud = status.provider?.current === "cloud-waitlist";
   const rows = [
     {
+      // The provider label is informational; readiness = a working key, which
+      // everyone needs today (Cloud isn't live yet — it's just a waitlist).
       label: cloud ? labels.providerCloud : labels.providerByo,
-      ok: cloud || status.apiKey.ok,
+      ok: status.apiKey.ok,
     },
-    ...(cloud
-      ? []
-      : [{ label: labels.aiKey, ok: status.apiKey.ok }]),
+    { label: labels.aiKey, ok: status.apiKey.ok },
     { label: labels.permissions, ok: status.permissions.ok },
     { label: labels.wc, ok: status.wc.active },
     { label: labels.analytics, ok: status.analytics.detected.length > 0, optional: true },
@@ -57,6 +57,17 @@ export function SummaryCard({ status, boot }: Props) {
           </li>
         ))}
       </ul>
+      <p className="mx-auto max-w-md text-center text-[11px] leading-snug text-muted-foreground">
+        {labels.privacy}{" "}
+        <a
+          href="https://github.com/gynciuz/wpchat/blob/main/PRIVACY.md"
+          target="_blank"
+          rel="noreferrer"
+          className="underline underline-offset-2 hover:text-foreground"
+        >
+          {labels.privacyLink}
+        </a>
+      </p>
     </div>
   );
 }
@@ -74,6 +85,8 @@ function labelsFor(locale?: string) {
         wc: "WooCommerce aktyvuotas",
         analytics: "Analitikos teikėjas",
         optional: "Neprivaloma",
+        privacy: "Jūsų užklausos (gali būti užsakymų/klientų duomenys) siunčiamos Anthropic atsakymui sugeneruoti.",
+        privacyLink: "Privatumo informacija",
       };
     case "ru":
       return {
@@ -86,6 +99,8 @@ function labelsFor(locale?: string) {
         wc: "WooCommerce активен",
         analytics: "Источник аналитики",
         optional: "Опционально",
+        privacy: "Ваши запросы (возможны данные заказов/клиентов) отправляются в Anthropic для генерации ответа.",
+        privacyLink: "О конфиденциальности",
       };
     case "pl":
       return {
@@ -98,6 +113,8 @@ function labelsFor(locale?: string) {
         wc: "WooCommerce aktywny",
         analytics: "Źródło analityki",
         optional: "Opcjonalne",
+        privacy: "Twoje zapytania (mogą zawierać dane zamówień/klientów) są wysyłane do Anthropic w celu wygenerowania odpowiedzi.",
+        privacyLink: "Informacje o prywatności",
       };
     default:
       return {
@@ -110,6 +127,8 @@ function labelsFor(locale?: string) {
         wc: "WooCommerce active",
         analytics: "Analytics provider",
         optional: "Optional",
+        privacy: "Your requests (which can include order/customer data) are sent to Anthropic to generate replies.",
+        privacyLink: "Privacy details",
       };
   }
 }

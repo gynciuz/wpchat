@@ -3,7 +3,7 @@
  * Plugin Name:       WPChat
  * Plugin URI:        https://github.com/gynciuz/wpchat
  * Description:       Chat-based admin for WooCommerce orders. Type "mark order 2833 used" — the assistant calls the right WP/WC functions and renders rich UI inline.
- * Version:           0.5.13
+ * Version:           0.6.0
  * Requires at least: 6.5
  * Requires PHP:      8.1
  * Author:            Gintaras Lukoševičius
@@ -19,7 +19,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('WPCHAT_VERSION', '0.5.13');
+define('WPCHAT_VERSION', '0.6.0');
 define('WPCHAT_FILE', __FILE__);
 define('WPCHAT_DIR', plugin_dir_path(__FILE__));
 define('WPCHAT_URL', plugin_dir_url(__FILE__));
@@ -33,6 +33,7 @@ require_once WPCHAT_DIR . 'includes/class-seo.php';
 require_once WPCHAT_DIR . 'includes/class-analytics-providers.php';
 require_once WPCHAT_DIR . 'includes/class-git-sync.php';
 require_once WPCHAT_DIR . 'includes/class-history.php';
+require_once WPCHAT_DIR . 'includes/class-telemetry.php';
 require_once WPCHAT_DIR . 'includes/class-tools.php';
 require_once WPCHAT_DIR . 'includes/class-rest.php';
 require_once WPCHAT_DIR . 'includes/class-upload.php';

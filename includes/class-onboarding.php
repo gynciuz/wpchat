@@ -126,6 +126,13 @@ class Onboarding {
             return new \WP_REST_Response(['error' => 'Key does not look like an Anthropic API key (should start with sk-).'], 400);
         }
 
+        // Live auth check — catch typo'd / revoked keys here, not at first chat.
+        // Fails open on transient errors (see Anthropic::validate_key).
+        $check = Anthropic::validate_key($key);
+        if (empty($check['ok'])) {
+            return new \WP_REST_Response(['error' => $check['error'] ?? 'Key validation failed.'], 400);
+        }
+
         $options = (array) get_option(Settings::OPTION, []);
         $options['anthropic_api_key'] = sanitize_text_field($key);
         update_option(Settings::OPTION, $options);
@@ -136,7 +143,9 @@ class Onboarding {
     public function handle_set_model(\WP_REST_Request $request): \WP_REST_Response {
         $body  = $request->get_json_params();
         $model = (string) ($body['model'] ?? '');
-        $allowed = ['claude-sonnet-4-6', 'claude-opus-4-7', 'claude-haiku-4-5'];
+        // opus-4-7 stays accepted for back-compat with already-saved configs;
+        // opus-4-8 is the current top model offered in the UI.
+        $allowed = ['claude-sonnet-4-6', 'claude-opus-4-8', 'claude-opus-4-7', 'claude-haiku-4-5'];
         if (!in_array($model, $allowed, true)) {
             return new \WP_REST_Response([
                 'error'   => 'Unknown model.',
@@ -184,6 +193,13 @@ class Onboarding {
                 'site'  => home_url(),
             ];
             update_option(self::WAITLIST_OPT, $waitlist, false);
+
+            // Forward to the developer too — a local-only list never reaches us.
+            Telemetry::send_report([
+                'kind'  => 'cloud_waitlist_signup',
+                'email' => $email,
+                'site'  => home_url(),
+            ]);
         }
 
         return new \WP_REST_Response(['provider' => $this->provider_status()], 200);
@@ -254,7 +270,7 @@ class Onboarding {
             'current' => Settings::get_model(),
             'options' => [
                 ['id' => 'claude-sonnet-4-6', 'label' => 'Sonnet 4.6 (recommended)'],
-                ['id' => 'claude-opus-4-7',   'label' => 'Opus 4.7 (highest quality, slowest)'],
+                ['id' => 'claude-opus-4-8',   'label' => 'Opus 4.8 (highest quality, slowest)'],
                 ['id' => 'claude-haiku-4-5',  'label' => 'Haiku 4.5 (fastest, cheapest)'],
             ],
         ];

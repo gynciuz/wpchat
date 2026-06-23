@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>WPChat — Chat-based admin for WooCommerce</title>
+  <meta name="description" content="Run your WooCommerce store by chat. Type a request in any language and WPChat does it — orders, content, SEO. Free, open-source, bring your own Anthropic key." />
+  <meta property="og:title" content="WPChat — Chat-based admin for WooCommerce" />
+  <meta property="og:description" content="Type a request in any language; WPChat calls the right WordPress/WooCommerce functions for you. Free & open-source." />
+  <meta property="og:type" content="website" />
+  <style>
+    :root {
+      --bg: #0a0a0b; --panel: #141417; --border: #26262b;
+      --fg: #f4f4f5; --muted: #a1a1aa; --accent: #7c8cff; --ok: #34d399;
+    }
+    * { box-sizing: border-box; }
+    html { -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; }
+    body {
+      margin: 0; background: var(--bg); color: var(--fg);
+      font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      line-height: 1.6;
+    }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .wrap { max-width: 880px; margin: 0 auto; padding: 0 20px; }
+    header { padding: 72px 0 40px; text-align: center; }
+    .logo { font-weight: 700; letter-spacing: -0.02em; font-size: 15px; color: var(--muted); }
+    h1 { font-size: clamp(34px, 6vw, 56px); line-height: 1.1; letter-spacing: -0.03em; margin: 18px 0 12px; text-wrap: balance; }
+    .sub { font-size: clamp(16px, 2.5vw, 20px); color: var(--muted); max-width: 620px; margin: 0 auto 28px; text-wrap: balance; }
+    .cta { display: inline-flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
+    .btn {
+      display: inline-flex; align-items: center; gap: 8px; padding: 12px 22px;
+      border-radius: 12px; font-weight: 600; font-size: 15px; border: 1px solid var(--border);
+    }
+    .btn.primary { background: var(--accent); color: #0a0a0b; border-color: var(--accent); }
+    .btn.ghost { background: transparent; color: var(--fg); }
+    .demo {
+      margin: 40px auto 0; max-width: 620px; background: var(--panel); border: 1px solid var(--border);
+      border-radius: 16px; padding: 18px 20px; text-align: left; font-size: 15px;
+    }
+    .demo .u { color: var(--fg); } .demo .a { color: var(--muted); margin-top: 8px; }
+    .demo .tag { color: var(--accent); font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; }
+    section { padding: 48px 0; border-top: 1px solid var(--border); }
+    h2 { font-size: 24px; letter-spacing: -0.02em; margin: 0 0 20px; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
+    .card { background: var(--panel); border: 1px solid var(--border); border-radius: 14px; padding: 18px; }
+    .card h3 { margin: 0 0 6px; font-size: 16px; }
+    .card p { margin: 0; color: var(--muted); font-size: 14px; }
+    ol.steps { counter-reset: s; list-style: none; padding: 0; margin: 0; display: grid; gap: 12px; }
+    ol.steps li { position: relative; padding-left: 44px; color: var(--muted); }
+    ol.steps li b { color: var(--fg); font-weight: 600; }
+    ol.steps li::before {
+      counter-increment: s; content: counter(s); position: absolute; left: 0; top: 0;
+      width: 28px; height: 28px; border-radius: 8px; background: var(--panel); border: 1px solid var(--border);
+      display: grid; place-items: center; color: var(--fg); font-weight: 600; font-size: 14px;
+    }
+    .price { display: flex; gap: 10px; align-items: baseline; }
+    .price .free { font-size: 28px; font-weight: 700; }
+    .note { color: var(--muted); font-size: 14px; }
+    footer { padding: 40px 0 64px; color: var(--muted); font-size: 13px; text-align: center; border-top: 1px solid var(--border); }
+    .pill { display: inline-block; font-size: 12px; color: var(--ok); border: 1px solid var(--border); border-radius: 999px; padding: 3px 10px; margin-bottom: 14px; }
+  </style>
+</head>
+<body>
+  <header class="wrap">
+    <div class="logo">WPChat</div>
+    <h1>Run your store by chat.</h1>
+    <p class="sub">Type a request in any language — “mark order 2833 completed”, “write a post about summer sale” — and WPChat calls the right WooCommerce &amp; WordPress functions for you. Free, open-source, self-hosted.</p>
+    <div class="cta">
+      <a class="btn primary" href="https://github.com/gynciuz/wpchat/releases/latest">Download latest release</a>
+      <a class="btn ghost" href="https://github.com/gynciuz/wpchat">View on GitHub</a>
+    </div>
+    <div class="demo">
+      <div class="tag">You</div>
+      <div class="u">pažymėk užsakymą 2833 įvykdytą ir parašyk klientui ačiū</div>
+      <div class="tag" style="margin-top:14px">WPChat</div>
+      <div class="a">Done — order #2833 is now Completed, and I added a thank-you note (confirmed before sending). ✓</div>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <section>
+      <h2>What it does</h2>
+      <div class="grid">
+        <div class="card"><h3>Orders</h3><p>List, filter, search, change status, add notes, resend emails — with a confirmation step before anything reaches a customer.</p></div>
+        <div class="card"><h3>Content</h3><p>Create posts &amp; pages as drafts with images, then publish on your okay. Edit existing content with preview + confirm.</p></div>
+        <div class="card"><h3>SEO</h3><p>Run an SEO / AI-SEO audit and fix titles, meta descriptions, indexing and more through the chat.</p></div>
+        <div class="card"><h3>Traffic</h3><p>Ask “how many visitors this week?” — WPChat reads whichever analytics plugin you already have.</p></div>
+        <div class="card"><h3>Any language</h3><p>Works in Lithuanian, Russian, Polish and English. Type how you think.</p></div>
+        <div class="card"><h3>Safe by design</h3><p>No bulk-destructive actions, no silent deletes. When it can’t do something, it hands you a direct admin link.</p></div>
+      </div>
+    </section>
+
+    <section>
+      <h2>Install in 4 steps</h2>
+      <ol class="steps">
+        <li><b>Download</b> the latest <code>wpchat-vX.Y.Z.zip</code> from <a href="https://github.com/gynciuz/wpchat/releases/latest">Releases</a>.</li>
+        <li><b>Upload</b> it in WP admin → Plugins → Add New → Upload Plugin → Activate.</li>
+        <li><b>Add your Anthropic API key</b> from <a href="https://console.anthropic.com">console.anthropic.com</a> in the first-run setup.</li>
+        <li><b>Open <code>/wpchat</code></b> on your site and start typing.</li>
+      </ol>
+    </section>
+
+    <section>
+      <h2>Pricing</h2>
+      <div class="price"><span class="free">Free</span><span class="note">— open-source (MIT)</span></div>
+      <p class="note" style="margin-top:10px; max-width: 620px;">
+        You bring your own Anthropic API key and pay Anthropic directly for usage — typically a few cents per request. WPChat collects no payment, so there’s nothing to refund. A hosted <b>WPChat Cloud</b> tier (no key setup) is coming as a ~€12/mo Stripe subscription — <a href="https://github.com/gynciuz/wpchat">join the waitlist</a>.
+      </p>
+    </section>
+
+    <section>
+      <h2>Privacy</h2>
+      <p class="note" style="max-width: 640px;">
+        WPChat sends the content of your requests — which can include order and customer data — to Anthropic to generate replies. Your conversation history stays in your own site’s database; your API key never reaches the browser. Optional, PII-free error reporting and an explicit “Report a problem” button are the only data sent to the developer. Full details in <a href="https://github.com/gynciuz/wpchat/blob/main/PRIVACY.md">PRIVACY.md</a>.
+      </p>
+    </section>
+  </main>
+
+  <footer class="wrap">
+    <span class="pill">Requires WordPress 6.5+ · PHP 8.1+ · an Anthropic API key</span><br />
+    WPChat is free, open-source software. © 2026 Gintaras Lukoševičius · MIT.
+  </footer>
+</body>
+</html>

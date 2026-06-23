@@ -1,7 +1,7 @@
-# Files excluded from `git archive` and similar release-package commands.
-# The ZIP we ship via gh release uses a hand-curated copy in scripts, not
-# git archive — these are belt-and-suspenders for anyone using
-# `composer create-project` against the repo.
+# Files excluded from `git archive` / the release ZIP (bin/release.sh).
+# Runtime needs only: wpchat.php, includes/, vendor-puc/, build/, and the
+# readme/license docs. Everything below is source, tooling, tests, internal
+# docs, or the marketing site — none of it is loaded at runtime.
 /.github             export-ignore
 /.gitattributes      export-ignore
 /.gitignore          export-ignore
@@ -11,14 +11,8 @@
 /composer.lock       export-ignore
 /phpunit.xml.dist    export-ignore
 /tests               export-ignore
-/app/src             export-ignore
-/app/node_modules    export-ignore
-/app/package.json    export-ignore
-/app/package-lock.json export-ignore
-/app/pnpm-lock.yaml  export-ignore
-/app/vite.config.ts  export-ignore
-/app/tsconfig.json   export-ignore
-/app/tsconfig.app.json export-ignore
-/app/tsconfig.node.json export-ignore
-/app/eslint.config.js export-ignore
-/app/index.html      export-ignore
+/docs                export-ignore
+/site                export-ignore
+# The whole React source/tooling tree — built assets ship from /build, so
+# nothing under /app is needed in the plugin package.
+/app                 export-ignore

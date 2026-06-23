@@ -18,6 +18,51 @@ class Anthropic {
     const MAX_LOOP = 8; // tool-call loop guard
 
     /**
+     * Cheaply check whether an API key authenticates, so onboarding can reject
+     * a typo'd / revoked key at setup instead of at first chat. Sends a minimal
+     * 1-token request and inspects the auth result.
+     *
+     * Fails OPEN on anything inconclusive (network error, rate limit, server
+     * error) — we never block setup over a transient problem; only an explicit
+     * auth rejection (401/403) counts as invalid.
+     *
+     * @return array{ok: bool, error?: string, inconclusive?: bool}
+     */
+    public static function validate_key(string $key): array {
+        $request = [
+            'model'      => 'claude-haiku-4-5',
+            'max_tokens' => 1,
+            'messages'   => [['role' => 'user', 'content' => 'hi']],
+        ];
+
+        // Honor the test seam so suites stay deterministic and offline.
+        $response = apply_filters('wpchat_anthropic_http_response', null, $request);
+        if ($response === null) {
+            $response = wp_remote_post(self::ENDPOINT, [
+                'timeout' => 15,
+                'headers' => [
+                    'x-api-key'         => $key,
+                    'anthropic-version' => self::VERSION,
+                    'content-type'      => 'application/json',
+                ],
+                'body' => wp_json_encode($request),
+            ]);
+        }
+
+        if (is_wp_error($response)) {
+            return ['ok' => true, 'inconclusive' => true];
+        }
+
+        $code = (int) wp_remote_retrieve_response_code($response);
+        if ($code === 401 || $code === 403) {
+            return ['ok' => false, 'error' => __('Anthropic rejected this key (invalid or revoked). Check it at console.anthropic.com.', 'wpchat')];
+        }
+        // 200 = fine; 400 = key authenticated but request quirk; anything else
+        // (429/5xx) = inconclusive → don't block.
+        return ['ok' => true];
+    }
+
+    /**
      * Run a conversation with tools until the model returns end_turn.
      *
      * @param array $messages   Conversation history. Each: ['role' => 'user'|'assistant', 'content' => ...].

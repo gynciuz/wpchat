@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { Send, Loader2, ExternalLink, LogOut, ChevronDown, History as HistoryIcon, Plus, Check, X } from "lucide-react";
+import { Send, Loader2, ExternalLink, LogOut, ChevronDown, History as HistoryIcon, Plus, Check, X, LifeBuoy } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Support } from "./Support";
 import { HistoryDrawer } from "./HistoryDrawer";
 import { OrdersTable, extractOrders } from "./OrdersTable";
 import { QuickChips } from "./QuickChips";
@@ -65,6 +66,7 @@ export function Chat({ boot }: { boot?: Boot }) {
   const [historyOpen, setHistoryOpen] = useState(false);
   const [historyRefreshKey, setHistoryRefreshKey] = useState(0);
   const [loadingConversation, setLoadingConversation] = useState(false);
+  const [supportView, setSupportView] = useState<null | "help" | "report">(null);
   const endRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -402,10 +404,17 @@ export function Chat({ boot }: { boot?: Boot }) {
 
         {error && (
           <div
-            className="self-stretch border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive"
+            className="flex items-center justify-between gap-3 self-stretch border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive"
             style={{ borderRadius: 10 }}
           >
-            {error}
+            <span>{error}</span>
+            <button
+              type="button"
+              onClick={() => setSupportView("report")}
+              className="shrink-0 whitespace-nowrap rounded-md border border-destructive/40 px-2 py-1 text-xs hover:bg-destructive/20"
+            >
+              {reportLabel(boot?.locale)}
+            </button>
           </div>
         )}
 
@@ -518,15 +527,54 @@ export function Chat({ boot }: { boot?: Boot }) {
         <span className="inline-flex items-center gap-2">
           {boot?.userName ? `${boot.userName} · ` : ""}user {boot?.userId ?? "?"}
         </span>
-        <a
-          href="/wp-admin/admin.php?page=wpchat-settings"
-          className="inline-flex items-center gap-1 hover:text-foreground"
-        >
-          Settings <ExternalLink className="size-3" />
-        </a>
+        <span className="inline-flex items-center gap-3">
+          <button
+            type="button"
+            onClick={() => setSupportView("help")}
+            className="inline-flex items-center gap-1 hover:text-foreground"
+          >
+            <LifeBuoy className="size-3" /> {helpLabel(boot?.locale)}
+          </button>
+          <a
+            href="/wp-admin/admin.php?page=wpchat-settings"
+            className="inline-flex items-center gap-1 hover:text-foreground"
+          >
+            Settings <ExternalLink className="size-3" />
+          </a>
+        </span>
       </footer>
+
+      <AnimatePresence>
+        {supportView && boot && (
+          <Support
+            boot={boot}
+            conversationId={conversationId}
+            lastError={error}
+            initialView={supportView}
+            onClose={() => setSupportView(null)}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
+}
+
+function helpLabel(locale?: string): string {
+  switch (locale) {
+    case "lt": return "Pagalba";
+    case "ru": return "Помощь";
+    case "pl": return "Pomoc";
+    default: return "Help";
+  }
+}
+
+function reportLabel(locale?: string): string {
+  switch (locale) {
+    case "lt": return "Pranešti apie problemą";
+    case "ru": return "Сообщить о проблеме";
+    case "pl": return "Zgłoś problem";
+    default: return "Report a problem";
+  }
 }
 
 /**
@@ -864,17 +912,26 @@ function stripUploadMarker(text: string): string {
 }
 
 /**
- * Decide whether an assistant message is in "awaiting confirmation" state:
- * it called a preview_* tool (or the older preview_team_member_role_change)
- * AND no later message has called an apply_* tool. If true, the UI renders
- * Confirm/Cancel buttons under that bubble so the user doesn't have to type
- * one of taip/gerai/ok/etc.
+ * Decide whether an assistant message is in "awaiting confirmation" state, so
+ * the UI can render Confirm/Cancel buttons and the user doesn't have to type
+ * one of taip/gerai/ok/etc. Two cases:
+ *  - a content edit: it called a preview_* tool (older: preview_team_member_role_change)
+ *    AND no later message applied via an apply_* tool.
+ *  - an order mutation: a tool returned `needs_confirmation` (status change,
+ *    order action, or customer-visible note). Re-calling the tool replaces this
+ *    as the latest message, so the latest-message gate clears the buttons.
  */
 function isPendingConfirmation(message: ChatMessage, index: number, all: ChatMessage[]): boolean {
   if (message.role !== "assistant") return false;
   const calls = message.toolCalls ?? [];
   const hasPreview = calls.some((c) => c.name.startsWith("preview_"));
-  if (!hasPreview) return false;
+  const needsConfirm = calls.some(
+    (c) =>
+      c.output != null &&
+      typeof c.output === "object" &&
+      (c.output as { needs_confirmation?: unknown }).needs_confirmation === true,
+  );
+  if (!hasPreview && !needsConfirm) return false;
   // If a later assistant message already applied or the user explicitly cancelled, no buttons.
   for (let j = index + 1; j < all.length; j++) {
     const next = all[j];

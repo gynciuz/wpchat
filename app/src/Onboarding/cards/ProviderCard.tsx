@@ -187,8 +187,8 @@ function labelsFor(locale?: string) {
         byoPrice: "Nemokama (pagal jūsų Anthropic sąskaitą)",
         cloudTitle: "WPChat Cloud",
         cloudBody:
-          "Be API nustatymų — viskas iš karto. Mokėjimas per Stripe. Šiuo metu kuriama; prisijunkite prie laukimo sąrašo.",
-        cloudPrice: "€10/mėn — €5 vertės žetonų",
+          "Be API nustatymų — DI tvarkysime už jus. Paprasta Stripe prenumerata, netrukus. Prisijunkite prie laukimo sąrašo ir pranešime, kai atidarysime.",
+        cloudPrice: "€12/mėn — Stripe prenumerata (netrukus)",
         comingSoon: "Kuriama",
         waitlistPrompt: "Pranešime, kai atidarysime:",
         join: "Užsiregistruoti",
@@ -205,8 +205,8 @@ function labelsFor(locale?: string) {
         byoPrice: "Бесплатно (по вашему счёту Anthropic)",
         cloudTitle: "WPChat Cloud",
         cloudBody:
-          "Без настройки API. Оплата через Stripe. Сейчас в разработке; присоединяйтесь к листу ожидания.",
-        cloudPrice: "€10/мес — токенов на €5",
+          "Без настройки API — ИИ берём на себя. Простая подписка через Stripe, скоро. Присоединяйтесь к листу ожидания, и мы напишем, когда откроется.",
+        cloudPrice: "€12/мес — подписка Stripe (скоро)",
         comingSoon: "Скоро",
         waitlistPrompt: "Напишем, когда откроется:",
         join: "Записаться",
@@ -223,8 +223,8 @@ function labelsFor(locale?: string) {
         byoPrice: "Bezpłatnie (rozliczenie Anthropic)",
         cloudTitle: "WPChat Cloud",
         cloudBody:
-          "Bez konfiguracji API. Płatność przez Stripe. W przygotowaniu; dołącz do listy oczekujących.",
-        cloudPrice: "€10/m-c — tokeny na €5",
+          "Bez konfiguracji API — AI obsługujemy my. Prosta subskrypcja Stripe, wkrótce. Dołącz do listy oczekujących, powiadomimy, gdy będzie gotowe.",
+        cloudPrice: "€12/m-c — subskrypcja Stripe (wkrótce)",
         comingSoon: "Wkrótce",
         waitlistPrompt: "Powiadomimy, gdy będzie gotowe:",
         join: "Dołącz",
@@ -241,8 +241,8 @@ function labelsFor(locale?: string) {
         byoPrice: "Free (charged on your Anthropic bill)",
         cloudTitle: "WPChat Cloud",
         cloudBody:
-          "No API setup. Stripe billing. Building it now — join the waitlist and we'll email when it opens.",
-        cloudPrice: "€10/mo — €5 of tokens",
+          "No API setup — we run the AI for you. A simple Stripe subscription, coming soon. Join the waitlist and we'll email when it opens.",
+        cloudPrice: "€12/mo — Stripe subscription (coming soon)",
         comingSoon: "Coming soon",
         waitlistPrompt: "We'll email when it opens:",
         join: "Join waitlist",
