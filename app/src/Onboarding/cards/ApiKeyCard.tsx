@@ -11,13 +11,18 @@ interface Props {
 }
 
 /**
- * Card — Anthropic API key. Interactive: paste, validate, save. If
- * the constant is defined in wp-config.php, show locked state with
- * the masked value. Design principle #2 — one sharp thing: the
- * paste-and-save action is the whole card.
+ * Card — the active provider's API key. Interactive: paste, validate, save.
+ * Provider-aware: the title, link, placeholder, and the `provider` sent to the
+ * backend all come from the chosen LLM provider. If the key is set via a
+ * wp-config constant, show the locked state.
  */
 export function ApiKeyCard({ status, boot, onUpdateStatus, onAdvance }: Props) {
-  const labels = labelsFor(boot.locale);
+  const providerId = status.apiKey.provider || status.llmProvider?.current || "anthropic";
+  const providerLabel =
+    status.llmProvider?.options.find((o) => o.id === providerId)?.label ?? "AI";
+  const keyHelp = status.apiKey.keyHelp ?? { url: "", placeholder: "", regex: "" };
+  const labels = labelsFor(boot.locale, providerLabel);
+
   const [value, setValue] = useState("");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -33,14 +38,12 @@ export function ApiKeyCard({ status, boot, onUpdateStatus, onAdvance }: Props) {
         method: "POST",
         headers: { "X-WP-Nonce": boot.nonce, "Content-Type": "application/json" },
         credentials: "same-origin",
-        body: JSON.stringify({ key: value.trim() }),
+        body: JSON.stringify({ key: value.trim(), provider: providerId }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error ?? `HTTP ${res.status}`);
       setSaved(true);
       await onUpdateStatus();
-      // Brief celebratory pause, then advance — design principle #4
-      // (match the speed of human attention; don't yank the camera).
       setTimeout(onAdvance, 700);
     } catch (e) {
       setErr(e instanceof Error ? e.message : "Save failed");
@@ -75,7 +78,7 @@ export function ApiKeyCard({ status, boot, onUpdateStatus, onAdvance }: Props) {
           autoFocus
           value={value}
           onChange={(e) => setValue(e.target.value)}
-          placeholder="sk-ant-…"
+          placeholder={keyHelp.placeholder || "…"}
           disabled={busy || saved}
           className="h-11 w-full rounded-lg border-0 bg-secondary/30 px-3 text-base text-foreground outline-none placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-foreground/30"
         />
@@ -97,60 +100,62 @@ export function ApiKeyCard({ status, boot, onUpdateStatus, onAdvance }: Props) {
         {err && <p className="text-center text-xs text-destructive">{err}</p>}
       </form>
 
-      <p className="text-center text-xs text-muted-foreground">
-        <a
-          href="https://console.anthropic.com/settings/keys"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex items-center gap-1 underline underline-offset-4 decoration-foreground/30 hover:decoration-foreground"
-        >
-          {labels.getKey} <ExternalLink className="size-3" />
-        </a>
-      </p>
+      {keyHelp.url && (
+        <p className="text-center text-xs text-muted-foreground">
+          <a
+            href={keyHelp.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1 underline underline-offset-4 decoration-foreground/30 hover:decoration-foreground"
+          >
+            {labels.getKey} <ExternalLink className="size-3" />
+          </a>
+        </p>
+      )}
     </div>
   );
 }
 
-function labelsFor(locale?: string) {
+function labelsFor(locale: string | undefined, provider: string) {
   switch (locale) {
     case "lt":
       return {
-        title: "Anthropic API raktas",
-        subtitle: "Įklijuokite Anthropic API raktą. WPChat naudoja jį visiems pokalbiams.",
+        title: `${provider} API raktas`,
+        subtitle: `Įklijuokite ${provider} API raktą. WPChat naudoja jį visiems pokalbiams.`,
         save: "Išsaugoti",
         saving: "Saugoma…",
         saved: "Išsaugota",
-        getKey: "Gauti raktą iš console.anthropic.com",
+        getKey: `Gauti ${provider} raktą`,
         constantLocked: "Raktas jau nustatytas per wp-config.php konstantą.",
       };
     case "ru":
       return {
-        title: "API-ключ Anthropic",
-        subtitle: "Вставьте ключ Anthropic. WPChat использует его для всех сообщений.",
+        title: `API-ключ ${provider}`,
+        subtitle: `Вставьте ключ ${provider}. WPChat использует его для всех сообщений.`,
         save: "Сохранить",
         saving: "Сохраняем…",
         saved: "Сохранено",
-        getKey: "Получить ключ на console.anthropic.com",
+        getKey: `Получить ключ ${provider}`,
         constantLocked: "Ключ задан через константу wp-config.php.",
       };
     case "pl":
       return {
-        title: "Klucz API Anthropic",
-        subtitle: "Wklej klucz Anthropic. WPChat używa go do każdej wiadomości.",
+        title: `Klucz API ${provider}`,
+        subtitle: `Wklej klucz ${provider}. WPChat używa go do każdej wiadomości.`,
         save: "Zapisz",
         saving: "Zapisuję…",
         saved: "Zapisano",
-        getKey: "Pobierz klucz z console.anthropic.com",
+        getKey: `Pobierz klucz ${provider}`,
         constantLocked: "Klucz jest ustawiony w stałej wp-config.php.",
       };
     default:
       return {
-        title: "Anthropic API key",
-        subtitle: "Paste your Anthropic API key. WPChat uses it for every message.",
+        title: `${provider} API key`,
+        subtitle: `Paste your ${provider} API key. WPChat uses it for every message.`,
         save: "Save",
         saving: "Saving…",
         saved: "Saved",
-        getKey: "Get a key from console.anthropic.com",
+        getKey: `Get a ${provider} key`,
         constantLocked: "Key is set via wp-config.php constant.",
       };
   }

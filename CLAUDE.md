@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-WPChat is a WordPress plugin (slug `wpchat`, distributed as `wpchat-vX.Y.Z.zip`) that adds a chat-based admin assistant for WooCommerce. A logged-in editor/admin visits `/wpchat`, types a request in any language (e.g. "mark order 2833 used, customer spent 30€ of 100€"), and the backend runs an Anthropic Claude tool-use loop that calls WC/WP PHP functions directly and renders rich React cards inline (orders table, confirm buttons, image previews).
+WPChat is a WordPress plugin (slug `wpchat`, distributed as `wpchat-vX.Y.Z.zip`) that adds a chat-based admin assistant for WooCommerce. A logged-in editor/admin visits `/wpchat`, types a request in any language (e.g. "mark order 2833 used, customer spent 30€ of 100€"), and the backend runs an LLM tool-use loop (Anthropic Claude, OpenAI, or Gemini — user's choice) that calls WC/WP PHP functions directly and renders rich React cards inline (orders table, confirm buttons, image previews).
 
 Two halves:
 - **PHP plugin** (`includes/`, `wpchat.php`) — REST API, the Anthropic tool-use loop, all tools.
@@ -42,8 +42,11 @@ The `build/` output is committed to the repo because the released ZIP serves pre
 ### Request flow
 1. `Frontend::maybe_render` intercepts `/wpchat` via `template_redirect`, gates on login + `edit_posts`, reads `build/manifest.json`, and emits a bare HTML page with `window.WPCHAT_BOOT` (REST URL, nonce, locale, site info, and `mode: 'chat' | 'onboarding'`).
 2. The React app (`app/src/main.tsx`) renders `Chat` or `OnboardingWizard` based on `boot.mode`.
-3. `Chat` POSTs to `wpchat/v1/chat` (`includes/class-rest.php`). `Rest::handle_chat` persists the user message (`History`), builds the **system prompt**, then calls `Anthropic::run_with_tools`.
-4. `Anthropic::run_with_tools` (`includes/class-anthropic.php`) runs the Messages API tool-use loop (max 8 turns), executing tool callables and feeding `tool_result` blocks back until `end_turn`. Returns `{text, messages, tool_calls}`.
+3. `Chat` POSTs to `wpchat/v1/chat` (`includes/class-rest.php`). `Rest::handle_chat` persists the user message (`History`), builds the **system prompt**, then calls `LLM::run_with_tools` (the active provider).
+4. `BaseLLMProvider::run_with_tools` (`includes/class-llm-providers.php`) runs the tool-use loop (max 8 turns), executing tool callables and feeding `tool_result` blocks back until `end_turn`. Returns `{text, messages, tool_calls}`.
+
+### Multi-provider LLM (`includes/class-llm-providers.php`)
+The engine speaks **one canonical format internally: Anthropic content blocks** (text / tool_use / tool_result). `BaseLLMProvider` owns the canonical tool-use loop; each adapter translates to/from its wire format **only at the HTTP boundary**, so tools, the system prompt, History, and the React UI (which reads the neutral `{name, input, output}` capture) are provider-independent. Providers: `AnthropicProvider` (near-identity, in `class-anthropic.php`, keeps the `wpchat_anthropic_http_response` test seam), `OpenAIProvider` (Chat Completions), `GeminiProvider` (generateContent, with a `sanitize_schema()` for Gemini's stricter function-declaration schema). `LLM::active()` resolves the configured provider (`Settings::get_provider()`); register more via the **`wpchat_llm_providers`** filter. Each provider has its own test seam: `wpchat_{id}_http_response` (mocks: `tests/MockAnthropic|MockOpenAI|MockGemini`).
 5. `Rest` persists the assistant turn and returns it; the React UI renders `tool_calls` output as structured cards.
 
 ### Tools — the core abstraction (`includes/class-tools.php`)
@@ -62,6 +65,7 @@ It is rebuilt per-request and encodes most of the product behavior: the live WC 
 ### Extensibility via filters (the key design pattern)
 - `wpchat_content_backends` — register `ContentBackend` implementations (`includes/class-content-backends.php`). The default `WPContentBackend` handles `wp_post` / `wp_page_slug` / `wp_post_meta` / `wp_term`. `ContentRouter` dispatches each tool call to whichever backend claims the target `kind`. Custom backends (e.g. a `team_member` kind writing static HTML) live in separate site plugins.
 - `wpchat_analytics_providers` — register `AnalyticsProvider` implementations (`includes/class-analytics-providers.php`). `AnalyticsRouter` auto-detects the first available host plugin (Site Kit, Jetpack Stats, MonsterInsights, WP Statistics, Koko Analytics, Statify).
+- `wpchat_llm_providers` — register `LLMProvider` implementations (`includes/class-llm-providers.php`). Defaults are Anthropic / OpenAI / Gemini; add a custom one (e.g. a self-hosted proxy) by appending to the filter. `LLM::active()` picks the configured provider.
 - `wpchat_anthropic_http_response` — returning non-null short-circuits the real HTTP call. **This is the test seam** — `tests/MockAnthropic.php` enqueues scripted Anthropic responses so real tools run against real WP while the LLM is deterministic and free.
 
 ### Per-kind capability gating

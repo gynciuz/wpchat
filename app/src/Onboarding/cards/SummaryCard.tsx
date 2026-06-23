@@ -16,14 +16,16 @@ interface Props {
 export function SummaryCard({ status, boot }: Props) {
   const labels = labelsFor(boot.locale);
   const cloud = status.provider?.current === "cloud-waitlist";
+  const providerLabel =
+    status.llmProvider?.options.find((o) => o.id === status.llmProvider.current)?.label ?? "AI";
   const rows = [
     {
       // The provider label is informational; readiness = a working key, which
       // everyone needs today (Cloud isn't live yet — it's just a waitlist).
-      label: cloud ? labels.providerCloud : labels.providerByo,
+      label: cloud ? labels.providerCloud : `${labels.providerByo}: ${providerLabel}`,
       ok: status.apiKey.ok,
     },
-    { label: labels.aiKey, ok: status.apiKey.ok },
+    { label: `${providerLabel} ${labels.keyWord}`, ok: status.apiKey.ok },
     { label: labels.permissions, ok: status.permissions.ok },
     { label: labels.wc, ok: status.wc.active },
     { label: labels.analytics, ok: status.analytics.detected.length > 0, optional: true },
@@ -78,9 +80,9 @@ function labelsFor(locale?: string) {
       return {
         title: "Pasiruošę pradėti",
         subtitle: "Štai kas veikia. Neprivalomi dalykai galima įjungti vėliau iš Nustatymų.",
-        providerByo: "Tiekėjas: Anthropic (jūsų raktas)",
+        providerByo: "Tiekėjas",
         providerCloud: "Tiekėjas: WPChat Cloud (laukimo sąraše)",
-        aiKey: "Anthropic API raktas",
+        keyWord: "API raktas",
         permissions: "Reikalingos teisės",
         wc: "WooCommerce aktyvuotas",
         analytics: "Analitikos teikėjas",
@@ -92,9 +94,9 @@ function labelsFor(locale?: string) {
       return {
         title: "Готово к работе",
         subtitle: "Вот что работает. Опциональные пункты можно подключить позже из Настроек.",
-        providerByo: "Провайдер: Anthropic (ваш ключ)",
+        providerByo: "Провайдер",
         providerCloud: "Провайдер: WPChat Cloud (в листе ожидания)",
-        aiKey: "API-ключ Anthropic",
+        keyWord: "API-ключ",
         permissions: "Нужные права",
         wc: "WooCommerce активен",
         analytics: "Источник аналитики",
@@ -106,9 +108,9 @@ function labelsFor(locale?: string) {
       return {
         title: "Gotowe",
         subtitle: "Oto co działa. Opcjonalne elementy można dodać później z Ustawień.",
-        providerByo: "Dostawca: Anthropic (Twój klucz)",
+        providerByo: "Dostawca",
         providerCloud: "Dostawca: WPChat Cloud (lista oczekujących)",
-        aiKey: "Klucz API Anthropic",
+        keyWord: "klucz API",
         permissions: "Uprawnienia",
         wc: "WooCommerce aktywny",
         analytics: "Źródło analityki",
@@ -120,9 +122,9 @@ function labelsFor(locale?: string) {
       return {
         title: "Ready to go",
         subtitle: "Here's what's working. Optional items can be enabled later from Settings.",
-        providerByo: "Provider: Anthropic (your key)",
+        providerByo: "Provider",
         providerCloud: "Provider: WPChat Cloud (waitlisted)",
-        aiKey: "Anthropic API key",
+        keyWord: "API key",
         permissions: "Required capabilities",
         wc: "WooCommerce active",
         analytics: "Analytics provider",

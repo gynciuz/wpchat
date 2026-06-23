@@ -11,21 +11,36 @@ export interface Boot {
   logoutUrl?: string;
 }
 
+export interface KeyHelp {
+  url: string;
+  placeholder: string;
+  regex: string;
+}
+
 export interface OnboardingStatus {
   apiKey: {
     ok: boolean;
     masked: string | null;
     source: "constant" | "option" | "none";
     editable: boolean;
+    provider: string;
+    keyHelp: KeyHelp;
   };
   model: {
     current: string;
     options: Array<{ id: string; label: string }>;
   };
+  /** Billing axis (BYO vs hosted Cloud waitlist). */
   provider: {
     current: "byo" | "cloud-waitlist";
     cloudAvailable: boolean;
     cloudWaitlistOpen: boolean;
+  };
+  /** Which LLM provider runs the chat. */
+  llmProvider: {
+    current: string;
+    locked: boolean;
+    options: Array<{ id: string; label: string; keyHelp: KeyHelp }>;
   };
   permissions: {
     ok: boolean;

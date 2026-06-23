@@ -93,7 +93,11 @@ class Rest {
         $api_key = Settings::get_api_key();
         if (!$api_key) {
             return new \WP_REST_Response([
-                'error' => __('Anthropic API key is not configured. Open WPChat → Settings.', 'wpchat'),
+                'error' => sprintf(
+                    /* translators: %s = provider label, e.g. Anthropic */
+                    __('%s API key is not configured. Open WPChat → Settings.', 'wpchat'),
+                    LLM::active()->label()
+                ),
             ], 400);
         }
 
@@ -138,7 +142,7 @@ class Rest {
         }
 
         try {
-            $result = Anthropic::run_with_tools(
+            $result = LLM::run_with_tools(
                 $messages,
                 $is_support ? [] : Tools::definitions(),
                 $is_support ? [] : Tools::implementations(),

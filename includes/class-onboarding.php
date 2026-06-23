@@ -67,6 +67,13 @@ class Onboarding {
             'permission_callback' => [$this, 'check_permission'],
             'callback'            => [$this, 'handle_set_provider'],
         ]);
+        // LLM-provider axis (anthropic | openai | gemini) — distinct from the
+        // billing `provider` (byo vs cloud-waitlist) above.
+        register_rest_route(self::NAMESPACE, '/onboarding/llm-provider', [
+            'methods'             => 'POST',
+            'permission_callback' => [$this, 'check_permission'],
+            'callback'            => [$this, 'handle_set_llm_provider'],
+        ]);
     }
 
     /** Stricter gate: only manage_options users (site admins) may flip
@@ -86,6 +93,7 @@ class Onboarding {
             'apiKey'         => $this->api_key_status(),
             'model'          => $this->model_status(),
             'provider'       => $this->provider_status(),
+            'llmProvider'    => $this->llm_provider_status(),
             'permissions'    => $this->permissions_status($user),
             'wc'             => $this->wc_status(),
             'analytics'      => $this->analytics_status(),
@@ -108,44 +116,83 @@ class Onboarding {
     }
 
     public function handle_set_api_key(\WP_REST_Request $request): \WP_REST_Response {
-        if (defined('WPCHAT_ANTHROPIC_API_KEY') && WPCHAT_ANTHROPIC_API_KEY) {
+        $body        = $request->get_json_params();
+        $provider_id = sanitize_key((string) ($body['provider'] ?? Settings::get_provider()));
+        $provider    = LLM::get($provider_id);
+        if (!$provider) {
+            return new \WP_REST_Response(['error' => 'Unknown provider.'], 400);
+        }
+
+        if (Settings::key_source($provider_id) === 'constant') {
             return new \WP_REST_Response([
-                'error'  => 'WPCHAT_ANTHROPIC_API_KEY is defined in wp-config.php and takes precedence. Edit wp-config.php to change it.',
+                'error'  => sprintf('WPCHAT_%s_API_KEY is defined in wp-config.php and takes precedence. Edit wp-config.php to change it.', strtoupper($provider_id)),
                 'apiKey' => $this->api_key_status(),
             ], 409);
         }
 
-        $body = $request->get_json_params();
-        $key  = (string) ($body['key'] ?? '');
+        $key = (string) ($body['key'] ?? '');
         if ($key === '') {
             return new \WP_REST_Response(['error' => 'key is required.'], 400);
         }
-        // Anthropic keys start with sk-ant-; accept anything that looks
-        // close so we don't lock users out of a key format change.
-        if (!preg_match('/^sk-[a-z0-9_\-]+$/i', $key)) {
-            return new \WP_REST_Response(['error' => 'Key does not look like an Anthropic API key (should start with sk-).'], 400);
+        $regex = $provider->key_help()['regex'] ?? '';
+        if ($regex !== '' && !preg_match('/' . $regex . '/i', $key)) {
+            return new \WP_REST_Response(['error' => sprintf('Key does not look like a %s API key.', $provider->label())], 400);
         }
 
         // Live auth check — catch typo'd / revoked keys here, not at first chat.
-        // Fails open on transient errors (see Anthropic::validate_key).
-        $check = Anthropic::validate_key($key);
+        // Fails open on transient errors (see BaseLLMProvider::check_key).
+        $check = $provider->validate_key($key);
         if (empty($check['ok'])) {
             return new \WP_REST_Response(['error' => $check['error'] ?? 'Key validation failed.'], 400);
         }
 
         $options = (array) get_option(Settings::OPTION, []);
-        $options['anthropic_api_key'] = sanitize_text_field($key);
+        $options[$provider_id . '_api_key'] = sanitize_text_field($key);
         update_option(Settings::OPTION, $options);
 
         return new \WP_REST_Response(['apiKey' => $this->api_key_status()], 200);
     }
 
+    public function handle_set_llm_provider(\WP_REST_Request $request): \WP_REST_Response {
+        if (defined('WPCHAT_LLM_PROVIDER') && WPCHAT_LLM_PROVIDER) {
+            return new \WP_REST_Response([
+                'error'       => 'WPCHAT_LLM_PROVIDER is set in wp-config.php and takes precedence.',
+                'llmProvider' => $this->llm_provider_status(),
+            ], 409);
+        }
+        $body = $request->get_json_params();
+        $id   = sanitize_key((string) ($body['provider'] ?? ''));
+        $provider = LLM::get($id);
+        if (!$provider) {
+            return new \WP_REST_Response(['error' => 'Unknown provider.', 'allowed' => array_keys(LLM::providers())], 400);
+        }
+
+        $options = (array) get_option(Settings::OPTION, []);
+        $options['llm_provider'] = $id;
+        // Reset the model to the new provider's default if the current model
+        // isn't one of its models.
+        $valid = array_column($provider->models(), 'id');
+        if (!in_array($options['model'] ?? '', $valid, true)) {
+            $options['model'] = $provider->default_model();
+        }
+        update_option(Settings::OPTION, $options);
+
+        return new \WP_REST_Response([
+            'llmProvider' => $this->llm_provider_status(),
+            'model'       => $this->model_status(),
+            'apiKey'      => $this->api_key_status(),
+        ], 200);
+    }
+
     public function handle_set_model(\WP_REST_Request $request): \WP_REST_Response {
-        $body  = $request->get_json_params();
-        $model = (string) ($body['model'] ?? '');
-        // opus-4-7 stays accepted for back-compat with already-saved configs;
-        // opus-4-8 is the current top model offered in the UI.
-        $allowed = ['claude-sonnet-4-6', 'claude-opus-4-8', 'claude-opus-4-7', 'claude-haiku-4-5'];
+        $body     = $request->get_json_params();
+        $model    = (string) ($body['model'] ?? '');
+        $provider = LLM::active();
+        $allowed  = array_column($provider->models(), 'id');
+        // Anthropic: keep opus-4-7 accepted for back-compat with saved configs.
+        if ($provider->id() === 'anthropic') {
+            $allowed[] = 'claude-opus-4-7';
+        }
         if (!in_array($model, $allowed, true)) {
             return new \WP_REST_Response([
                 'error'   => 'Unknown model.',
@@ -243,13 +290,28 @@ class Onboarding {
     // ------------------------------------------------------------------
 
     private function api_key_status(): array {
-        $constant_defined = defined('WPCHAT_ANTHROPIC_API_KEY') && WPCHAT_ANTHROPIC_API_KEY;
-        $key = Settings::get_api_key();
+        $provider_id = Settings::get_provider();
+        $provider    = LLM::get($provider_id) ?? LLM::get('anthropic');
+        $source      = Settings::key_source($provider_id);
+        $key         = Settings::get_api_key($provider_id);
         return [
-            'ok'      => $key !== '',
-            'masked'  => $key ? '••••' . substr($key, -4) : null,
-            'source'  => $constant_defined ? 'constant' : ($key ? 'option' : 'none'),
-            'editable' => !$constant_defined,
+            'ok'       => $key !== '',
+            'masked'   => $key ? '••••' . substr($key, -4) : null,
+            'source'   => $source,
+            'editable' => $source !== 'constant',
+            'provider' => $provider_id,
+            'keyHelp'  => $provider->key_help(),
+        ];
+    }
+
+    private function llm_provider_status(): array {
+        $options = array_map(static function (LLMProvider $p) {
+            return ['id' => $p->id(), 'label' => $p->label(), 'keyHelp' => $p->key_help()];
+        }, array_values(LLM::providers()));
+        return [
+            'current' => Settings::get_provider(),
+            'locked'  => defined('WPCHAT_LLM_PROVIDER') && WPCHAT_LLM_PROVIDER,
+            'options' => $options,
         ];
     }
 
@@ -268,11 +330,7 @@ class Onboarding {
     private function model_status(): array {
         return [
             'current' => Settings::get_model(),
-            'options' => [
-                ['id' => 'claude-sonnet-4-6', 'label' => 'Sonnet 4.6 (recommended)'],
-                ['id' => 'claude-opus-4-8',   'label' => 'Opus 4.8 (highest quality, slowest)'],
-                ['id' => 'claude-haiku-4-5',  'label' => 'Haiku 4.5 (fastest, cheapest)'],
-            ],
+            'options' => LLM::active()->models(),
         ];
     }
 

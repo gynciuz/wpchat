@@ -4,7 +4,7 @@ Tags: woocommerce, chat, ai, claude, orders
 Requires at least: 6.5
 Tested up to: 6.8
 Requires PHP: 8.1
-Stable tag: 0.6.0
+Stable tag: 0.7.0
 License: MIT
 License URI: https://opensource.org/licenses/MIT
 
@@ -77,6 +77,13 @@ Open the Help panel in the chat (footer) — it answers common questions,
 and "Report a problem" sends the details to the developer.
 
 == Changelog ==
+
+= 0.7.0 =
+Multiple AI providers — bring your own OpenAI or Google Gemini key, not just Anthropic.
+* **Provider abstraction.** The chat engine now runs on **Anthropic, OpenAI, or Google Gemini**. Internally everything still speaks one canonical (Anthropic content-block) format; each provider adapter translates only at the HTTP boundary, so tools, the system prompt, and the React UI are unchanged. New `wpchat_llm_providers` filter to register custom providers.
+* **Onboarding gains a provider step.** Pick Anthropic / OpenAI / Gemini, then paste that provider's key — the key card's link, placeholder, and validation adapt to the choice; the model list shows that provider's models. New `POST /wpchat/v1/onboarding/llm-provider` route; status payload gains `llmProvider`.
+* **Provider-aware settings.** `WPCHAT_LLM_PROVIDER` + per-provider `WPCHAT_{PROVIDER}_API_KEY` constants; per-provider write-only key fields and a provider/model selector in WPChat → Settings. You are billed by your chosen provider directly.
+* New tests: MultiProviderTest (OpenAI + Gemini chat runs yield identical {name,input,output} captures; Gemini schema sanitize) + ProviderConfigTest (provider/key resolution, provider switch, per-provider key validation). 204 PHP + 5 E2E green.
 
 = 0.6.0 =
 Public-launch readiness release.

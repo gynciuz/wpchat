@@ -43,4 +43,6 @@ require "{$tests_dir}/includes/bootstrap.php";
 
 // Load test helpers.
 require_once __DIR__ . '/MockAnthropic.php';
+require_once __DIR__ . '/MockOpenAI.php';
+require_once __DIR__ . '/MockGemini.php';
 require_once __DIR__ . '/TestCase.php';
