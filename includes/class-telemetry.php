@@ -31,19 +31,25 @@ class Telemetry {
     /** Developer fallback inbox (overridable via WPCHAT_SUPPORT_EMAIL). */
     const DEFAULT_EMAIL = 'gintaras.lukosevicius@gmail.com';
 
-    /** Where explicit reports / opt-in telemetry are POSTed, if set. */
+    /** Where explicit reports / opt-in telemetry are POSTed, if set. Filterable. */
     public static function endpoint(): string {
-        if (defined('WPCHAT_SUPPORT_ENDPOINT') && WPCHAT_SUPPORT_ENDPOINT) {
-            return (string) WPCHAT_SUPPORT_ENDPOINT;
-        }
-        return '';
+        $endpoint = (defined('WPCHAT_SUPPORT_ENDPOINT') && WPCHAT_SUPPORT_ENDPOINT) ? (string) WPCHAT_SUPPORT_ENDPOINT : '';
+        return (string) apply_filters('wpchat_support_endpoint', $endpoint);
     }
 
     public static function support_email(): string {
-        if (defined('WPCHAT_SUPPORT_EMAIL') && WPCHAT_SUPPORT_EMAIL) {
-            return (string) WPCHAT_SUPPORT_EMAIL;
-        }
-        return self::DEFAULT_EMAIL;
+        $email = (defined('WPCHAT_SUPPORT_EMAIL') && WPCHAT_SUPPORT_EMAIL) ? (string) WPCHAT_SUPPORT_EMAIL : self::DEFAULT_EMAIL;
+        return (string) apply_filters('wpchat_support_email', $email);
+    }
+
+    /**
+     * Shared secret for the X-WPChat-Signature HMAC, so the collector can reject
+     * junk. Filterable. NOTE: a shipped default only deters casual spam (anyone
+     * reading the plugin can compute it) — the collector should also rate-limit.
+     */
+    private static function secret(): string {
+        $secret = (defined('WPCHAT_SUPPORT_SECRET') && WPCHAT_SUPPORT_SECRET) ? (string) WPCHAT_SUPPORT_SECRET : '';
+        return (string) apply_filters('wpchat_support_secret', $secret);
     }
 
     /** Opt-in telemetry — default ON, disclosed in onboarding; admin can disable. */
@@ -111,10 +117,13 @@ class Telemetry {
 
         $delivered = false;
 
+        // Explicit reports matter — retry the collector before the email fallback.
         $endpoint = self::endpoint();
         if ($endpoint !== '') {
-            $res = self::post($endpoint, $payload, true);
-            $delivered = !is_wp_error($res) && (int) wp_remote_retrieve_response_code($res) < 400;
+            for ($attempt = 0; $attempt < 2 && !$delivered; $attempt++) {
+                $res = self::post($endpoint, $payload, true);
+                $delivered = !is_wp_error($res) && (int) wp_remote_retrieve_response_code($res) < 400;
+            }
         }
 
         if (!$delivered) {
@@ -156,11 +165,18 @@ class Telemetry {
 
     /** @return array|\WP_Error wp_remote_post result (or WP_Error). */
     private static function post(string $url, array $payload, bool $blocking) {
+        $body    = wp_json_encode($payload);
+        $headers = ['content-type' => 'application/json'];
+        $secret  = self::secret();
+        if ($secret !== '') {
+            // Lets the collector verify the payload came from a WPChat install.
+            $headers['X-WPChat-Signature'] = 'sha256=' . hash_hmac('sha256', (string) $body, $secret);
+        }
         return wp_remote_post($url, [
             'timeout'  => $blocking ? 15 : 1,
             'blocking' => $blocking,
-            'headers'  => ['content-type' => 'application/json'],
-            'body'     => wp_json_encode($payload),
+            'headers'  => $headers,
+            'body'     => $body,
         ]);
     }
 

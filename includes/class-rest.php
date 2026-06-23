@@ -202,6 +202,8 @@ class Rest {
             'error'           => $error,
             'conversation_id' => $convo,
             'messages'        => $recent,
+            'recent_errors'   => Telemetry::recent(10),
+            'provider'        => Settings::get_provider(),
             'reporter'        => [
                 'login' => $user ? $user->user_login : '',
                 'email' => $user ? $user->user_email : '',

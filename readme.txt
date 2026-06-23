@@ -4,7 +4,7 @@ Tags: woocommerce, chat, ai, claude, orders
 Requires at least: 6.5
 Tested up to: 6.8
 Requires PHP: 8.1
-Stable tag: 0.7.0
+Stable tag: 0.7.1
 License: MIT
 License URI: https://opensource.org/licenses/MIT
 
@@ -77,6 +77,11 @@ Open the Help panel in the chat (footer) — it answers common questions,
 and "Report a problem" sends the details to the developer.
 
 == Changelog ==
+
+= 0.7.1 =
+Support-endpoint hardening + diagnostics.
+* **Reliable support delivery.** Error reports / telemetry can now be signed (HMAC `X-WPChat-Signature`) and POSTed to a collector you control (`WPCHAT_SUPPORT_ENDPOINT` + `WPCHAT_SUPPORT_SECRET`, or the `wpchat_support_endpoint` / `wpchat_support_email` / `wpchat_support_secret` filters). "Report a problem" retries the collector before falling back to `wp_mail`. A ready-to-deploy Cloudflare Worker collector ships in `cloud/`.
+* **WPChat → Diagnostics admin page.** Shows the recent error log, a "Copy diagnostics" button, and a "Send to developer" button — so help works even when no collector is configured. Support reports now include the recent error log + active provider.
 
 = 0.7.0 =
 Multiple AI providers — bring your own OpenAI or Google Gemini key, not just Anthropic.

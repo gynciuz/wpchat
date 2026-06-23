@@ -53,6 +53,15 @@ class Admin {
             self::MENU_SLUG . '-settings',
             [$this, 'render_settings_page']
         );
+
+        add_submenu_page(
+            self::MENU_SLUG,
+            __('Diagnostics', 'wpchat'),
+            __('Diagnostics', 'wpchat'),
+            $capability,
+            self::MENU_SLUG . '-diagnostics',
+            [$this, 'render_diagnostics_page']
+        );
     }
 
     public function enqueue_assets(string $hook): void {
@@ -130,6 +139,74 @@ class Admin {
         echo '<a href="' . $onboarding_url . '">' . esc_html__('Re-run onboarding wizard', 'wpchat') . '</a> ';
         echo '<span class="description">' . esc_html__('— walk through the capability check + settings again.', 'wpchat') . '</span>';
         echo '</p>';
+
+        echo '</div>';
+    }
+
+    /**
+     * Diagnostics — recent errors + a "copy" blob + a "report to developer"
+     * button. Makes help work even when no collector endpoint is configured.
+     */
+    public function render_diagnostics_page(): void {
+        $recent = Telemetry::recent(50);
+        $diag   = [
+            'plugin'   => WPCHAT_VERSION,
+            'php'      => PHP_VERSION,
+            'wp'       => get_bloginfo('version'),
+            'provider' => Settings::get_provider(),
+            'errors'   => $recent,
+        ];
+
+        echo '<div class="wrap">';
+        echo '<h1>' . esc_html__('WPChat Diagnostics', 'wpchat') . '</h1>';
+        echo '<p class="description">' . esc_html__('Recent errors WPChat recorded on this site. Use “Copy diagnostics” to paste into a support request, or send it straight to the developer.', 'wpchat') . '</p>';
+
+        // Recent errors table.
+        echo '<table class="widefat striped" style="margin-top:1rem;max-width:900px;">';
+        echo '<thead><tr><th>' . esc_html__('When (UTC)', 'wpchat') . '</th><th>' . esc_html__('Event', 'wpchat') . '</th><th>' . esc_html__('Tool', 'wpchat') . '</th><th>' . esc_html__('Message', 'wpchat') . '</th></tr></thead><tbody>';
+        if (empty($recent)) {
+            echo '<tr><td colspan="4">' . esc_html__('No errors recorded — nice.', 'wpchat') . '</td></tr>';
+        } else {
+            foreach (array_reverse($recent) as $e) {
+                printf(
+                    '<tr><td>%s</td><td><code>%s</code></td><td>%s</td><td>%s</td></tr>',
+                    esc_html((string) ($e['at'] ?? '')),
+                    esc_html((string) ($e['event'] ?? '')),
+                    esc_html((string) ($e['tool'] ?? '')),
+                    esc_html((string) ($e['message'] ?? ''))
+                );
+            }
+        }
+        echo '</tbody></table>';
+
+        $diag_json = wp_json_encode($diag, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+        echo '<h2 style="margin-top:2rem;">' . esc_html__('Send a report to the developer', 'wpchat') . '</h2>';
+        echo '<p><textarea id="wpchat-diag-note" rows="3" style="width:100%;max-width:600px;" placeholder="' . esc_attr__('Optional: what were you doing when it broke?', 'wpchat') . '"></textarea></p>';
+        echo '<p>';
+        echo '<button type="button" class="button" id="wpchat-diag-copy">' . esc_html__('Copy diagnostics', 'wpchat') . '</button> ';
+        echo '<button type="button" class="button button-primary" id="wpchat-diag-send">' . esc_html__('Send to developer', 'wpchat') . '</button> ';
+        echo '<span id="wpchat-diag-status" style="margin-left:.5rem;"></span>';
+        echo '</p>';
+        echo '<details style="margin-top:1rem;"><summary>' . esc_html__('Show raw diagnostics', 'wpchat') . '</summary><pre id="wpchat-diag-json" style="background:#f6f7f7;border:1px solid #dcdcde;padding:1rem;overflow:auto;max-width:900px;">' . esc_html($diag_json) . '</pre></details>';
+
+        // Inline behavior: copy to clipboard + POST the report via the REST route.
+        $boot = wp_json_encode([
+            'rest'  => rest_url('wpchat/v1/support'),
+            'nonce' => wp_create_nonce('wp_rest'),
+        ]);
+        $sent_ok   = esc_js(__('Sent — thank you!', 'wpchat'));
+        $sent_fail = esc_js(__('Could not send. Try “Copy diagnostics” and email it.', 'wpchat'));
+        $copied    = esc_js(__('Copied.', 'wpchat'));
+        echo "<script>(function(){var b={$boot};"
+            . "var s=document.getElementById('wpchat-diag-status');"
+            . "document.getElementById('wpchat-diag-copy').addEventListener('click',function(){"
+            . "navigator.clipboard.writeText(document.getElementById('wpchat-diag-json').textContent).then(function(){s.textContent='{$copied}';});});"
+            . "document.getElementById('wpchat-diag-send').addEventListener('click',function(){"
+            . "s.textContent='…';"
+            . "fetch(b.rest,{method:'POST',headers:{'Content-Type':'application/json','X-WP-Nonce':b.nonce},credentials:'same-origin',"
+            . "body:JSON.stringify({note:document.getElementById('wpchat-diag-note').value,error:'admin-diagnostics'})})"
+            . ".then(function(r){return r.json().catch(function(){return{};}).then(function(d){s.textContent=(r.ok&&d.ok)?'{$sent_ok}':'{$sent_fail}';});})"
+            . ".catch(function(){s.textContent='{$sent_fail}';});});})();</script>";
 
         echo '</div>';
     }

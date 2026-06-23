@@ -77,4 +77,48 @@ class TelemetryTest extends TestCase {
         $this->assertStringContainsString('WPChat', $captured['subject']);
         $this->assertStringContainsString('It broke', $captured['message']);
     }
+
+    public function test_report_to_endpoint_is_hmac_signed_when_secret_set(): void {
+        $endpoint = function () { return 'https://collector.example/hook'; };
+        $secret   = function () { return 'test-secret-123'; };
+        \add_filter('wpchat_support_endpoint', $endpoint);
+        \add_filter('wpchat_support_secret', $secret);
+
+        $captured = [];
+        $pre = function ($preempt, $args, $url) use (&$captured) {
+            $captured = ['args' => $args, 'url' => $url];
+            return ['response' => ['code' => 200], 'body' => '{"ok":true}', 'headers' => []];
+        };
+        \add_filter('pre_http_request', $pre, 10, 3);
+
+        $ok = Telemetry::send_report(['kind' => 'support_report', 'note' => 'hi']);
+
+        \remove_filter('pre_http_request', $pre, 10);
+        \remove_filter('wpchat_support_endpoint', $endpoint);
+        \remove_filter('wpchat_support_secret', $secret);
+
+        $this->assertTrue($ok, 'Report should deliver to the endpoint.');
+        $this->assertSame('https://collector.example/hook', $captured['url']);
+        $expected = 'sha256=' . hash_hmac('sha256', $captured['args']['body'], 'test-secret-123');
+        $this->assertSame($expected, $captured['args']['headers']['X-WPChat-Signature'] ?? '');
+    }
+
+    public function test_report_to_endpoint_has_no_signature_without_secret(): void {
+        $endpoint = function () { return 'https://collector.example/hook'; };
+        \add_filter('wpchat_support_endpoint', $endpoint);
+
+        $captured = [];
+        $pre = function ($preempt, $args) use (&$captured) {
+            $captured = $args;
+            return ['response' => ['code' => 200], 'body' => '{"ok":true}', 'headers' => []];
+        };
+        \add_filter('pre_http_request', $pre, 10, 3);
+
+        Telemetry::send_report(['kind' => 'support_report']);
+
+        \remove_filter('pre_http_request', $pre, 10);
+        \remove_filter('wpchat_support_endpoint', $endpoint);
+
+        $this->assertArrayNotHasKey('X-WPChat-Signature', $captured['headers'] ?? []);
+    }
 }
