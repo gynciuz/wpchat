@@ -62,6 +62,17 @@ class Admin {
             self::MENU_SLUG . '-diagnostics',
             [$this, 'render_diagnostics_page']
         );
+
+        // Quick link to the dedicated full-screen chat at /wpchat (no wp-admin
+        // chrome). A URL as the menu slug renders as a plain link.
+        global $submenu;
+        if (isset($submenu[self::MENU_SLUG])) {
+            $submenu[self::MENU_SLUG][] = [
+                __('Open full screen ↗', 'wpchat'),
+                $capability,
+                home_url('/wpchat'),
+            ];
+        }
     }
 
     public function enqueue_assets(string $hook): void {
@@ -98,25 +109,61 @@ class Admin {
             true
         );
 
+        $user = wp_get_current_user();
         wp_add_inline_script(
             'wpchat-app',
             'window.WPCHAT_BOOT = ' . wp_json_encode([
-                'restUrl' => rest_url('wpchat/v1/'),
-                'nonce'   => wp_create_nonce('wp_rest'),
-                'userId'  => get_current_user_id(),
-                'locale'  => substr(get_user_locale(), 0, 2),
+                // First-run admins see the onboarding wizard in the tab too.
+                'mode'      => Onboarding::should_show_for_user(get_current_user_id()) ? 'onboarding' : 'chat',
+                'restUrl'   => rest_url('wpchat/v1/'),
+                'nonce'     => wp_create_nonce('wp_rest'),
+                'userId'    => get_current_user_id(),
+                'userName'  => $user ? $user->display_name : '',
+                'firstName' => $user ? $user->first_name : '',
+                'locale'    => substr(get_user_locale(), 0, 2),
+                'siteName'  => html_entity_decode((string) get_bloginfo('name'), ENT_QUOTES | ENT_HTML5, 'UTF-8'),
+                'siteUrl'   => home_url(),
             ]) . ';',
             'before'
         );
     }
 
     public function render_chat_page(): void {
-        echo '<div class="wrap"><div id="wpchat-root">';
+        // The chat is a dark, always-dark UI whose container is transparent — it
+        // expects a dark surface. wp-admin's light chrome + form/heading styles
+        // (`input[type=text]`, `.wrap h2`, …) outrank the app's utility classes,
+        // which breaks the theme. So we render on our own dark panel (NOT the
+        // `.wrap` class) and neutralize wp-admin's form-control bleed inside the
+        // root. (The dedicated /wpchat page renders full-screen with no chrome.)
+        ?>
+        <style>
+            #wpchat-shell {
+                background: oklch(0.145 0 0);
+                border-radius: 12px;
+                margin: 10px 20px 0 0;
+                min-height: calc(100vh - 60px);
+                overflow: hidden;
+            }
+            /* Strip wp-admin's form-control styling so the app's own (borderless,
+               transparent, theme-coloured) styles show through. */
+            #wpchat-root input:not([type=checkbox]):not([type=radio]),
+            #wpchat-root textarea,
+            #wpchat-root select {
+                border: 0 !important;
+                background: transparent !important;
+                box-shadow: none !important;
+                outline: 0 !important;
+                min-height: 0 !important;
+                color: inherit !important;
+            }
+            #wpchat-root h1, #wpchat-root h2, #wpchat-root h3 { color: inherit; }
+        </style>
+        <div id="wpchat-shell"><div id="wpchat-root" class="dark">
+        <?php
         if (!file_exists(WPCHAT_DIR . 'build/manifest.json')) {
-            echo '<div style="padding:2rem;border:1px dashed #c3c4c7;background:#fff;margin-top:1rem;">';
-            echo '<h2 style="margin-top:0;">' . esc_html__('WPChat — build assets missing', 'wpchat') . '</h2>';
+            echo '<div style="padding:2rem;margin:1rem;border:1px dashed #555;color:#ddd;border-radius:10px;">';
+            echo '<h2 style="margin-top:0;color:#fff;">' . esc_html__('WPChat — build assets missing', 'wpchat') . '</h2>';
             echo '<p>' . esc_html__('Run', 'wpchat') . ' <code>pnpm install &amp;&amp; pnpm build</code> ' . esc_html__('inside the plugin\'s', 'wpchat') . ' <code>app/</code> ' . esc_html__('directory to produce the chat UI bundle.', 'wpchat') . '</p>';
-            echo '<p>' . esc_html__('Once', 'wpchat') . ' <code>build/manifest.json</code> ' . esc_html__('exists, this page will render the chat interface.', 'wpchat') . '</p>';
             echo '</div>';
         }
         echo '</div></div>';
