@@ -13,6 +13,7 @@
 /tests               export-ignore
 /docs                export-ignore
 /site                export-ignore
+/.wp-env.json        export-ignore
 # The whole React source/tooling tree — built assets ship from /build, so
 # nothing under /app is needed in the plugin package.
 /app                 export-ignore

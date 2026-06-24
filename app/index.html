@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en" class="dark">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="dark" />
+    <title>WPChat — dev preview</title>
+    <!-- The shell is always dark; the chat container is transparent and relies
+         on a dark html/body (matches Frontend::render in production). Without
+         this the body is white and the light text becomes invisible. -->
+    <style>
+      html.dark, body.dark { background: oklch(0.145 0 0); color-scheme: dark; }
+    </style>
+  </head>
+  <body class="dark">
+    <!-- Dev-only harness. In production WordPress injects #wpchat-root +
+         window.WPCHAT_BOOT (see Frontend/Admin). This file is export-ignored,
+         so it never ships in the plugin ZIP. REST calls 404 here (no WP), so
+         this previews the UI shell only — full chat needs a WordPress backend. -->
+    <div id="wpchat-root" class="dark"></div>
+    <script>
+      window.WPCHAT_BOOT = {
+        mode: new URLSearchParams(location.search).get("mode") === "onboarding" ? "onboarding" : "chat",
+        restUrl: "/wp-json/wpchat/v1/",
+        nonce: "dev",
+        userId: 1,
+        userName: "Dev User",
+        firstName: "Dev",
+        locale: new URLSearchParams(location.search).get("locale") || "en",
+        siteName: "Dev Site",
+        siteUrl: "http://localhost",
+      };
+    </script>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
