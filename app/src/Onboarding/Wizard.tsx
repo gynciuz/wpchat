@@ -12,7 +12,6 @@ import { AnalyticsCard } from "./cards/AnalyticsCard";
 import { BackendsCard } from "./cards/BackendsCard";
 import { SummaryCard } from "./cards/SummaryCard";
 import { ProviderCard } from "./cards/ProviderCard";
-import { LlmProviderCard } from "./cards/LlmProviderCard";
 
 /**
  * First-run onboarding stepper. Cards are picked dynamically based on
@@ -290,17 +289,8 @@ function buildSteps(status: OnboardingStatus | null, boot: Boot): Step[] {
     ),
   });
 
-  // Which LLM provider runs the chat (Anthropic / OpenAI / Gemini). Comes
-  // before the key step so the key card asks for the right provider's key.
-  // Skipped when locked via WPCHAT_LLM_PROVIDER (only one real choice).
-  if (!status.llmProvider?.locked) {
-    steps.push({
-      id: "llm-provider",
-      render: ({ status, boot, onUpdateStatus }) => (
-        <LlmProviderCard status={status} boot={boot} onUpdateStatus={onUpdateStatus} />
-      ),
-    });
-  }
+  // No provider picker — the key step auto-detects Anthropic / OpenAI / Gemini
+  // from the key prefix (see ApiKeyCard).
 
   // WPChat Cloud isn't live yet — joining the waitlist is additive, NOT a
   // substitute for setup. Everyone still needs a provider key + model to

@@ -38,15 +38,15 @@ class Settings {
             'wpchat_settings_section_api',
             __('AI provider', 'wpchat'),
             function () {
-                echo '<p>' . esc_html__('Choose which AI provider WPChat uses, then paste that provider’s API key. You are billed by the provider directly.', 'wpchat') . '</p>';
+                echo '<p>' . esc_html__('Paste your Anthropic, OpenAI, or Google Gemini API key — WPChat detects the provider automatically. You are billed by the provider directly.', 'wpchat') . '</p>';
             },
             'wpchat-settings'
         );
 
         add_settings_field(
-            'llm_provider',
-            __('Provider', 'wpchat'),
-            [$this, 'field_provider'],
+            'api_key',
+            __('API key', 'wpchat'),
+            [$this, 'field_api_key'],
             'wpchat-settings',
             'wpchat_settings_section_api'
         );
@@ -57,17 +57,6 @@ class Settings {
             'wpchat-settings',
             'wpchat_settings_section_api'
         );
-        // One write-only key field per registered provider.
-        foreach (LLM::providers() as $provider) {
-            $pid = $provider->id();
-            add_settings_field(
-                'key_' . $pid,
-                sprintf(__('%s API key', 'wpchat'), $provider->label()),
-                function () use ($pid) { $this->render_key_field($pid); },
-                'wpchat-settings',
-                'wpchat_settings_section_api'
-            );
-        }
 
         add_settings_section(
             'wpchat_settings_section_privacy',
@@ -90,15 +79,16 @@ class Settings {
     public function sanitize($input): array {
         $output = (array) get_option(self::OPTION, []);
 
-        if (isset($input['llm_provider']) && LLM::get(sanitize_key($input['llm_provider']))) {
-            $output['llm_provider'] = sanitize_key($input['llm_provider']);
-        }
-
-        // Write-only key fields: only overwrite when a new value is supplied,
-        // so submitting the form with a blank field keeps the stored key.
-        foreach (array_keys(LLM::providers()) as $pid) {
-            if (!empty($input[$pid . '_api_key'])) {
-                $output[$pid . '_api_key'] = sanitize_text_field($input[$pid . '_api_key']);
+        // One key field — detect the provider from the key and store it under
+        // that provider's slot, setting it active. Blank submit keeps current.
+        if (!empty($input['api_key'])) {
+            $key = trim((string) $input['api_key']);
+            $pid = LLM::detect($key);
+            if ($pid) {
+                $output[$pid . '_api_key'] = sanitize_text_field($key);
+                $output['llm_provider']    = $pid;
+            } else {
+                add_settings_error(self::OPTION, 'wpchat_key', __('Couldn’t recognize that API key (expected sk-ant-…, sk-…, or AIza…).', 'wpchat'));
             }
         }
 
@@ -106,8 +96,8 @@ class Settings {
             $output['model'] = sanitize_text_field($input['model']);
         }
 
-        // If the chosen model isn't valid for the (possibly just-changed)
-        // provider, fall back to that provider's default.
+        // If the chosen model isn't valid for the active provider, fall back to
+        // that provider's default.
         $provider = LLM::get($output['llm_provider'] ?? 'anthropic');
         if ($provider) {
             $valid = array_column($provider->models(), 'id');
@@ -124,55 +114,36 @@ class Settings {
         return $output;
     }
 
-    public function field_provider(): void {
-        $current = Settings::get_provider();
-        $locked  = defined('WPCHAT_LLM_PROVIDER') && WPCHAT_LLM_PROVIDER;
-        if ($locked) {
-            echo '<p class="description">' . esc_html__('Set via WPCHAT_LLM_PROVIDER in wp-config.php.', 'wpchat') . '</p>';
-        }
-        printf('<select name="%s[llm_provider]" %s>', esc_attr(self::OPTION), $locked ? 'disabled' : '');
-        foreach (LLM::providers() as $provider) {
-            printf(
-                '<option value="%s" %s>%s</option>',
-                esc_attr($provider->id()),
-                selected($current, $provider->id(), false),
-                esc_html($provider->label())
-            );
-        }
-        echo '</select>';
-        echo '<p class="description">' . esc_html__('Save to refresh the model list for the selected provider.', 'wpchat') . '</p>';
-    }
+    public function field_api_key(): void {
+        $provider = LLM::active();
+        $source   = Settings::key_source();
+        $value    = Settings::get_api_key();
+        $masked   = $value ? str_repeat('•', 8) . substr($value, -4) : '';
 
-    private function render_key_field(string $provider_id): void {
-        $provider = LLM::get($provider_id);
-        if (!$provider) {
+        if ($source === 'constant') {
+            echo '<p class="description">' . esc_html(sprintf(
+                /* translators: %s = provider label */
+                __('A %s key is set via a wp-config.php constant (ignored here).', 'wpchat'),
+                $provider->label()
+            )) . '</p>';
             return;
         }
-        $const = 'WPCHAT_' . strtoupper($provider_id) . '_API_KEY';
-        if (defined($const) && constant($const)) {
-            echo '<p class="description">' . esc_html(sprintf(__('Set via the %s constant in wp-config.php (ignored here).', 'wpchat'), $const)) . '</p>';
-            return;
-        }
-        $options = get_option(self::OPTION, []);
-        $value   = $options[$provider_id . '_api_key'] ?? '';
-        $masked  = $value ? str_repeat('•', 8) . substr($value, -4) : '';
-        $help    = $provider->key_help();
-        // Write-only: never echo the stored key back into the field.
+
+        // Write-only single field — paste any supported key; provider is detected.
         printf(
-            '<input type="password" name="%s[%s_api_key]" value="" class="regular-text" autocomplete="off" placeholder="%s" />',
+            '<input type="password" name="%s[api_key]" value="" class="regular-text" autocomplete="off" placeholder="%s" />',
             esc_attr(self::OPTION),
-            esc_attr($provider_id),
-            esc_attr($value ? __('Leave blank to keep current key', 'wpchat') : ($help['placeholder'] ?? ''))
+            esc_attr($value ? __('Leave blank to keep current key', 'wpchat') : 'sk-ant-…  ·  sk-…  ·  AIza…')
         );
         if ($masked) {
-            echo '<p class="description">' . esc_html__('Current key:', 'wpchat') . ' <code>' . esc_html($masked) . '</code></p>';
+            echo '<p class="description">' . esc_html(sprintf(
+                /* translators: 1: provider label, 2: masked key */
+                __('Connected to %1$s · %2$s', 'wpchat'),
+                $provider->label(),
+                $masked
+            )) . '</p>';
         }
-        printf(
-            '<p class="description"><a href="%s" target="_blank" rel="noreferrer">%s</a> · %s</p>',
-            esc_url($help['url'] ?? ''),
-            esc_html__('Get a key', 'wpchat'),
-            esc_html(sprintf(__('or set %s in wp-config.php', 'wpchat'), $const))
-        );
+        echo '<p class="description">' . esc_html__('Get a key: Anthropic (console.anthropic.com) · OpenAI (platform.openai.com) · Google (aistudio.google.com).', 'wpchat') . '</p>';
     }
 
     public function field_model(): void {

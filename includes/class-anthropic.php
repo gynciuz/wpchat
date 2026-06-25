@@ -43,6 +43,10 @@ class AnthropicProvider extends BaseLLMProvider {
         ];
     }
 
+    public function matches_key(string $key): bool {
+        return (bool) preg_match('/^sk-ant-/i', trim($key));
+    }
+
     public function validate_key(string $key): array {
         return $this->check_key([
             'model'      => 'claude-haiku-4-5',

@@ -116,27 +116,26 @@ class Onboarding {
     }
 
     public function handle_set_api_key(\WP_REST_Request $request): \WP_REST_Response {
-        $body        = $request->get_json_params();
-        $provider_id = sanitize_key((string) ($body['provider'] ?? Settings::get_provider()));
-        $provider    = LLM::get($provider_id);
-        if (!$provider) {
-            return new \WP_REST_Response(['error' => 'Unknown provider.'], 400);
+        $body = $request->get_json_params();
+        $key  = trim((string) ($body['key'] ?? ''));
+        if ($key === '') {
+            return new \WP_REST_Response(['error' => 'key is required.'], 400);
         }
+
+        // One field, no provider picker — detect the provider from the key.
+        $provider_id = LLM::detect($key);
+        if (!$provider_id) {
+            return new \WP_REST_Response([
+                'error' => __('Couldn’t recognize this key. Supported: Anthropic (sk-ant-…), OpenAI (sk-…), or Google Gemini (AIza…).', 'wpchat'),
+            ], 400);
+        }
+        $provider = LLM::get($provider_id);
 
         if (Settings::key_source($provider_id) === 'constant') {
             return new \WP_REST_Response([
                 'error'  => sprintf('WPCHAT_%s_API_KEY is defined in wp-config.php and takes precedence. Edit wp-config.php to change it.', strtoupper($provider_id)),
                 'apiKey' => $this->api_key_status(),
             ], 409);
-        }
-
-        $key = (string) ($body['key'] ?? '');
-        if ($key === '') {
-            return new \WP_REST_Response(['error' => 'key is required.'], 400);
-        }
-        $regex = $provider->key_help()['regex'] ?? '';
-        if ($regex !== '' && !preg_match('/' . $regex . '/i', $key)) {
-            return new \WP_REST_Response(['error' => sprintf('Key does not look like a %s API key.', $provider->label())], 400);
         }
 
         // Live auth check — catch typo'd / revoked keys here, not at first chat.
@@ -148,9 +147,22 @@ class Onboarding {
 
         $options = (array) get_option(Settings::OPTION, []);
         $options[$provider_id . '_api_key'] = sanitize_text_field($key);
+        $options['llm_provider']            = $provider_id; // detected key sets the active provider
+        // Reset the model to the detected provider's default if the current one
+        // isn't valid for it.
+        $valid = array_column($provider->models(), 'id');
+        if ($provider_id === 'anthropic') {
+            $valid[] = 'claude-opus-4-7';
+        }
+        if (!in_array($options['model'] ?? '', $valid, true)) {
+            $options['model'] = $provider->default_model();
+        }
         update_option(Settings::OPTION, $options);
 
-        return new \WP_REST_Response(['apiKey' => $this->api_key_status()], 200);
+        return new \WP_REST_Response([
+            'apiKey' => $this->api_key_status(),
+            'model'  => $this->model_status(),
+        ], 200);
     }
 
     public function handle_set_llm_provider(\WP_REST_Request $request): \WP_REST_Response {

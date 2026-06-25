@@ -36,6 +36,8 @@ interface LLMProvider {
     public function default_model(): string;
     /** UI hints for the key step. @return array{url: string, placeholder: string, regex: string} */
     public function key_help(): array;
+    /** Does this API key look like it belongs to this provider? (prefix match) */
+    public function matches_key(string $key): bool;
     /** Run the tool-use loop. @return array{messages: array, text: string, tool_calls: array} */
     public function run_with_tools(array $messages, array $tools, array $tool_impls, array $opts = []): array;
     /** Cheap auth check. @return array{ok: bool, error?: string, inconclusive?: bool} */
@@ -239,6 +241,12 @@ class OpenAIProvider extends BaseLLMProvider {
         ];
     }
 
+    public function matches_key(string $key): bool {
+        // OpenAI keys start with sk- (incl. sk-proj-). Anthropic (sk-ant-) is
+        // claimed first in the detection loop, so a plain sk- lands here.
+        return (bool) preg_match('/^sk-/i', trim($key));
+    }
+
     public function validate_key(string $key): array {
         return $this->check_key([
             'model'      => 'gpt-4o-mini',
@@ -393,6 +401,11 @@ class GeminiProvider extends BaseLLMProvider {
             'placeholder' => 'AIza...',
             'regex'       => '^[A-Za-z0-9_\\-]+$',
         ];
+    }
+
+    public function matches_key(string $key): bool {
+        // Google API keys start with AIza.
+        return (bool) preg_match('/^AIza/', trim($key));
     }
 
     public function validate_key(string $key): array {
@@ -563,6 +576,19 @@ class LLM {
 
     public static function get(string $id): ?LLMProvider {
         return self::providers()[$id] ?? null;
+    }
+
+    /**
+     * Detect the provider from an API key's prefix. Order matters: Anthropic
+     * (sk-ant-) is checked before OpenAI (sk-). Returns the provider id or null.
+     */
+    public static function detect(string $key): ?string {
+        foreach (self::providers() as $id => $provider) {
+            if ($provider->matches_key($key)) {
+                return $id;
+            }
+        }
+        return null;
     }
 
     /** The configured provider, falling back to Anthropic. */

@@ -47,6 +47,8 @@ The `build/` output is committed to the repo because the released ZIP serves pre
 
 ### Multi-provider LLM (`includes/class-llm-providers.php`)
 The engine speaks **one canonical format internally: Anthropic content blocks** (text / tool_use / tool_result). `BaseLLMProvider` owns the canonical tool-use loop; each adapter translates to/from its wire format **only at the HTTP boundary**, so tools, the system prompt, History, and the React UI (which reads the neutral `{name, input, output}` capture) are provider-independent. Providers: `AnthropicProvider` (near-identity, in `class-anthropic.php`, keeps the `wpchat_anthropic_http_response` test seam), `OpenAIProvider` (Chat Completions), `GeminiProvider` (generateContent, with a `sanitize_schema()` for Gemini's stricter function-declaration schema). `LLM::active()` resolves the configured provider (`Settings::get_provider()`); register more via the **`wpchat_llm_providers`** filter. Each provider has its own test seam: `wpchat_{id}_http_response` (mocks: `tests/MockAnthropic|MockOpenAI|MockGemini`).
+
+**No provider picker** — onboarding and Settings have a single API-key field. `LLM::detect($key)` infers the provider from the key prefix (`sk-ant-` → Anthropic, `sk-` → OpenAI, `AIza` → Google), and saving a key sets the active provider + resets the model to that provider's default. Each provider implements `matches_key()`.
 5. `Rest` persists the assistant turn and returns it; the React UI renders `tool_calls` output as structured cards.
 
 ### Tools — the core abstraction (`includes/class-tools.php`)

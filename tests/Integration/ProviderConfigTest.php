@@ -10,9 +10,47 @@
 namespace WPChat\Tests\Integration;
 
 use WPChat\Settings;
+use WPChat\LLM;
 use WPChat\Tests\TestCase;
 
 class ProviderConfigTest extends TestCase {
+
+    public function test_detect_provider_from_key_prefix(): void {
+        $this->assertSame('anthropic', LLM::detect('sk-ant-abc123'));
+        $this->assertSame('openai', LLM::detect('sk-proj-abc123'));
+        $this->assertSame('openai', LLM::detect('sk-abc123'));
+        $this->assertSame('gemini', LLM::detect('AIzaSyAbc123'));
+        $this->assertNull(LLM::detect('not-a-real-key'));
+    }
+
+    public function test_api_key_save_autodetects_provider_and_sets_active(): void {
+        $ok = function () {
+            return ['response' => ['code' => 200], 'body' => json_encode(['candidates' => [['content' => ['parts' => [['text' => 'ok']]]]]]), 'headers' => []];
+        };
+        \add_filter('wpchat_gemini_http_response', $ok, 99, 2);
+
+        $request = new \WP_REST_Request('POST', '/wpchat/v1/onboarding/api-key');
+        $request->set_header('Content-Type', 'application/json');
+        $request->set_body(json_encode(['key' => 'AIzaSyTESTKEY123'])); // no provider param
+        $response = \rest_get_server()->dispatch($request);
+
+        \remove_filter('wpchat_gemini_http_response', $ok, 99);
+
+        $this->assertSame(200, $response->get_status());
+        $options = \get_option('wpchat_settings');
+        $this->assertSame('gemini', $options['llm_provider']);
+        $this->assertSame('AIzaSyTESTKEY123', $options['gemini_api_key']);
+        $this->assertStringStartsWith('gemini-', $options['model']); // model reset to gemini default
+        $this->assertSame('gemini', $response->get_data()['apiKey']['provider']);
+    }
+
+    public function test_api_key_save_rejects_unrecognized_key(): void {
+        $request = new \WP_REST_Request('POST', '/wpchat/v1/onboarding/api-key');
+        $request->set_header('Content-Type', 'application/json');
+        $request->set_body(json_encode(['key' => 'random-string-no-prefix']));
+        $response = \rest_get_server()->dispatch($request);
+        $this->assertSame(400, $response->get_status());
+    }
 
     public function test_provider_and_per_provider_keys_resolve(): void {
         \update_option('wpchat_settings', [

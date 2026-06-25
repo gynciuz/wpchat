@@ -4,7 +4,7 @@ Tags: woocommerce, chat, ai, claude, orders
 Requires at least: 6.5
 Tested up to: 6.8
 Requires PHP: 8.1
-Stable tag: 0.7.1
+Stable tag: 0.7.2
 License: MIT
 License URI: https://opensource.org/licenses/MIT
 
@@ -77,6 +77,12 @@ Open the Help panel in the chat (footer) — it answers common questions,
 and "Report a problem" sends the details to the developer.
 
 == Changelog ==
+
+= 0.7.2 =
+Simpler provider setup + wp-admin chat fixes.
+* **One API key field — no provider picker.** Onboarding and Settings now have a single key input; WPChat detects the provider from the key prefix (`sk-ant-…` → Anthropic, `sk-…` → OpenAI, `AIza…` → Google Gemini), validates it, and sets it active. Saving a key resets the model to that provider's default. (`LLM::detect()` + per-provider `matches_key()`.)
+* **wp-admin Chat tab fixed.** The embedded chat rendered inside wp-admin's light `.wrap`, so wp-admin's `input[type=text]` / heading styles overrode the dark theme (white-bordered input, low-contrast quick-links). It now renders on its own dark panel with wp-admin's form-control bleed neutralized.
+* **First-run onboarding in the admin tab** (was hardcoded to chat), and a new **"Open full screen ↗"** menu link to the dedicated /wpchat page.
 
 = 0.7.1 =
 Support-endpoint hardening + diagnostics.
