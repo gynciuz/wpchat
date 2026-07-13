@@ -3,123 +3,438 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>WPChat — Chat-based admin for WooCommerce</title>
-  <meta name="description" content="Run your WooCommerce store by chat. Type a request in any language and WPChat does it — orders, content, SEO. Free, open-source, bring your own Anthropic key." />
-  <meta property="og:title" content="WPChat — Chat-based admin for WooCommerce" />
-  <meta property="og:description" content="Type a request in any language; WPChat calls the right WordPress/WooCommerce functions for you. Free & open-source." />
+  <title>WPChat — Stop being your clients' WordPress helpdesk</title>
+  <meta name="description" content="Install WPChat once and your clients run their own WooCommerce store & content by chat — in plain language, any language, with a confirm step so nothing breaks. Free, open-source, self-hosted." />
+  <meta name="theme-color" content="#0a0a0b" />
+  <link rel="canonical" href="https://wpchat.ai/" />
+  <meta property="og:title" content="Stop being your clients' WordPress helpdesk" />
+  <meta property="og:description" content="Your clients will never learn WooCommerce's admin — and that was never the deal. WPChat lets them just say what they want, with a confirm step so they can't break anything. Free & open-source." />
   <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://wpchat.ai/" />
+  <meta name="twitter:card" content="summary_large_image" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+
   <style>
     :root {
-      --bg: #0a0a0b; --panel: #141417; --border: #26262b;
-      --fg: #f4f4f5; --muted: #a1a1aa; --accent: #7c8cff; --ok: #34d399;
+      --ink: #0a0a0b;
+      --raise: #151519;
+      --raise-2: #1c1c22;
+      --line: #26262b;
+      --line-2: #33333b;
+      --fg: #f4f4f5;
+      --muted: #a1a1aa;
+      --dim: #71717a;
+      --accent: #8b93ff;   /* product / primary action */
+      --accent-ink: #0a0a0b;
+      --ok: #34d399;       /* confirm / proof */
+      --warn: #f0a35e;     /* the dreaded client ticket — used only here */
+      --radius: 16px;
+      --maxw: 1060px;
+      --display: "Bricolage Grotesque", ui-sans-serif, system-ui, sans-serif;
+      --body: "Inter", ui-sans-serif, system-ui, -apple-system, sans-serif;
+      --mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
     }
+
     * { box-sizing: border-box; }
-    html { -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; }
+    html { -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; scroll-behavior: smooth; }
     body {
-      margin: 0; background: var(--bg); color: var(--fg);
-      font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-      line-height: 1.6;
+      margin: 0; background: var(--ink); color: var(--fg);
+      font-family: var(--body); line-height: 1.6; font-size: 16px;
+      overflow-x: hidden;
+    }
+    body::before {
+      /* ambient wash — quiet, not the party trick */
+      content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none;
+      background:
+        radial-gradient(60% 45% at 78% -5%, rgba(139,147,255,0.16), transparent 70%),
+        radial-gradient(50% 40% at 8% 8%, rgba(52,211,153,0.06), transparent 70%);
     }
     a { color: var(--accent); text-decoration: none; }
-    a:hover { text-decoration: underline; }
-    .wrap { max-width: 880px; margin: 0 auto; padding: 0 20px; }
-    header { padding: 72px 0 40px; text-align: center; }
-    .logo { font-weight: 700; letter-spacing: -0.02em; font-size: 15px; color: var(--muted); }
-    h1 { font-size: clamp(34px, 6vw, 56px); line-height: 1.1; letter-spacing: -0.03em; margin: 18px 0 12px; text-wrap: balance; }
-    .sub { font-size: clamp(16px, 2.5vw, 20px); color: var(--muted); max-width: 620px; margin: 0 auto 28px; text-wrap: balance; }
-    .cta { display: inline-flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
-    .btn {
-      display: inline-flex; align-items: center; gap: 8px; padding: 12px 22px;
-      border-radius: 12px; font-weight: 600; font-size: 15px; border: 1px solid var(--border);
-    }
-    .btn.primary { background: var(--accent); color: #0a0a0b; border-color: var(--accent); }
-    .btn.ghost { background: transparent; color: var(--fg); }
-    .demo {
-      margin: 40px auto 0; max-width: 620px; background: var(--panel); border: 1px solid var(--border);
-      border-radius: 16px; padding: 18px 20px; text-align: left; font-size: 15px;
-    }
-    .demo .u { color: var(--fg); } .demo .a { color: var(--muted); margin-top: 8px; }
-    .demo .tag { color: var(--accent); font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; }
-    section { padding: 48px 0; border-top: 1px solid var(--border); }
-    h2 { font-size: 24px; letter-spacing: -0.02em; margin: 0 0 20px; }
-    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
-    .card { background: var(--panel); border: 1px solid var(--border); border-radius: 14px; padding: 18px; }
-    .card h3 { margin: 0 0 6px; font-size: 16px; }
-    .card p { margin: 0; color: var(--muted); font-size: 14px; }
-    ol.steps { counter-reset: s; list-style: none; padding: 0; margin: 0; display: grid; gap: 12px; }
-    ol.steps li { position: relative; padding-left: 44px; color: var(--muted); }
+    a:hover { text-decoration: underline; text-underline-offset: 3px; }
+    .wrap { max-width: var(--maxw); margin: 0 auto; padding: 0 24px; }
+
+    :focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 6px; }
+
+    /* ---------- top bar ---------- */
+    .nav { position: sticky; top: 0; z-index: 20; backdrop-filter: blur(12px);
+      background: color-mix(in srgb, var(--ink) 72%, transparent); border-bottom: 1px solid transparent; }
+    .nav.scrolled { border-bottom-color: var(--line); }
+    .nav .row { display: flex; align-items: center; justify-content: space-between; height: 62px; }
+    .brand { display: flex; align-items: center; gap: 9px; font-family: var(--display); font-weight: 700;
+      font-size: 17px; letter-spacing: -0.02em; color: var(--fg); }
+    .brand:hover { text-decoration: none; }
+    .spark { width: 22px; height: 22px; border-radius: 7px; background: linear-gradient(150deg, var(--accent), #b7bcff);
+      display: grid; place-items: center; color: var(--accent-ink); font-size: 13px; font-weight: 800; box-shadow: 0 0 0 1px rgba(139,147,255,0.4), 0 6px 20px -6px rgba(139,147,255,0.6); }
+    .nav-cta { display: flex; align-items: center; gap: 8px; }
+
+    .btn { display: inline-flex; align-items: center; gap: 8px; padding: 11px 18px; border-radius: 11px;
+      font-weight: 600; font-size: 14.5px; border: 1px solid var(--line-2); color: var(--fg);
+      background: var(--raise); transition: transform .15s ease, background .15s ease, border-color .15s ease; white-space: nowrap; }
+    .btn:hover { text-decoration: none; transform: translateY(-1px); border-color: var(--line-2); background: var(--raise-2); }
+    .btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent);
+      box-shadow: 0 8px 24px -10px rgba(139,147,255,0.8); }
+    .btn.primary:hover { background: #a3a9ff; }
+    .btn.sm { padding: 8px 13px; font-size: 13.5px; border-radius: 9px; }
+    .btn svg { width: 16px; height: 16px; }
+
+    /* ---------- hero ---------- */
+    .hero { padding: 64px 0 30px; }
+    .hero-grid { display: grid; grid-template-columns: 1.05fr 0.95fr; gap: 52px; align-items: center; }
+    .eyebrow { font-family: var(--mono); font-size: 12.5px; letter-spacing: 0.02em; color: var(--warn);
+      display: inline-flex; align-items: center; gap: 8px; margin-bottom: 22px; }
+    .eyebrow::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--warn);
+      box-shadow: 0 0 12px 1px var(--warn); }
+    h1 { font-family: var(--display); font-weight: 800; font-size: clamp(38px, 5.6vw, 62px); line-height: 1.02;
+      letter-spacing: -0.035em; margin: 0 0 20px; text-wrap: balance; }
+    h1 .strike { position: relative; white-space: nowrap; color: var(--muted); }
+    h1 .strike::after { content: ""; position: absolute; left: -2%; right: -2%; top: 54%; height: 4px; border-radius: 3px;
+      background: var(--warn); transform: rotate(-2.5deg); box-shadow: 0 0 14px -2px var(--warn); }
+    .lede { font-size: clamp(17px, 1.9vw, 20px); color: var(--muted); max-width: 40ch; margin: 0 0 30px; text-wrap: pretty; }
+    .lede b { color: var(--fg); font-weight: 600; }
+    .hero-cta { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+    .microcopy { margin-top: 16px; font-size: 13px; color: var(--dim); font-family: var(--mono); }
+    .microcopy b { color: var(--ok); font-weight: 500; }
+
+    /* ---------- signature chat card ---------- */
+    .chat { background: linear-gradient(180deg, var(--raise), #101014); border: 1px solid var(--line);
+      border-radius: 20px; padding: 16px; box-shadow: 0 40px 80px -40px rgba(0,0,0,0.9), 0 0 0 1px rgba(255,255,255,0.02) inset;
+      position: relative; }
+    .chat-head { display: flex; align-items: center; gap: 9px; padding: 4px 6px 14px; border-bottom: 1px solid var(--line); margin-bottom: 14px; }
+    .chat-head .spark { width: 20px; height: 20px; font-size: 12px; border-radius: 6px; }
+    .chat-head .who { font-weight: 600; font-size: 13.5px; }
+    .chat-head .site { margin-left: auto; font-family: var(--mono); font-size: 11.5px; color: var(--dim); }
+    .msg { opacity: 0; transform: translateY(8px); animation: rise .5s ease forwards; }
+    .msg.u { display: flex; justify-content: flex-end; margin-bottom: 14px; animation-delay: .15s; }
+    .msg.u .bubble { background: var(--accent); color: var(--accent-ink); font-family: var(--mono); font-size: 13px;
+      line-height: 1.5; padding: 11px 14px; border-radius: 14px 14px 4px 14px; max-width: 88%; }
+    .msg.a { animation-delay: .9s; }
+    .role { font-size: 11px; font-family: var(--mono); color: var(--dim); text-transform: uppercase; letter-spacing: 0.08em; margin: 0 4px 7px; }
+    .ordercard { background: var(--raise-2); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+    .ordercard .top { display: flex; justify-content: space-between; align-items: center; padding: 11px 13px; border-bottom: 1px solid var(--line); }
+    .ordercard .oid { font-family: var(--mono); font-size: 13px; font-weight: 500; }
+    .badge { font-size: 11px; font-family: var(--mono); padding: 3px 9px; border-radius: 999px; border: 1px solid var(--line-2);
+      color: var(--warn); }
+    .badge.to { color: var(--ok); border-color: color-mix(in srgb, var(--ok) 40%, transparent); background: color-mix(in srgb, var(--ok) 12%, transparent); }
+    .ordercard .rows { padding: 4px 13px 11px; }
+    .ordercard .r { display: flex; justify-content: space-between; font-size: 12.5px; color: var(--muted); padding: 6px 0; border-bottom: 1px dashed var(--line); }
+    .ordercard .r:last-child { border-bottom: 0; }
+    .ordercard .r span:last-child { color: var(--fg); font-family: var(--mono); }
+    .prompt-line { font-size: 13.5px; color: var(--muted); margin: 13px 4px 12px; }
+    .confirmbar { display: flex; gap: 9px; }
+    .cbtn { flex: 1; text-align: center; padding: 10px; border-radius: 10px; font-weight: 600; font-size: 13.5px; cursor: default; }
+    .cbtn.yes { background: var(--ok); color: #06231a; }
+    .cbtn.no { background: transparent; border: 1px solid var(--line-2); color: var(--muted); }
+    .guard-note { font-family: var(--mono); font-size: 11.5px; color: var(--dim); text-align: center; margin-top: 12px; }
+    .guard-note b { color: var(--ok); font-weight: 500; }
+
+    @keyframes rise { to { opacity: 1; transform: none; } }
+
+    /* ---------- generic section ---------- */
+    section { padding: 84px 0; }
+    .kicker { font-family: var(--mono); font-size: 12.5px; color: var(--accent); letter-spacing: 0.04em; margin: 0 0 14px; }
+    h2 { font-family: var(--display); font-weight: 700; font-size: clamp(28px, 3.6vw, 40px); letter-spacing: -0.03em;
+      line-height: 1.08; margin: 0 0 18px; text-wrap: balance; }
+    .section-lede { color: var(--muted); font-size: 17px; max-width: 62ch; margin: 0 0 44px; text-wrap: pretty; }
+    .section-lede b { color: var(--fg); font-weight: 600; }
+
+    /* the trap — wall of tickets */
+    .trap { border-top: 1px solid var(--line); }
+    .tickets { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 14px; margin-top: 8px; }
+    .ticket { background: var(--raise); border: 1px solid var(--line); border-left: 3px solid var(--warn);
+      border-radius: 10px; padding: 14px 16px; }
+    .ticket .t { font-family: var(--mono); font-size: 13px; color: var(--fg); line-height: 1.5; margin: 0; }
+    .ticket .m { font-size: 12px; color: var(--dim); margin: 8px 0 0; }
+    .trap-punch { margin-top: 40px; font-family: var(--display); font-weight: 700; font-size: clamp(20px, 2.6vw, 27px);
+      letter-spacing: -0.02em; line-height: 1.3; max-width: 30ch; text-wrap: balance; }
+    .trap-punch em { font-style: normal; color: var(--accent); }
+
+    /* how it works — 3 beats */
+    .how { border-top: 1px solid var(--line); }
+    .beats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+    .beat { background: var(--raise); border: 1px solid var(--line); border-radius: var(--radius); padding: 22px; position: relative; }
+    .beat .n { font-family: var(--mono); font-size: 12px; color: var(--dim); }
+    .beat h3 { font-family: var(--display); font-weight: 700; font-size: 19px; letter-spacing: -0.01em; margin: 12px 0 8px; }
+    .beat p { margin: 0; color: var(--muted); font-size: 14.5px; }
+    .beat .code { display: block; font-family: var(--mono); font-size: 12.5px; color: var(--fg); background: var(--ink);
+      border: 1px solid var(--line); border-radius: 8px; padding: 9px 11px; margin-top: 14px; }
+    .beat.mid .code { color: var(--ok); }
+
+    /* guardrails */
+    .guard { border-top: 1px solid var(--line); }
+    .guard-grid { display: grid; grid-template-columns: 1.1fr 1fr; gap: 48px; align-items: center; }
+    .glist { list-style: none; padding: 0; margin: 26px 0 0; display: grid; gap: 18px; }
+    .glist li { display: grid; grid-template-columns: 26px 1fr; gap: 14px; align-items: start; }
+    .glist .ic { width: 26px; height: 26px; border-radius: 8px; display: grid; place-items: center;
+      background: color-mix(in srgb, var(--ok) 14%, transparent); color: var(--ok);
+      border: 1px solid color-mix(in srgb, var(--ok) 35%, transparent); }
+    .glist .ic svg { width: 15px; height: 15px; }
+    .glist b { font-weight: 600; }
+    .glist p { margin: 3px 0 0; color: var(--muted); font-size: 14.5px; }
+    .quote { background: var(--raise); border: 1px solid var(--line); border-radius: var(--radius); padding: 26px; }
+    .quote .q { font-family: var(--display); font-weight: 600; font-size: 20px; line-height: 1.4; letter-spacing: -0.01em; text-wrap: pretty; margin: 0; }
+    .quote .a { margin: 16px 0 0; font-size: 14px; color: var(--muted); }
+
+    /* multilingual */
+    .lang { border-top: 1px solid var(--line); }
+    .lang-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 14px; margin-top: 8px; }
+    .lcard { background: var(--raise); border: 1px solid var(--line); border-radius: 12px; padding: 16px; }
+    .lcard .flag { font-family: var(--mono); font-size: 11px; color: var(--dim); text-transform: uppercase; letter-spacing: 0.1em; }
+    .lcard .say { font-family: var(--mono); font-size: 13px; color: var(--fg); margin: 10px 0 0; line-height: 1.5; }
+
+    /* own it / pricing */
+    .own { border-top: 1px solid var(--line); }
+    .own-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; margin-top: 8px; }
+    .ocard { background: var(--raise); border: 1px solid var(--line); border-radius: var(--radius); padding: 20px; }
+    .ocard h3 { font-family: var(--display); font-weight: 700; font-size: 17px; margin: 0 0 7px; letter-spacing: -0.01em; }
+    .ocard p { margin: 0; color: var(--muted); font-size: 14px; }
+    .ocard .big { font-family: var(--display); font-weight: 800; font-size: 30px; letter-spacing: -0.02em; }
+    .ocard.cloud { border-color: color-mix(in srgb, var(--accent) 40%, var(--line)); }
+    .soon { font-family: var(--mono); font-size: 10.5px; color: var(--accent); border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent);
+      border-radius: 999px; padding: 2px 8px; vertical-align: middle; margin-left: 8px; }
+
+    /* install */
+    .install { border-top: 1px solid var(--line); }
+    ol.steps { counter-reset: s; list-style: none; padding: 0; margin: 8px 0 0; display: grid; gap: 12px; max-width: 720px; }
+    ol.steps li { position: relative; padding: 16px 18px 16px 60px; color: var(--muted); font-size: 15px;
+      background: var(--raise); border: 1px solid var(--line); border-radius: 12px; }
     ol.steps li b { color: var(--fg); font-weight: 600; }
-    ol.steps li::before {
-      counter-increment: s; content: counter(s); position: absolute; left: 0; top: 0;
-      width: 28px; height: 28px; border-radius: 8px; background: var(--panel); border: 1px solid var(--border);
-      display: grid; place-items: center; color: var(--fg); font-weight: 600; font-size: 14px;
+    ol.steps li code { font-family: var(--mono); font-size: 12.5px; color: var(--accent); background: var(--ink);
+      padding: 2px 6px; border-radius: 5px; border: 1px solid var(--line); }
+    ol.steps li::before { counter-increment: s; content: counter(s); position: absolute; left: 16px; top: 15px;
+      width: 30px; height: 30px; border-radius: 9px; background: var(--ink); border: 1px solid var(--line-2);
+      display: grid; place-items: center; color: var(--fg); font-family: var(--mono); font-weight: 500; font-size: 14px; }
+
+    /* final cta */
+    .final { border-top: 1px solid var(--line); text-align: center; }
+    .final h2 { max-width: 18ch; margin-left: auto; margin-right: auto; }
+    .final .section-lede { margin-left: auto; margin-right: auto; }
+    .final .hero-cta { justify-content: center; }
+
+    footer { border-top: 1px solid var(--line); padding: 40px 0 64px; color: var(--dim); font-size: 13px; }
+    .foot-row { display: flex; justify-content: space-between; gap: 18px; flex-wrap: wrap; align-items: flex-start; }
+    footer a { color: var(--muted); }
+    .foot-links { display: flex; gap: 20px; flex-wrap: wrap; }
+
+    @media (max-width: 860px) {
+      .hero-grid { grid-template-columns: 1fr; gap: 40px; }
+      .chat { order: 2; }
+      .guard-grid { grid-template-columns: 1fr; gap: 30px; }
+      .beats { grid-template-columns: 1fr; }
+      section { padding: 62px 0; }
+      .hero { padding: 40px 0 10px; }
     }
-    .price { display: flex; gap: 10px; align-items: baseline; }
-    .price .free { font-size: 28px; font-weight: 700; }
-    .note { color: var(--muted); font-size: 14px; }
-    footer { padding: 40px 0 64px; color: var(--muted); font-size: 13px; text-align: center; border-top: 1px solid var(--border); }
-    .pill { display: inline-block; font-size: 12px; color: var(--ok); border: 1px solid var(--border); border-radius: 999px; padding: 3px 10px; margin-bottom: 14px; }
+
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      .msg { animation: none; opacity: 1; transform: none; }
+    }
   </style>
 </head>
 <body>
-  <header class="wrap">
-    <div class="logo">WPChat</div>
-    <h1>Run your store by chat.</h1>
-    <p class="sub">Type a request in any language — “mark order 2833 completed”, “write a post about summer sale” — and WPChat calls the right WooCommerce &amp; WordPress functions for you. Free, open-source, self-hosted.</p>
-    <div class="cta">
-      <a class="btn primary" href="https://github.com/gynciuz/wpchat/releases/latest">Download latest release</a>
-      <a class="btn ghost" href="https://github.com/gynciuz/wpchat">View on GitHub</a>
+  <nav class="nav" id="nav">
+    <div class="wrap row">
+      <a class="brand" href="/"><span class="spark">✦</span> WPChat</a>
+      <div class="nav-cta">
+        <a class="btn sm" href="https://github.com/gynciuz/wpchat" aria-label="View WPChat on GitHub">
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .3a12 12 0 0 0-3.8 23.4c.6.1.8-.3.8-.6v-2c-3.3.7-4-1.6-4-1.6-.6-1.4-1.3-1.8-1.3-1.8-1.1-.7 0-.7 0-.7 1.2 0 1.8 1.2 1.8 1.2 1.1 1.8 2.8 1.3 3.5 1 .1-.8.4-1.3.7-1.6-2.7-.3-5.5-1.3-5.5-6 0-1.3.5-2.3 1.2-3.1-.1-.4-.5-1.6.1-3.2 0 0 1-.3 3.3 1.2a11.5 11.5 0 0 1 6 0C17 4.7 18 5 18 5c.6 1.6.2 2.8.1 3.2.7.8 1.2 1.8 1.2 3.1 0 4.6-2.8 5.6-5.5 5.9.5.3.9 1 .9 2.2v3.3c0 .3.2.7.8.6A12 12 0 0 0 12 .3Z"/></svg>
+          Star
+        </a>
+        <a class="btn primary sm" href="https://github.com/gynciuz/wpchat/releases/latest">Install free</a>
+      </div>
     </div>
-    <div class="demo">
-      <div class="tag">You</div>
-      <div class="u">pažymėk užsakymą 2833 įvykdytą ir parašyk klientui ačiū</div>
-      <div class="tag" style="margin-top:14px">WPChat</div>
-      <div class="a">Done — order #2833 is now Completed, and I added a thank-you note (confirmed before sending). ✓</div>
+  </nav>
+
+  <header class="hero">
+    <div class="wrap hero-grid">
+      <div>
+        <span class="eyebrow">for the developer who's tired of being tech support</span>
+        <h1>Stop being your clients'<br />WordPress <span class="strike">helpdesk</span>.</h1>
+        <p class="lede">Install WPChat once. Your clients run their own store &amp; content <b>by chat</b> — in plain language, in any language — and the 5-minute tickets stop landing in your inbox. <b>You keep the retainer. You lose the 9pm emails.</b></p>
+        <div class="hero-cta">
+          <a class="btn primary" href="https://github.com/gynciuz/wpchat/releases/latest">Install free →</a>
+          <a class="btn" href="#how">See how it works</a>
+        </div>
+        <p class="microcopy">Free &amp; open-source · self-hosted · <b>every change is preview → confirm</b></p>
+      </div>
+
+      <div class="chat" aria-label="Example WPChat conversation">
+        <div class="chat-head">
+          <span class="spark">✦</span><span class="who">WPChat</span>
+          <span class="site">/wpchat · shop.example.com</span>
+        </div>
+        <div class="msg u"><span class="bubble">pažymėk užsakymą 2833 panaudotą — klientas išleido 30€ iš 100€</span></div>
+        <div class="msg a">
+          <div class="role">WPChat · preview</div>
+          <div class="ordercard">
+            <div class="top"><span class="oid">Order #2833</span>
+              <span><span class="badge">Processing</span> → <span class="badge to">Panaudotas</span></span>
+            </div>
+            <div class="rows">
+              <div class="r"><span>Customer</span><span>Ona J.</span></div>
+              <div class="r"><span>Note added</span><span>spent 30€ / 100€</span></div>
+            </div>
+          </div>
+          <p class="prompt-line">Ready to apply this change?</p>
+          <div class="confirmbar">
+            <span class="cbtn yes">Patvirtinti</span>
+            <span class="cbtn no">Atšaukti</span>
+          </div>
+          <p class="guard-note"><b>Nothing changes</b> until they tap confirm.</p>
+        </div>
+      </div>
     </div>
   </header>
 
-  <main class="wrap">
-    <section>
-      <h2>What it does</h2>
-      <div class="grid">
-        <div class="card"><h3>Orders</h3><p>List, filter, search, change status, add notes, resend emails — with a confirmation step before anything reaches a customer.</p></div>
-        <div class="card"><h3>Content</h3><p>Create posts &amp; pages as drafts with images, then publish on your okay. Edit existing content with preview + confirm.</p></div>
-        <div class="card"><h3>SEO</h3><p>Run an SEO / AI-SEO audit and fix titles, meta descriptions, indexing and more through the chat.</p></div>
-        <div class="card"><h3>Traffic</h3><p>Ask “how many visitors this week?” — WPChat reads whichever analytics plugin you already have.</p></div>
-        <div class="card"><h3>Any language</h3><p>Works in Lithuanian, Russian, Polish and English. Type how you think.</p></div>
-        <div class="card"><h3>Safe by design</h3><p>No bulk-destructive actions, no silent deletes. When it can’t do something, it hands you a direct admin link.</p></div>
+  <main>
+    <section class="trap">
+      <div class="wrap">
+        <p class="kicker">the trap</p>
+        <h2>You can't train the ticket away.</h2>
+        <p class="section-lede">You've sent the Loom. Twice. You built the simplified edit screen. They still email you. Not because they're careless — because <b>they never wanted to learn WooCommerce's admin, and that was never the deal.</b> A "quick edit" request isn't a knowledge gap. It's an interface mismatch, and no documentation closes it.</p>
+        <div class="tickets">
+          <div class="ticket"><p class="t">"can you just change the price on the sneakers to €59?"</p><p class="m">— 9:14pm, again</p></div>
+          <div class="ticket"><p class="t">"the product photo is wrong, can you swap it?"</p><p class="m">— third time this month</p></div>
+          <div class="ticket"><p class="t">"how do I mark this order as paid??"</p><p class="m">— you've shown her twice</p></div>
+          <div class="ticket"><p class="t">"can you update our opening hours on the site?"</p><p class="m">— it's two words</p></div>
+        </div>
+        <p class="trap-punch">Every hour on the helpdesk is an hour you're <em>not</em> selling the next build. Support isn't just annoying — it's the ceiling on your studio.</p>
       </div>
     </section>
 
-    <section>
-      <h2>Install in 4 steps</h2>
-      <ol class="steps">
-        <li><b>Download</b> the latest <code>wpchat-vX.Y.Z.zip</code> from <a href="https://github.com/gynciuz/wpchat/releases/latest">Releases</a>.</li>
-        <li><b>Upload</b> it in WP admin → Plugins → Add New → Upload Plugin → Activate.</li>
-        <li><b>Add your Anthropic API key</b> from <a href="https://console.anthropic.com">console.anthropic.com</a> in the first-run setup.</li>
-        <li><b>Open <code>/wpchat</code></b> on your site and start typing.</li>
-      </ol>
+    <section class="how" id="how">
+      <div class="wrap">
+        <p class="kicker">how it works</p>
+        <h2>They say what they want.<br />It shows them. They confirm.</h2>
+        <p class="section-lede">WPChat runs the real WooCommerce &amp; WordPress functions directly — no fragile automations, no new dashboard for them to learn. Three beats, every time:</p>
+        <div class="beats">
+          <div class="beat">
+            <span class="n">01 · plain language</span>
+            <h3>They ask</h3>
+            <p>In whatever words they'd use — including the messy, real ones. No menu to find, no field to know.</p>
+            <span class="code">"mark 2833 used, they spent 30€"</span>
+          </div>
+          <div class="beat mid">
+            <span class="n">02 · preview</span>
+            <h3>It shows the change</h3>
+            <p>WPChat renders exactly what will happen — the order, the new status, the note — before touching anything.</p>
+            <span class="code">Processing → Panaudotas · note ✓</span>
+          </div>
+          <div class="beat">
+            <span class="n">03 · confirm</span>
+            <h3>They approve</h3>
+            <p>One tap applies it. One tap cancels. There's no silent write, and no way to fire off ten of them at once.</p>
+            <span class="code">[ Patvirtinti ]&nbsp;&nbsp;[ Atšaukti ]</span>
+          </div>
+        </div>
+      </div>
     </section>
 
-    <section>
-      <h2>Pricing</h2>
-      <div class="price"><span class="free">Free</span><span class="note">— open-source (MIT)</span></div>
-      <p class="note" style="margin-top:10px; max-width: 620px;">
-        You bring your own Anthropic API key and pay Anthropic directly for usage — typically a few cents per request. WPChat collects no payment, so there’s nothing to refund. A hosted <b>WPChat Cloud</b> tier (no key setup) is coming as a ~€12/mo Stripe subscription — <a href="https://github.com/gynciuz/wpchat">join the waitlist</a>.
-      </p>
+    <section class="guard">
+      <div class="wrap guard-grid">
+        <div>
+          <p class="kicker">the objection, answered</p>
+          <h2>"But won't they break something?"</h2>
+          <p class="section-lede">Correct fear. It's exactly what the product is designed around. This isn't admin access with the safety off — it's <b>guardrailed access.</b></p>
+          <ul class="glist">
+            <li>
+              <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>
+              <div><b>Preview → confirm on every change.</b><p>Nothing mutates silently. They see it, then approve it.</p></div>
+            </li>
+            <li>
+              <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>
+              <div><b>One item at a time. No bulk-destructive anything.</b><p>There's no "delete all orders" button for a panicked client to find — it's an enforced constraint, not a setting.</p></div>
+            </li>
+            <li>
+              <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>
+              <div><b>It hands off instead of improvising.</b><p>Out of scope? It returns a direct link to the right admin page — it never invents a destructive workaround.</p></div>
+            </li>
+          </ul>
+        </div>
+        <div class="quote">
+          <p class="q">"It's not access. It's guardrailed access — the difference between handing a client the keys and handing them a loaded gun."</p>
+          <p class="a">The whole design goal: let the non-expert act, without being able to blow up the site.</p>
+        </div>
+      </div>
     </section>
 
-    <section>
-      <h2>Privacy</h2>
-      <p class="note" style="max-width: 640px;">
-        WPChat sends the content of your requests — which can include order and customer data — to Anthropic to generate replies. Your conversation history stays in your own site’s database; your API key never reaches the browser. Optional, PII-free error reporting and an explicit “Report a problem” button are the only data sent to the developer. Full details in <a href="https://github.com/gynciuz/wpchat/blob/main/PRIVACY.md">PRIVACY.md</a>.
-      </p>
+    <section class="lang">
+      <div class="wrap">
+        <p class="kicker">in their language, literally</p>
+        <h2>Your client thinks in their language.<br />So does WPChat.</h2>
+        <p class="section-lede">Lithuanian, Russian, Polish, English — order statuses, confirmations, and content edits all work in the words your client actually types. Almost no other WordPress AI tool does this.</p>
+        <div class="lang-grid">
+          <div class="lcard"><span class="flag">LT</span><p class="say">"pažymėk 2833 kaip panaudotą"</p></div>
+          <div class="lcard"><span class="flag">PL</span><p class="say">"zmień cenę butów na 59 €"</p></div>
+          <div class="lcard"><span class="flag">RU</span><p class="say">"добавь заметку к заказу 2833"</p></div>
+          <div class="lcard"><span class="flag">EN</span><p class="say">"write a draft post about the summer sale"</p></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="own">
+      <div class="wrap">
+        <p class="kicker">yours to run</p>
+        <h2>Free. Open-source. Nothing new to babysit.</h2>
+        <p class="section-lede">No SaaS bill, no vendor lock, no account to create for your client. You install a plugin and own it.</p>
+        <div class="own-grid">
+          <div class="ocard"><h3>MIT-licensed</h3><p>Read the code, fork it, ship it. It's a WordPress plugin, not a black box.</p></div>
+          <div class="ocard"><h3>Bring your own key</h3><p>Paste an Anthropic API key; pay Anthropic directly — usually cents per request. WPChat takes no payment.</p></div>
+          <div class="ocard"><h3>Auto-updates</h3><p>Ships updates through the normal WordPress flow, straight from GitHub Releases. No SSH, no build step on your side.</p></div>
+          <div class="ocard cloud"><h3>WPChat Cloud <span class="soon">soon</span></h3><p><span class="big">€12</span><span style="color:var(--muted)">/mo</span><br />Hosted, no key to manage. For clients you'd rather not hand an API key.</p></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="install">
+      <div class="wrap">
+        <p class="kicker">install</p>
+        <h2>Live on a client site in four steps.</h2>
+        <ol class="steps">
+          <li><b>Download</b> the latest <code>wpchat-vX.Y.Z.zip</code> from <a href="https://github.com/gynciuz/wpchat/releases/latest">GitHub Releases</a>.</li>
+          <li><b>Upload &amp; activate</b> in WP admin → Plugins → Add New → Upload Plugin.</li>
+          <li><b>Add an Anthropic API key</b> from <a href="https://console.anthropic.com">console.anthropic.com</a> in the first-run setup.</li>
+          <li><b>Send your client to <code>/wpchat</code></b> — and stop answering the "can you just…" emails.</li>
+        </ol>
+      </div>
+    </section>
+
+    <section class="final">
+      <div class="wrap">
+        <p class="kicker">retire the helpdesk</p>
+        <h2>Keep the retainer. Lose the tickets.</h2>
+        <p class="section-lede">Install it on one client site this week. If it doesn't kill a stack of trivial emails, delete it — it's free and it's yours.</p>
+        <div class="hero-cta">
+          <a class="btn primary" href="https://github.com/gynciuz/wpchat/releases/latest">Install free →</a>
+          <a class="btn" href="https://github.com/gynciuz/wpchat">View on GitHub</a>
+        </div>
+      </div>
     </section>
   </main>
 
-  <footer class="wrap">
-    <span class="pill">Requires WordPress 6.5+ · PHP 8.1+ · an Anthropic API key</span><br />
-    WPChat is free, open-source software. © 2026 Gintaras Lukoševičius · MIT.
+  <footer>
+    <div class="wrap foot-row">
+      <div><a class="brand" href="/" style="font-size:15px;"><span class="spark" style="width:18px;height:18px;font-size:11px;">✦</span> WPChat</a><br />
+        <span style="display:inline-block;margin-top:10px;">Free, open-source software · MIT · © 2026 Gintaras Lukoševičius</span></div>
+      <div class="foot-links">
+        <a href="https://github.com/gynciuz/wpchat">GitHub</a>
+        <a href="https://github.com/gynciuz/wpchat/releases/latest">Releases</a>
+        <a href="https://github.com/gynciuz/wpchat/blob/main/PRIVACY.md">Privacy</a>
+        <a href="https://console.anthropic.com">Get an API key</a>
+      </div>
+    </div>
   </footer>
+
+  <script>
+    // Hairline under the nav once you scroll — the only JS on the page.
+    (function () {
+      var nav = document.getElementById('nav');
+      var onScroll = function () { nav.classList.toggle('scrolled', window.scrollY > 8); };
+      onScroll();
+      window.addEventListener('scroll', onScroll, { passive: true });
+    })();
+  </script>
 </body>
 </html>
