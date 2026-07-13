@@ -102,6 +102,19 @@ architecture notes; this section is the short, checkable version.
 
 > Newest at the top. Work bottom-up. One commit per task. Use `[x]` to check off.
 
+[ ] (priority) **Expand built-in language coverage to the marketing-priority set.**
+    The landing page now advertises **EN, ES, FR, PT, HI (Hindi), ZH (Mandarin),
+    DE** — plus "dozens more" — with **Russian kept working but no longer featured**.
+    The LLM already handles arbitrary languages, but the hardcoded multilingual bits
+    must cover the new set so we don't over-claim in marketing:
+    - `ContentConfirmation::is_confirmed` confirmation whitelist — add sí/confirmar,
+      oui/confirmer, sim/confirmar, ja/bestätigen, हाँ/पुष्टि करें, 确认/是, etc.
+    - The status→slug multilingual map in `Rest::system_prompt`.
+    - React confirm/cancel button locales (currently LT/RU/PL/EN → add ES/FR/PT/HI/ZH/DE).
+    **Keep Russian** in the whitelist and support paths (do not remove) — only
+    de-emphasized in marketing. Add locale tests mirroring the existing confirmation
+    tests. Priority order: EN, ES, FR, PT, HI, ZH, DE, then the rest.
+
 [ ] (scope and discuss) (priority) **Stand up the paid WPChat Cloud tier (Stripe subscription billing).**
     Goal: let a site owner subscribe to hosted WPChat with **no BYO API key** —
     the backend runs on *our* Anthropic key behind a proxy. Revenue track;
