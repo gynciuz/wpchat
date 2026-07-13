@@ -102,6 +102,23 @@ architecture notes; this section is the short, checkable version.
 
 > Newest at the top. Work bottom-up. One commit per task. Use `[x]` to check off.
 
+[ ] (scope and discuss) (priority) **Stand up the paid WPChat Cloud tier (Stripe subscription billing).**
+    Goal: let a site owner subscribe to hosted WPChat with **no BYO API key** —
+    the backend runs on *our* Anthropic key behind a proxy. Revenue track;
+    requested "asap". Pricing already scoped in `docs/wpchat-cloud-pricing.md`
+    (**€12/mo**, Sonnet default, fair-use soft cap ~150 chats/mo, overage =
+    throttle-to-Haiku or top-up). Stripe account is live (display name "Loupe",
+    `acct_1Ts8WKHRn8ZbPNdX`).
+    Design must cover: Stripe product/price + Checkout/Customer Portal;
+    subscription state → plugin entitlement (webhook or license-key check);
+    the hosted proxy that injects our key and enforces the per-site cap;
+    `Settings::get_api_key` precedence when Cloud is active; onboarding/UI
+    (the ProviderCard `cloudPrice` already surfaces "€12/mo"); overage policy;
+    security (no key ever reaches the browser; webhook signature verification;
+    restricted Stripe keys). **This is `scope and discuss` — produce the design
+    + implementation plan and wait for sign-off before writing billing code.**
+    Being drafted in an isolated worktree session (2026-07-13).
+
 [x](done 2026-06-22) **Create posts/pages with images + guided taxonomy/SEO.**
     Fixed the upload bug: oversized file (over PHP upload_max_filesize) was
     misreported as "No file provided" — now reports the size limit; dev server
