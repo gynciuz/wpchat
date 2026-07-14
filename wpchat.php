@@ -61,14 +61,8 @@ register_deactivation_hook(__FILE__, ['\WPChat\Plugin', 'deactivate']);
  * pins WordPress's update lookups to this repository so a future WP.org
  * plugin with the same slug can't silently hijack our update channel.
  */
-// Omitted from the WordPress.org build (wp.org serves updates and bans bundled
-// updaters + the Update URI header). Present only in the GitHub-Releases build.
-if (file_exists(WPCHAT_DIR . 'vendor-puc/plugin-update-checker/plugin-update-checker.php')) {
-    require_once WPCHAT_DIR . 'vendor-puc/plugin-update-checker/plugin-update-checker.php';
-    $wpchat_update_checker = YahnisElsts\PluginUpdateChecker\v5\PucFactory::buildUpdateChecker(
-        'https://github.com/gynciuz/wpchat',
-        __FILE__,
-        'wpchat'
-    );
-    $wpchat_update_checker->getVcsApi()->enableReleaseAssets();
+// Optional GitHub-Releases auto-update helper. The whole file is stripped from
+// the WordPress.org build, so this require simply no-ops there.
+if (file_exists(WPCHAT_DIR . 'includes/updater.php')) {
+    require_once WPCHAT_DIR . 'includes/updater.php';
 }

@@ -31,6 +31,7 @@ git -C "$ROOT" archive HEAD | tar -x -C "$OUT"
 
 # 2) Strip what wp.org bans.
 rm -rf "$OUT/vendor-puc"                    # bundled update checker
+rm -f  "$OUT/includes/updater.php"          # PUC bootstrap (updater code)
 rm -f  "$OUT/includes/class-git-sync.php"   # proc_open() is forbidden
 
 # 3) Remove the `Update URI:` header line (a comment — can't be guarded in code).
