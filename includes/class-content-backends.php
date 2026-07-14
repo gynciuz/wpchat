@@ -68,10 +68,14 @@ interface ContentBackend {
 class ContentConfirmation {
 
     /**
-     * Accepted natural-language affirmatives across LT / RU / PL / EN.
-     * Single-token matches; we explicitly reject negations first so words
-     * that contain an affirmative as a substring (e.g. "negerai" — "not
-     * okay" — would have substring-matched "gerai") can't slip through.
+     * Accepted natural-language affirmatives across the supported languages
+     * (EN / ES / FR / PT / HI / ZH / DE, plus LT / PL / RU — Russian is kept
+     * supported though no longer featured in marketing).
+     * Space-delimited languages are matched as exact tokens; we explicitly
+     * reject negations first so a word that contains an affirmative as a
+     * substring (e.g. "negerai" — "not okay") can't slip through. Mandarin
+     * has no word boundaries, so its affirmatives/negations are matched as
+     * substrings on short replies.
      */
     public static function is_confirmed(string $phrase): bool {
         $lc = mb_strtolower(trim($phrase), 'UTF-8');
@@ -84,9 +88,24 @@ class ContentConfirmation {
         // Reject negations first. If any rejection word is present anywhere
         // in the input, treat as not-confirmed even if an affirmative is
         // also present — fail safe for "ne, taip" / "no, ok" / etc.
-        $rejections = ['no', 'ne', 'нет', 'не', 'nie', 'cancel', 'atšaukti', 'negerai'];
+        $rejections = [
+            'no', 'nope', 'cancel',             // English
+            'ne', 'negerai', 'atšaukti',        // Lithuanian
+            'нет', 'не', 'отмена',              // Russian (kept)
+            'nie',                              // Polish
+            'non',                              // French
+            'não', 'nao',                       // Portuguese
+            'nein',                             // German
+            'नहीं', 'रद्द',                     // Hindi (no / cancel)
+        ];
         foreach ($tokens as $token) {
             if (in_array($token, $rejections, true)) {
+                return false;
+            }
+        }
+        // Mandarin negation / cancel — substring (no word boundaries).
+        foreach (['取消', '不要', '否', '不'] as $needle) {
+            if (mb_strpos($lc, $needle, 0, 'UTF-8') !== false) {
                 return false;
             }
         }
@@ -97,10 +116,20 @@ class ContentConfirmation {
             'yes', 'ok', 'okay', 'sure', 'confirm', 'apply',
             // Lithuanian
             'taip', 'gerai', 'sutinku', 'patvirtinu',
-            // Russian
+            // Russian (kept — still supported, just not featured)
             'да', 'хорошо', 'ок',
             // Polish
             'tak', 'dobrze',
+            // Spanish
+            'sí', 'si', 'vale', 'confirmar', 'confirmo', 'aplicar',
+            // French
+            'oui', 'confirmer', 'confirme', "d'accord",
+            // Portuguese
+            'sim',
+            // German
+            'ja', 'bestätigen', 'bestätige', 'einverstanden',
+            // Hindi
+            'हाँ', 'हां', 'ठीक', 'पुष्टि', 'जी',
         ];
         foreach ($tokens as $token) {
             if (in_array($token, $allowed_words, true)) {
@@ -108,9 +137,18 @@ class ContentConfirmation {
             }
         }
 
+        // Mandarin affirmatives — substring on short replies (no word boundaries).
+        if (mb_strlen($lc, 'UTF-8') <= 12) {
+            foreach (['确认', '确定', '好的', '是的', '可以', '好', '是'] as $needle) {
+                if (mb_strpos($lc, $needle, 0, 'UTF-8') !== false) {
+                    return true;
+                }
+            }
+        }
+
         // Multi-word affirmative phrases — substring is fine because
         // these are unambiguous.
-        $allowed_phrases = ['do it'];
+        $allowed_phrases = ['do it', 'de acuerdo', "d'accord", 'está bem', 'esta bem'];
         foreach ($allowed_phrases as $needle) {
             if (mb_strlen($lc, 'UTF-8') <= 40 && strpos($lc, $needle) !== false) {
                 return true;

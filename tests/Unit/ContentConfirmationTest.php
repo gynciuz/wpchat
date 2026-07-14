@@ -40,6 +40,31 @@ class ContentConfirmationTest extends TestCase {
             // Polish
             'polish tak'      => ['tak'],
             'polish dobrze'   => ['dobrze'],
+            // Spanish
+            'spanish sí'         => ['sí'],
+            'spanish si'         => ['si'],
+            'spanish vale'       => ['vale'],
+            'spanish confirmar'  => ['confirmar'],
+            'spanish de acuerdo' => ['de acuerdo'],
+            // French
+            'french oui'         => ['oui'],
+            'french confirmer'   => ['confirmer'],
+            "french d'accord"    => ["d'accord"],
+            // Portuguese
+            'portuguese sim'     => ['sim'],
+            'portuguese está bem'=> ['está bem'],
+            // German
+            'german ja'          => ['ja'],
+            'german bestätigen'  => ['bestätigen'],
+            'german einverstanden' => ['einverstanden'],
+            // Hindi
+            'hindi haan'         => ['हाँ'],
+            'hindi theek hai'    => ['ठीक है'],
+            'hindi pushti'       => ['पुष्टि करें'],
+            // Mandarin (substring — no word boundaries)
+            'mandarin queren'    => ['确认'],
+            'mandarin haode'     => ['好的'],
+            'mandarin shi'       => ['是'],
             // Casing + whitespace
             'case insensitive uppercase' => ['TAIP'],
             'case insensitive mixed'     => ['Gerai'],
@@ -65,6 +90,13 @@ class ContentConfirmationTest extends TestCase {
             'russian нет'        => ['нет'],
             'russian не надо'    => ['не надо'],
             'polish nie'         => ['nie'],
+            'french non'         => ['non'],
+            'portuguese não'     => ['não'],
+            'german nein'        => ['nein'],
+            'hindi nahi'         => ['नहीं'],
+            'mandarin quxiao (cancel)' => ['取消'],
+            'mandarin bu (no)'   => ['不'],
+            'mandarin negated confirm' => ['我不确认'],
             'cancel'             => ['cancel'],
             'maybe'              => ['maybe'],
             'unrelated word'     => ['banana'],

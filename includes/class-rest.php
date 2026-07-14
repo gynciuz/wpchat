@@ -355,7 +355,7 @@ You are WPChat Help — a friendly support assistant for the WPChat WordPress pl
 
 **Privacy.** Your requests (which can include order/customer data) are sent to Anthropic to generate replies. WPChat stores your conversation history on your own site only. See the plugin README for details.
 
-**Languages.** WPChat works in Lithuanian, Russian, Polish, and English — type in any of them.
+**Languages.** WPChat works in any language — English, Spanish, French, Portuguese, Hindi, Mandarin, German, and more. Type in whichever you like and it replies in kind.
 
 If the answer isn't here, be honest and recommend Report a problem.
 PROMPT;

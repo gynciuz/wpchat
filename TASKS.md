@@ -102,8 +102,15 @@ architecture notes; this section is the short, checkable version.
 
 > Newest at the top. Work bottom-up. One commit per task. Use `[x]` to check off.
 
-[ ] (priority) **Expand built-in language coverage to the marketing-priority set.**
-    The landing page now advertises **EN, ES, FR, PT, HI (Hindi), ZH (Mandarin),
+[x](done 2026-07-14) **Expand built-in language coverage to the marketing-priority set.**
+    Done: added EN/ES/FR/PT/HI/ZH/DE affirmatives + negations to
+    `ContentConfirmation::is_confirmed` (Mandarin matched by substring — no word
+    boundaries; Hindi/Latin by token), extended the React confirm/cancel + hero +
+    help/report locales in `Chat.tsx` (locale is 2-letter from `substr(get_user_locale,0,2)`),
+    and broadened the "Languages" line in the help system prompt. Russian kept in
+    the whitelist + UI. Tests: `ContentConfirmationTest` now 62 assertions green
+    (new accepted/rejected cases per language). React `pnpm build` green; `build/` recommitted.
+    The landing page advertised **EN, ES, FR, PT, HI (Hindi), ZH (Mandarin),
     DE** — plus "dozens more" — with **Russian kept working but no longer featured**.
     The LLM already handles arbitrary languages, but the hardcoded multilingual bits
     must cover the new set so we don't over-claim in marketing:

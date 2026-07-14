@@ -561,6 +561,12 @@ export function Chat({ boot }: { boot?: Boot }) {
 
 function helpLabel(locale?: string): string {
   switch (locale) {
+    case "es": return "Ayuda";
+    case "fr": return "Aide";
+    case "pt": return "Ajuda";
+    case "hi": return "मदद";
+    case "zh": return "帮助";
+    case "de": return "Hilfe";
     case "lt": return "Pagalba";
     case "ru": return "Помощь";
     case "pl": return "Pomoc";
@@ -570,6 +576,12 @@ function helpLabel(locale?: string): string {
 
 function reportLabel(locale?: string): string {
   switch (locale) {
+    case "es": return "Informar de un problema";
+    case "fr": return "Signaler un problème";
+    case "pt": return "Relatar um problema";
+    case "hi": return "समस्या की रिपोर्ट करें";
+    case "zh": return "报告问题";
+    case "de": return "Problem melden";
     case "lt": return "Pranešti apie problemą";
     case "ru": return "Сообщить о проблеме";
     case "pl": return "Zgłoś problem";
@@ -874,6 +886,42 @@ function EmptyHero(props: EmptyHeroProps) {
 
 function heroLabelsFor(locale?: string): { title: string; placeholder: string; confirm: string } {
   switch (locale) {
+    case "es":
+      return {
+        title: "¿Qué resultado quieres?",
+        placeholder: "Escribe o habla…",
+        confirm: "Confirmar",
+      };
+    case "fr":
+      return {
+        title: "Quel résultat voulez-vous ?",
+        placeholder: "Écrivez ou parlez…",
+        confirm: "Confirmer",
+      };
+    case "pt":
+      return {
+        title: "Que resultado você quer?",
+        placeholder: "Escreva ou fale…",
+        confirm: "Confirmar",
+      };
+    case "hi":
+      return {
+        title: "आप क्या परिणाम चाहते हैं?",
+        placeholder: "लिखें या बोलें…",
+        confirm: "पुष्टि करें",
+      };
+    case "zh":
+      return {
+        title: "你想要什么结果？",
+        placeholder: "输入或说话…",
+        confirm: "确认",
+      };
+    case "de":
+      return {
+        title: "Welches Ergebnis möchten Sie?",
+        placeholder: "Schreiben oder sprechen…",
+        confirm: "Bestätigen",
+      };
     case "lt":
       return {
         title: "Kokio rezultato siekiate?",
@@ -973,6 +1021,12 @@ function ConfirmCancelButtons({
 
 function labelsFor(locale?: string): { confirm: string; cancel: string } {
   switch (locale) {
+    case "es": return { confirm: "Confirmar", cancel: "Cancelar" };
+    case "fr": return { confirm: "Confirmer", cancel: "Annuler" };
+    case "pt": return { confirm: "Confirmar", cancel: "Cancelar" };
+    case "hi": return { confirm: "पुष्टि करें", cancel: "रद्द करें" };
+    case "zh": return { confirm: "确认", cancel: "取消" };
+    case "de": return { confirm: "Bestätigen", cancel: "Abbrechen" };
     case "lt": return { confirm: "Patvirtinti", cancel: "Atšaukti" };
     case "ru": return { confirm: "Подтвердить", cancel: "Отмена" };
     case "pl": return { confirm: "Potwierdź", cancel: "Anuluj" };
