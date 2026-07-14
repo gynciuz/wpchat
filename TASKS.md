@@ -102,6 +102,17 @@ architecture notes; this section is the short, checkable version.
 
 > Newest at the top. Work bottom-up. One commit per task. Use `[x]` to check off.
 
+[ ] (blocked: awaiting wp.org review) **Publish ChatAdmin to WordPress.org.**
+    SUBMITTED 2026-07-14 as **ChatAdmin – AI chat admin**, slug **`chatadmin`**
+    (wp.org account `chatapp`, review email → tiptop_blocs_0t@icloud.com). Automated
+    scan PASSED; wp.org Plugin Check (all categories) = 0 errors / 0 warnings. The
+    reviewed build is `dist/chatadmin-v0.7.2-wporg.zip` (from `bin/build-wporg.sh`).
+    Text domain = slug = `chatadmin`. **On approval:** run
+    `SVN_USER=chatapp bin/publish-wporg.sh` (checks out SVN, fills trunk from the
+    ZIP, copies assets, commits + tags). Full runbook: `docs/wporg-svn-publish.md`.
+    If the reviewer emails findings, fix in Git → `bin/build-wporg.sh` → re-upload
+    via the submission page's "Upload updated plugin" button.
+
 [x](done 2026-07-14) **Harden the preview→apply confirmation (audit finding #2).**
     Implemented approach B: a per-conversation `PendingConfirmation` record minted
     by preview/needs_confirmation (stamped with the user-turn index) that an apply
