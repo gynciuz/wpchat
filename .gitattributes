@@ -24,3 +24,4 @@
 /cloud               export-ignore
 /.claude             export-ignore
 /.DS_Store           export-ignore
+/PRIVACY.md          export-ignore

@@ -146,20 +146,23 @@ class History {
         $ids = array_map(static fn($r) => $r->conversation, $convs);
         $placeholders = implode(',', array_fill(0, count($ids), '%s'));
 
-        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- custom table; $placeholders is a generated %s list and every value is passed as a prepare arg.
+        // Custom table; $placeholders is a generated %s list and every value is
+        // passed as a prepare() arg. disable/enable covers the inner SQL line.
+        // phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared
         $first_msgs = $wpdb->get_results(
             $wpdb->prepare(
                 "SELECT m.conversation, m.content
-                 FROM %i m
+                 FROM $table m
                  INNER JOIN (
                    SELECT conversation, MIN(id) AS first_id
-                   FROM %i
+                   FROM $table
                    WHERE user_id = %d AND role = 'user' AND conversation IN ($placeholders)
                    GROUP BY conversation
                  ) f ON f.first_id = m.id",
-                array_merge([$table, $table, $user_id], $ids)
+                array_merge([$user_id], $ids)
             )
         );
+        // phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared
         $label_by_conv = [];
         foreach ($first_msgs as $f) {
             $label_by_conv[$f->conversation] = $f->content;

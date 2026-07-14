@@ -183,7 +183,7 @@ class Admin {
 
         $onboarding_url = esc_url(home_url('/chat-admin?onboarding=1'));
         echo '<p style="margin-top:2rem;border-top:1px solid #c3c4c7;padding-top:1rem;">';
-        echo '<a href="' . $onboarding_url . '">' . esc_html__('Re-run onboarding wizard', 'chat-admin') . '</a> ';
+        echo '<a href="' . $onboarding_url . '">' . esc_html__('Re-run onboarding wizard', 'chat-admin') . '</a> '; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- $onboarding_url is esc_url()'d above.
         echo '<span class="description">' . esc_html__('— walk through the capability check + settings again.', 'chat-admin') . '</span>';
         echo '</p>';
 
@@ -244,6 +244,9 @@ class Admin {
         $sent_ok   = esc_js(__('Sent — thank you!', 'chat-admin'));
         $sent_fail = esc_js(__('Could not send. Try “Copy diagnostics” and email it.', 'chat-admin'));
         $copied    = esc_js(__('Copied.', 'chat-admin'));
+        // Inline admin script: $boot is wp_json_encode(JSON_HEX_*)'d and the
+        // status strings are esc_js()'d, so the interpolated values are escaped.
+        // phpcs:disable WordPress.Security.EscapeOutput.OutputNotEscaped
         echo "<script>(function(){var b={$boot};"
             . "var s=document.getElementById('chatadmin-diag-status');"
             . "document.getElementById('chatadmin-diag-copy').addEventListener('click',function(){"
@@ -254,6 +257,7 @@ class Admin {
             . "body:JSON.stringify({note:document.getElementById('chatadmin-diag-note').value,error:'admin-diagnostics'})})"
             . ".then(function(r){return r.json().catch(function(){return{};}).then(function(d){s.textContent=(r.ok&&d.ok)?'{$sent_ok}':'{$sent_fail}';});})"
             . ".catch(function(){s.textContent='{$sent_fail}';});});})();</script>";
+        // phpcs:enable WordPress.Security.EscapeOutput.OutputNotEscaped
 
         echo '</div>';
     }
