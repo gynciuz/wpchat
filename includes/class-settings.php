@@ -62,7 +62,8 @@ class Settings {
             'wpchat_settings_section_privacy',
             __('Privacy & diagnostics', 'wpchat'),
             function () {
-                echo '<p>' . esc_html__('WPChat sends the content of your requests (which can include order and customer data) to your chosen AI provider to generate replies. See the plugin README for the full data-handling note.', 'wpchat') . '</p>';
+                echo '<p>' . esc_html__('WPChat sends the content of your requests (which can include order and customer data) to your chosen AI provider to generate replies.', 'wpchat') . '</p>';
+                echo '<p>' . esc_html__('Two channels also send data to the plugin developer: “Report a problem” sends your recent conversation (which can include customer data) plus your login/email, and error reporting (below, on by default) sends PII-free diagnostics when something fails. Turn error reporting off below. See the plugin README / PRIVACY.md for the full data-handling note.', 'wpchat') . '</p>';
             },
             'wpchat-settings'
         );

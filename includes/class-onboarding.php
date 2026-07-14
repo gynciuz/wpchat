@@ -39,12 +39,13 @@ class Onboarding {
         ]);
         register_rest_route(self::NAMESPACE, '/onboarding/api-key', [
             'methods'             => 'POST',
-            'permission_callback' => [$this, 'check_permission'],
+            // Site-wide secret + billing — admin only, matching the Settings page.
+            'permission_callback' => [$this, 'check_admin'],
             'callback'            => [$this, 'handle_set_api_key'],
         ]);
         register_rest_route(self::NAMESPACE, '/onboarding/model', [
             'methods'             => 'POST',
-            'permission_callback' => [$this, 'check_permission'],
+            'permission_callback' => [$this, 'check_admin'],
             'callback'            => [$this, 'handle_set_model'],
         ]);
         register_rest_route(self::NAMESPACE, '/onboarding/complete', [
@@ -64,20 +65,21 @@ class Onboarding {
         ]);
         register_rest_route(self::NAMESPACE, '/onboarding/provider', [
             'methods'             => 'POST',
-            'permission_callback' => [$this, 'check_permission'],
+            'permission_callback' => [$this, 'check_admin'],
             'callback'            => [$this, 'handle_set_provider'],
         ]);
         // LLM-provider axis (anthropic | openai | gemini) — distinct from the
         // billing `provider` (byo vs cloud-waitlist) above.
         register_rest_route(self::NAMESPACE, '/onboarding/llm-provider', [
             'methods'             => 'POST',
-            'permission_callback' => [$this, 'check_permission'],
+            'permission_callback' => [$this, 'check_admin'],
             'callback'            => [$this, 'handle_set_llm_provider'],
         ]);
     }
 
-    /** Stricter gate: only manage_options users (site admins) may flip
-     *  the site-wide disabled-kinds list. */
+    /** Stricter gate: only manage_options users (site admins) may change
+     *  site-wide settings — the API key, model, provider(s), and the
+     *  disabled-kinds list. */
     public function check_admin(): bool {
         return current_user_can('manage_options');
     }

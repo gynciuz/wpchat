@@ -81,7 +81,9 @@ class Frontend {
             'siteUrl'   => untrailingslashit(home_url()),
             'logoutUrl' => wp_logout_url(home_url(self::URL_PATH)),
         ];
-        $boot_json = wp_json_encode($boot);
+        // JSON_HEX_* so a "</script>" (or quotes) inside site/user names can't
+        // break out of the inline <script> below.
+        $boot_json = wp_json_encode($boot, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT);
 
         $title = sprintf('%s — %s', esc_html__('WPChat', 'wpchat'), esc_html($site_name));
 

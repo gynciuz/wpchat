@@ -102,6 +102,21 @@ architecture notes; this section is the short, checkable version.
 
 > Newest at the top. Work bottom-up. One commit per task. Use `[x]` to check off.
 
+[ ] (scope and discuss) **Harden the preview→apply confirmation with a server-minted token.**
+    Security-audit finding #2 (medium): the two-step preview→apply / order-confirm
+    gate currently trusts the model to (a) actually run a `preview_*` before
+    `apply_*` and (b) supply a genuine `confirmation` phrase — both are only
+    enforced in the system prompt. A prompt-injection payload in tool-returned
+    content (an order note, page HTML) could make the model call `apply_*` /
+    `update_order_status` with `confirmation: "yes"` and skip the preview.
+    Fix direction: `preview_content_change` mints a single-use token (stored in a
+    short-TTL transient, bound to the conversation + target); `apply_content_change`
+    only proceeds if given a matching, unconsumed token. Same shape for order
+    mutations. React passes the token through the Confirm button. Add scenario tests.
+    NOTE: capability gating (audit finding: holds) already caps blast radius to the
+    acting user's own privileges, and the `_confirmed`-flag bypass (finding #1) is
+    already fixed — this closes the residual "model asserts consent" gap.
+
 [ ] (priority) **Prep for WordPress.org plugin-directory submission.**
     - Install the official **Plugin Check (PCP)** plugin locally; fix every error/
       warning (escaping, nonces, sanitization, direct-file-access, i18n text-domain).

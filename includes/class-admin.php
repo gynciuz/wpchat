@@ -123,7 +123,7 @@ class Admin {
                 'locale'    => substr(get_user_locale(), 0, 2),
                 'siteName'  => html_entity_decode((string) get_bloginfo('name'), ENT_QUOTES | ENT_HTML5, 'UTF-8'),
                 'siteUrl'   => home_url(),
-            ]) . ';',
+            ], JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) . ';',
             'before'
         );
     }
@@ -240,7 +240,7 @@ class Admin {
         $boot = wp_json_encode([
             'rest'  => rest_url('wpchat/v1/support'),
             'nonce' => wp_create_nonce('wp_rest'),
-        ]);
+        ], JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT);
         $sent_ok   = esc_js(__('Sent — thank you!', 'wpchat'));
         $sent_fail = esc_js(__('Could not send. Try “Copy diagnostics” and email it.', 'wpchat'));
         $copied    = esc_js(__('Copied.', 'wpchat'));

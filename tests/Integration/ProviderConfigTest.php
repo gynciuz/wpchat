@@ -140,4 +140,25 @@ class ProviderConfigTest extends TestCase {
         $options = \get_option('wpchat_settings');
         $this->assertSame('sk-good-key', $options['openai_api_key']);
     }
+
+    /**
+     * A shop-manager (has manage_woocommerce, lacks manage_options) must NOT be
+     * able to set the site-wide API key via the onboarding route — it is
+     * admin-only, matching the Settings page. Regression for the onboarding
+     * privilege-gap finding (api-key/model/provider were gated at the looser
+     * shop-cap while the Settings page reserved them for manage_options).
+     */
+    public function test_non_admin_cannot_set_api_key(): void {
+        $manager = $this->factory()->user->create(['role' => 'shop_manager']);
+        \wp_set_current_user($manager);
+
+        $request = new \WP_REST_Request('POST', '/wpchat/v1/onboarding/api-key');
+        $request->set_header('Content-Type', 'application/json');
+        $request->set_body(json_encode(['key' => 'sk-ant-should-be-blocked']));
+        $response = \rest_get_server()->dispatch($request);
+
+        $this->assertContains($response->get_status(), [401, 403]);
+        $options = \get_option('wpchat_settings') ?: [];
+        $this->assertArrayNotHasKey('anthropic_api_key', $options, 'A non-admin must not persist an API key.');
+    }
 }

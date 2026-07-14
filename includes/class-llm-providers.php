@@ -135,6 +135,17 @@ abstract class BaseLLMProvider implements LLMProvider {
                 if ($args instanceof \stdClass) {
                     $args = (array) $args;
                 }
+                // Security: the model must never set internal control flags.
+                // `_confirmed` (and any other underscore-prefixed key) is a
+                // server-only signal — the direct-action REST routes set it to
+                // record a real user click. Strip every `_`-prefixed key from
+                // model-supplied tool input so a prompt-injection payload cannot
+                // forge `_confirmed: true` and bypass the confirmation gate.
+                foreach (array_keys($args) as $arg_key) {
+                    if (is_string($arg_key) && str_starts_with($arg_key, '_')) {
+                        unset($args[$arg_key]);
+                    }
+                }
                 $impl   = $tool_impls[$name] ?? null;
                 $output = is_callable($impl) ? $this->safe_call($impl, $args) : ['error' => "Unknown tool: $name"];
 
