@@ -1,6 +1,6 @@
 <?php
 /**
- * Plugin Name:       ChatAdmin
+ * Plugin Name:       ChatAdmin – AI chat admin
  * Plugin URI:        https://github.com/gynciuz/wpchat
  * Description:       Chat-based admin for WooCommerce orders. Type "mark order 2833 used" — the assistant calls the right WP/WC functions and renders rich UI inline.
  * Version:           0.7.2
@@ -9,7 +9,7 @@
  * Author:            Gintaras Lukoševičius
  * License:           MIT
  * License URI:       https://opensource.org/licenses/MIT
- * Text Domain:       chat-admin
+ * Text Domain:       chatadmin
  * Update URI:        https://github.com/gynciuz/wpchat
  *
  * @package ChatAdmin

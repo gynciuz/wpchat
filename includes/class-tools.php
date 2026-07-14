@@ -748,9 +748,9 @@ class Tools {
      */
     public static function order_actions_for(\WC_Order $order): array {
         $defaults = [
-            'send_order_details'              => __('Email invoice / order details to customer', 'chat-admin'),
-            'send_order_details_admin'        => __('Resend new order notification (to admin)', 'chat-admin'),
-            'regenerate_download_permissions' => __('Regenerate download permissions', 'chat-admin'),
+            'send_order_details'              => __('Email invoice / order details to customer', 'chatadmin'),
+            'send_order_details_admin'        => __('Resend new order notification (to admin)', 'chatadmin'),
+            'regenerate_download_permissions' => __('Regenerate download permissions', 'chatadmin'),
         ];
         $actions = apply_filters('woocommerce_order_actions', $defaults, $order); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- invoking a WooCommerce core hook, not defining ours
         $out = [];
@@ -828,7 +828,7 @@ class Tools {
                 WC()->payment_gateways();
                 WC()->shipping();
                 WC()->mailer()->customer_invoice($order);
-                $order->add_order_note(__('Order details manually re-sent to customer via ChatAdmin.', 'chat-admin'), false, true);
+                $order->add_order_note(__('Order details manually re-sent to customer via ChatAdmin.', 'chatadmin'), false, true);
                 do_action('woocommerce_after_resend_order_email', $order, 'customer'); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- invoking a WooCommerce core hook, not defining ours
                 break;
 

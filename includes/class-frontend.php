@@ -33,8 +33,8 @@ class Frontend {
         if (!current_user_can('edit_posts')) {
             status_header(403);
             wp_die(
-                esc_html__('Reikalingos redaktoriaus arba administratoriaus teisės. (Editor or administrator role required.)', 'chat-admin'),
-                esc_html__('ChatAdmin — Access denied', 'chat-admin'),
+                esc_html__('Reikalingos redaktoriaus arba administratoriaus teisės. (Editor or administrator role required.)', 'chatadmin'),
+                esc_html__('ChatAdmin — Access denied', 'chatadmin'),
                 ['response' => 403]
             );
         }
@@ -91,7 +91,7 @@ class Frontend {
         // break out of the inline <script> below.
         $boot_json = wp_json_encode($boot, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT);
 
-        $title = sprintf('%s — %s', esc_html__('ChatAdmin', 'chat-admin'), esc_html($site_name));
+        $title = sprintf('%s — %s', esc_html__('ChatAdmin', 'chatadmin'), esc_html($site_name));
 
         echo <<<HTML
 <!DOCTYPE html>

@@ -19,7 +19,7 @@
 # TextDomainMismatch. Any override must not contain "wp"/"wordpress".
 set -euo pipefail
 
-SLUG="${WPORG_SLUG:-chat-admin}"
+SLUG="${WPORG_SLUG:-chatadmin}"
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 DIST="$ROOT/dist"
 STAGE="$(mktemp -d)"

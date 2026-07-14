@@ -70,7 +70,7 @@ abstract class BaseLLMProvider implements LLMProvider {
         if (!$key) {
             throw new \RuntimeException(esc_html(sprintf(
                 /* translators: %s = provider label */
-                __('%s API key not configured. Set it in ChatAdmin → Settings.', 'chat-admin'),
+                __('%s API key not configured. Set it in ChatAdmin → Settings.', 'chatadmin'),
                 $this->label()
             )));
         }
@@ -209,7 +209,7 @@ abstract class BaseLLMProvider implements LLMProvider {
         if ($code === 401 || $code === 403) {
             return ['ok' => false, 'error' => sprintf(
                 /* translators: %s = provider label */
-                __('%s rejected this key (invalid or revoked).', 'chat-admin'),
+                __('%s rejected this key (invalid or revoked).', 'chatadmin'),
                 $this->label()
             )];
         }

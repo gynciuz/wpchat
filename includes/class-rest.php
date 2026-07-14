@@ -95,7 +95,7 @@ class Rest {
             return new \WP_REST_Response([
                 'error' => sprintf(
                     /* translators: %s = provider label, e.g. Anthropic */
-                    __('%s API key is not configured. Open ChatAdmin → Settings.', 'chat-admin'),
+                    __('%s API key is not configured. Open ChatAdmin → Settings.', 'chatadmin'),
                     LLM::active()->label()
                 ),
             ], 400);
@@ -114,7 +114,7 @@ class Rest {
                 set_transient($rl_key, 1, self::RATE_LIMIT_WINDOW);
             } elseif ((int) $count >= $max) {
                 return new \WP_REST_Response([
-                    'error' => __('You are sending requests too quickly — please wait a moment and try again.', 'chat-admin'),
+                    'error' => __('You are sending requests too quickly — please wait a moment and try again.', 'chatadmin'),
                 ], 429);
             } else {
                 set_transient($rl_key, (int) $count + 1, self::RATE_LIMIT_WINDOW);

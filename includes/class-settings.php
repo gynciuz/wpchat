@@ -36,23 +36,23 @@ class Settings {
 
         add_settings_section(
             'chatadmin_settings_section_api',
-            __('AI provider', 'chat-admin'),
+            __('AI provider', 'chatadmin'),
             function () {
-                echo '<p>' . esc_html__('Paste your Anthropic, OpenAI, or Google Gemini API key — ChatAdmin detects the provider automatically. You are billed by the provider directly.', 'chat-admin') . '</p>';
+                echo '<p>' . esc_html__('Paste your Anthropic, OpenAI, or Google Gemini API key — ChatAdmin detects the provider automatically. You are billed by the provider directly.', 'chatadmin') . '</p>';
             },
             'chatadmin-settings'
         );
 
         add_settings_field(
             'api_key',
-            __('API key', 'chat-admin'),
+            __('API key', 'chatadmin'),
             [$this, 'field_api_key'],
             'chatadmin-settings',
             'chatadmin_settings_section_api'
         );
         add_settings_field(
             'model',
-            __('Model', 'chat-admin'),
+            __('Model', 'chatadmin'),
             [$this, 'field_model'],
             'chatadmin-settings',
             'chatadmin_settings_section_api'
@@ -60,17 +60,17 @@ class Settings {
 
         add_settings_section(
             'chatadmin_settings_section_privacy',
-            __('Privacy & diagnostics', 'chat-admin'),
+            __('Privacy & diagnostics', 'chatadmin'),
             function () {
-                echo '<p>' . esc_html__('ChatAdmin sends the content of your requests (which can include order and customer data) to your chosen AI provider to generate replies.', 'chat-admin') . '</p>';
-                echo '<p>' . esc_html__('Two channels also send data to the plugin developer: “Report a problem” sends your recent conversation (which can include customer data) plus your login/email, and error reporting (below, on by default) sends PII-free diagnostics when something fails. Turn error reporting off below. See the plugin README / PRIVACY.md for the full data-handling note.', 'chat-admin') . '</p>';
+                echo '<p>' . esc_html__('ChatAdmin sends the content of your requests (which can include order and customer data) to your chosen AI provider to generate replies.', 'chatadmin') . '</p>';
+                echo '<p>' . esc_html__('Two channels also send data to the plugin developer: “Report a problem” sends your recent conversation (which can include customer data) plus your login/email, and error reporting (below, on by default) sends PII-free diagnostics when something fails. Turn error reporting off below. See the plugin README / PRIVACY.md for the full data-handling note.', 'chatadmin') . '</p>';
             },
             'chatadmin-settings'
         );
 
         add_settings_field(
             'telemetry',
-            __('Error reporting', 'chat-admin'),
+            __('Error reporting', 'chatadmin'),
             [$this, 'field_telemetry'],
             'chatadmin-settings',
             'chatadmin_settings_section_privacy'
@@ -89,7 +89,7 @@ class Settings {
                 $output[$pid . '_api_key'] = sanitize_text_field($key);
                 $output['llm_provider']    = $pid;
             } else {
-                add_settings_error(self::OPTION, 'chatadmin_key', __('Couldn’t recognize that API key (expected sk-ant-…, sk-…, or AIza…).', 'chat-admin'));
+                add_settings_error(self::OPTION, 'chatadmin_key', __('Couldn’t recognize that API key (expected sk-ant-…, sk-…, or AIza…).', 'chatadmin'));
             }
         }
 
@@ -124,7 +124,7 @@ class Settings {
         if ($source === 'constant') {
             echo '<p class="description">' . esc_html(sprintf(
                 /* translators: %s = provider label */
-                __('A %s key is set via a wp-config.php constant (ignored here).', 'chat-admin'),
+                __('A %s key is set via a wp-config.php constant (ignored here).', 'chatadmin'),
                 $provider->label()
             )) . '</p>';
             return;
@@ -134,17 +134,17 @@ class Settings {
         printf(
             '<input type="password" name="%s[api_key]" value="" class="regular-text" autocomplete="off" placeholder="%s" />',
             esc_attr(self::OPTION),
-            esc_attr($value ? __('Leave blank to keep current key', 'chat-admin') : 'sk-ant-…  ·  sk-…  ·  AIza…')
+            esc_attr($value ? __('Leave blank to keep current key', 'chatadmin') : 'sk-ant-…  ·  sk-…  ·  AIza…')
         );
         if ($masked) {
             echo '<p class="description">' . esc_html(sprintf(
                 /* translators: 1: provider label, 2: masked key */
-                __('Connected to %1$s · %2$s', 'chat-admin'),
+                __('Connected to %1$s · %2$s', 'chatadmin'),
                 $provider->label(),
                 $masked
             )) . '</p>';
         }
-        echo '<p class="description">' . esc_html__('Get a key: Anthropic (console.anthropic.com) · OpenAI (platform.openai.com) · Google (aistudio.google.com).', 'chat-admin') . '</p>';
+        echo '<p class="description">' . esc_html__('Get a key: Anthropic (console.anthropic.com) · OpenAI (platform.openai.com) · Google (aistudio.google.com).', 'chatadmin') . '</p>';
     }
 
     public function field_model(): void {
@@ -168,7 +168,7 @@ class Settings {
             '<label><input type="checkbox" name="%s[telemetry]" value="1" %s /> %s</label>',
             esc_attr(self::OPTION),
             checked($enabled, true, false),
-            esc_html__('Send anonymous error reports (no order or customer data) so the developer can fix failures you hit. You can turn this off any time.', 'chat-admin')
+            esc_html__('Send anonymous error reports (no order or customer data) so the developer can fix failures you hit. You can turn this off any time.', 'chatadmin')
         );
     }
 

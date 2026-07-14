@@ -128,7 +128,7 @@ class Onboarding {
         $provider_id = LLM::detect($key);
         if (!$provider_id) {
             return new \WP_REST_Response([
-                'error' => __('Couldn’t recognize this key. Supported: Anthropic (sk-ant-…), OpenAI (sk-…), or Google Gemini (AIza…).', 'chat-admin'),
+                'error' => __('Couldn’t recognize this key. Supported: Anthropic (sk-ant-…), OpenAI (sk-…), or Google Gemini (AIza…).', 'chatadmin'),
             ], 400);
         }
         $provider = LLM::get($provider_id);

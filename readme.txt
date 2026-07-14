@@ -1,4 +1,4 @@
-=== ChatAdmin ===
+=== ChatAdmin – AI chat admin ===
 Contributors: gynciuz
 Tags: woocommerce, chat, ai, claude, orders
 Requires at least: 6.5

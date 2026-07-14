@@ -27,8 +27,8 @@ class Admin {
             : self::CAPABILITY;
 
         add_menu_page(
-            __('ChatAdmin', 'chat-admin'),
-            __('ChatAdmin', 'chat-admin'),
+            __('ChatAdmin', 'chatadmin'),
+            __('ChatAdmin', 'chatadmin'),
             $capability,
             self::MENU_SLUG,
             [$this, 'render_chat_page'],
@@ -38,8 +38,8 @@ class Admin {
 
         add_submenu_page(
             self::MENU_SLUG,
-            __('Chat', 'chat-admin'),
-            __('Chat', 'chat-admin'),
+            __('Chat', 'chatadmin'),
+            __('Chat', 'chatadmin'),
             $capability,
             self::MENU_SLUG,
             [$this, 'render_chat_page']
@@ -47,8 +47,8 @@ class Admin {
 
         add_submenu_page(
             self::MENU_SLUG,
-            __('Settings', 'chat-admin'),
-            __('Settings', 'chat-admin'),
+            __('Settings', 'chatadmin'),
+            __('Settings', 'chatadmin'),
             'manage_options',
             self::MENU_SLUG . '-settings',
             [$this, 'render_settings_page']
@@ -56,8 +56,8 @@ class Admin {
 
         add_submenu_page(
             self::MENU_SLUG,
-            __('Diagnostics', 'chat-admin'),
-            __('Diagnostics', 'chat-admin'),
+            __('Diagnostics', 'chatadmin'),
+            __('Diagnostics', 'chatadmin'),
             $capability,
             self::MENU_SLUG . '-diagnostics',
             [$this, 'render_diagnostics_page']
@@ -68,7 +68,7 @@ class Admin {
         global $submenu;
         if (isset($submenu[self::MENU_SLUG])) {
             $submenu[self::MENU_SLUG][] = [
-                __('Open full screen ↗', 'chat-admin'),
+                __('Open full screen ↗', 'chatadmin'),
                 $capability,
                 home_url('/chat-admin'),
             ];
@@ -163,8 +163,8 @@ class Admin {
         <?php
         if (!file_exists(CHATADMIN_DIR . 'build/manifest.json')) {
             echo '<div style="padding:2rem;margin:1rem;border:1px dashed #555;color:#ddd;border-radius:10px;">';
-            echo '<h2 style="margin-top:0;color:#fff;">' . esc_html__('ChatAdmin — build assets missing', 'chat-admin') . '</h2>';
-            echo '<p>' . esc_html__('Run', 'chat-admin') . ' <code>pnpm install &amp;&amp; pnpm build</code> ' . esc_html__('inside the plugin\'s', 'chat-admin') . ' <code>app/</code> ' . esc_html__('directory to produce the chat UI bundle.', 'chat-admin') . '</p>';
+            echo '<h2 style="margin-top:0;color:#fff;">' . esc_html__('ChatAdmin — build assets missing', 'chatadmin') . '</h2>';
+            echo '<p>' . esc_html__('Run', 'chatadmin') . ' <code>pnpm install &amp;&amp; pnpm build</code> ' . esc_html__('inside the plugin\'s', 'chatadmin') . ' <code>app/</code> ' . esc_html__('directory to produce the chat UI bundle.', 'chatadmin') . '</p>';
             echo '</div>';
         }
         echo '</div></div>';
@@ -175,7 +175,7 @@ class Admin {
             return;
         }
         echo '<div class="wrap">';
-        echo '<h1>' . esc_html__('ChatAdmin Settings', 'chat-admin') . '</h1>';
+        echo '<h1>' . esc_html__('ChatAdmin Settings', 'chatadmin') . '</h1>';
         echo '<form method="post" action="options.php">';
         settings_fields('chatadmin_settings_group');
         do_settings_sections('chatadmin-settings');
@@ -184,8 +184,8 @@ class Admin {
 
         $onboarding_url = esc_url(home_url('/chat-admin?onboarding=1'));
         echo '<p style="margin-top:2rem;border-top:1px solid #c3c4c7;padding-top:1rem;">';
-        echo '<a href="' . $onboarding_url . '">' . esc_html__('Re-run onboarding wizard', 'chat-admin') . '</a> '; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- $onboarding_url is esc_url()'d above.
-        echo '<span class="description">' . esc_html__('— walk through the capability check + settings again.', 'chat-admin') . '</span>';
+        echo '<a href="' . $onboarding_url . '">' . esc_html__('Re-run onboarding wizard', 'chatadmin') . '</a> '; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- $onboarding_url is esc_url()'d above.
+        echo '<span class="description">' . esc_html__('— walk through the capability check + settings again.', 'chatadmin') . '</span>';
         echo '</p>';
 
         echo '</div>';
@@ -206,14 +206,14 @@ class Admin {
         ];
 
         echo '<div class="wrap">';
-        echo '<h1>' . esc_html__('ChatAdmin Diagnostics', 'chat-admin') . '</h1>';
-        echo '<p class="description">' . esc_html__('Recent errors ChatAdmin recorded on this site. Use “Copy diagnostics” to paste into a support request, or send it straight to the developer.', 'chat-admin') . '</p>';
+        echo '<h1>' . esc_html__('ChatAdmin Diagnostics', 'chatadmin') . '</h1>';
+        echo '<p class="description">' . esc_html__('Recent errors ChatAdmin recorded on this site. Use “Copy diagnostics” to paste into a support request, or send it straight to the developer.', 'chatadmin') . '</p>';
 
         // Recent errors table.
         echo '<table class="widefat striped" style="margin-top:1rem;max-width:900px;">';
-        echo '<thead><tr><th>' . esc_html__('When (UTC)', 'chat-admin') . '</th><th>' . esc_html__('Event', 'chat-admin') . '</th><th>' . esc_html__('Tool', 'chat-admin') . '</th><th>' . esc_html__('Message', 'chat-admin') . '</th></tr></thead><tbody>';
+        echo '<thead><tr><th>' . esc_html__('When (UTC)', 'chatadmin') . '</th><th>' . esc_html__('Event', 'chatadmin') . '</th><th>' . esc_html__('Tool', 'chatadmin') . '</th><th>' . esc_html__('Message', 'chatadmin') . '</th></tr></thead><tbody>';
         if (empty($recent)) {
-            echo '<tr><td colspan="4">' . esc_html__('No errors recorded — nice.', 'chat-admin') . '</td></tr>';
+            echo '<tr><td colspan="4">' . esc_html__('No errors recorded — nice.', 'chatadmin') . '</td></tr>';
         } else {
             foreach (array_reverse($recent) as $e) {
                 printf(
@@ -228,23 +228,23 @@ class Admin {
         echo '</tbody></table>';
 
         $diag_json = wp_json_encode($diag, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
-        echo '<h2 style="margin-top:2rem;">' . esc_html__('Send a report to the developer', 'chat-admin') . '</h2>';
-        echo '<p><textarea id="chatadmin-diag-note" rows="3" style="width:100%;max-width:600px;" placeholder="' . esc_attr__('Optional: what were you doing when it broke?', 'chat-admin') . '"></textarea></p>';
+        echo '<h2 style="margin-top:2rem;">' . esc_html__('Send a report to the developer', 'chatadmin') . '</h2>';
+        echo '<p><textarea id="chatadmin-diag-note" rows="3" style="width:100%;max-width:600px;" placeholder="' . esc_attr__('Optional: what were you doing when it broke?', 'chatadmin') . '"></textarea></p>';
         echo '<p>';
-        echo '<button type="button" class="button" id="chatadmin-diag-copy">' . esc_html__('Copy diagnostics', 'chat-admin') . '</button> ';
-        echo '<button type="button" class="button button-primary" id="chatadmin-diag-send">' . esc_html__('Send to developer', 'chat-admin') . '</button> ';
+        echo '<button type="button" class="button" id="chatadmin-diag-copy">' . esc_html__('Copy diagnostics', 'chatadmin') . '</button> ';
+        echo '<button type="button" class="button button-primary" id="chatadmin-diag-send">' . esc_html__('Send to developer', 'chatadmin') . '</button> ';
         echo '<span id="chatadmin-diag-status" style="margin-left:.5rem;"></span>';
         echo '</p>';
-        echo '<details style="margin-top:1rem;"><summary>' . esc_html__('Show raw diagnostics', 'chat-admin') . '</summary><pre id="chatadmin-diag-json" style="background:#f6f7f7;border:1px solid #dcdcde;padding:1rem;overflow:auto;max-width:900px;">' . esc_html($diag_json) . '</pre></details>';
+        echo '<details style="margin-top:1rem;"><summary>' . esc_html__('Show raw diagnostics', 'chatadmin') . '</summary><pre id="chatadmin-diag-json" style="background:#f6f7f7;border:1px solid #dcdcde;padding:1rem;overflow:auto;max-width:900px;">' . esc_html($diag_json) . '</pre></details>';
 
         // Inline behavior: copy to clipboard + POST the report via the REST route.
         $boot = wp_json_encode([
             'rest'  => rest_url('chatadmin/v1/support'),
             'nonce' => wp_create_nonce('wp_rest'),
         ], JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT);
-        $sent_ok   = esc_js(__('Sent — thank you!', 'chat-admin'));
-        $sent_fail = esc_js(__('Could not send. Try “Copy diagnostics” and email it.', 'chat-admin'));
-        $copied    = esc_js(__('Copied.', 'chat-admin'));
+        $sent_ok   = esc_js(__('Sent — thank you!', 'chatadmin'));
+        $sent_fail = esc_js(__('Could not send. Try “Copy diagnostics” and email it.', 'chatadmin'));
+        $copied    = esc_js(__('Copied.', 'chatadmin'));
         // Inline admin script: $boot is wp_json_encode(JSON_HEX_*)'d and the
         // status strings are esc_js()'d, so the interpolated values are escaped.
         // phpcs:disable WordPress.Security.EscapeOutput.OutputNotEscaped
