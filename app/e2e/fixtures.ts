@@ -1,14 +1,14 @@
 import type { Page } from "@playwright/test";
 
 /**
- * Shared fixtures for the WPChat E2E suite: a WPCHAT_BOOT payload, canned
+ * Shared fixtures for the ChatAdmin E2E suite: a CHATADMIN_BOOT payload, canned
  * REST responses matching the real endpoint shapes, and helpers to inject
- * the boot + intercept wpchat/v1/* network calls.
+ * the boot + intercept chatadmin/v1/* network calls.
  */
 
 export const BOOT = {
   mode: "chat" as const,
-  restUrl: "/wpchat/v1/",
+  restUrl: "/chatadmin/v1/",
   nonce: "test-nonce",
   userId: 1,
   userName: "Test Admin",
@@ -115,11 +115,11 @@ interface RouteHandlers {
 }
 
 /**
- * Intercept every wpchat/v1/* request and answer with a fixture. Anything
+ * Intercept every chatadmin/v1/* request and answer with a fixture. Anything
  * unrecognized returns {} so a stray call never hits the network or hangs.
  */
 export async function installRoutes(page: Page, handlers: RouteHandlers = {}): Promise<void> {
-  await page.route("**/wpchat/v1/**", async (route) => {
+  await page.route("**/chatadmin/v1/**", async (route) => {
     const path = new URL(route.request().url()).pathname;
     const send = (body: unknown) =>
       route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(body) });
@@ -145,10 +145,10 @@ export async function installRoutes(page: Page, handlers: RouteHandlers = {}): P
   });
 }
 
-/** Inject WPCHAT_BOOT (before the app's module runs) and open the harness. */
+/** Inject CHATADMIN_BOOT (before the app's module runs) and open the harness. */
 export async function gotoApp(page: Page, boot: Record<string, unknown> = BOOT): Promise<void> {
   await page.addInitScript((b) => {
-    (window as unknown as { WPCHAT_BOOT: unknown }).WPCHAT_BOOT = b;
+    (window as unknown as { CHATADMIN_BOOT: unknown }).CHATADMIN_BOOT = b;
   }, boot);
   await page.goto("/e2e/harness.html");
 }

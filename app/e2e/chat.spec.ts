@@ -6,7 +6,7 @@ test.describe("Chat", () => {
     await installRoutes(page);
     await gotoApp(page, BOOT);
 
-    await expect(page.getByRole("heading", { name: "WPChat" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "ChatAdmin" })).toBeVisible();
     await expect(
       page.getByRole("heading", { name: "What outcome do you want?" })
     ).toBeVisible();
@@ -64,7 +64,7 @@ test.describe("Chat", () => {
   test("surfaces a backend error in the chat", async ({ page }) => {
     await installRoutes(page);
     // Override chat with a 500 so the error banner renders.
-    await page.route("**/wpchat/v1/chat", (route) =>
+    await page.route("**/chatadmin/v1/chat", (route) =>
       route.fulfill({
         status: 500,
         contentType: "application/json",

@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <!--
   Standalone harness for Playwright visual/E2E tests. Mirrors the markup
-  PHP's WPChat\Frontend::render() emits (dark <html>/<body>, the #wpchat-root
+  PHP's ChatAdmin\Frontend::render() emits (dark <html>/<body>, the #chatadmin-root
   mount node, the dark background token) but WITHOUT WordPress: the test
-  injects window.WPCHAT_BOOT via page.addInitScript() before this page's
-  module script runs, and intercepts the wpchat/v1/* REST calls with
+  injects window.CHATADMIN_BOOT via page.addInitScript() before this page's
+  module script runs, and intercepts the chatadmin/v1/* REST calls with
   page.route(). Vite serves /src/main.tsx so the REAL app (same components,
   same Tailwind v4 build, same fonts) renders in a real browser.
 -->
@@ -13,17 +13,17 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <meta name="color-scheme" content="dark" />
-  <title>WPChat E2E harness</title>
+  <title>ChatAdmin E2E harness</title>
   <style>
     html, body { margin: 0; padding: 0; height: 100%; background: oklch(0.145 0 0); color: oklch(0.985 0 0); }
     /* Match Frontend::render()'s 18px rem reference so layout matches prod. */
     html { font-size: 18px; }
     body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
-    #wpchat-root { min-height: 100vh; }
+    #chatadmin-root { min-height: 100vh; }
   </style>
 </head>
 <body class="dark">
-  <div id="wpchat-root" class="dark"></div>
+  <div id="chatadmin-root" class="dark"></div>
   <script type="module" src="/src/main.tsx"></script>
 </body>
 </html>
