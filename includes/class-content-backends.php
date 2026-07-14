@@ -160,6 +160,46 @@ class ContentConfirmation {
 }
 
 /**
+ * Server-side proof that a mutating apply follows a real, *earlier* user turn
+ * (audit finding #2, approach B). When a preview_* / needs_confirmation runs on
+ * the LLM path, we record a pending entry keyed by conversation, stamped with
+ * the current user-turn index. The matching apply may only proceed if a record
+ * exists for the same target AND was created in a strictly earlier turn — which
+ * prompt-injected content (which lives in tool results, not genuine user
+ * messages, and cannot create a new user turn) can never satisfy. Consumed once.
+ */
+class PendingConfirmation {
+
+    private const PREFIX = 'wpchat_pending_';
+    private const TTL    = 900; // 15 minutes
+
+    public static function record(string $conversation, string $target_key, int $turn): void {
+        if ($conversation === '') {
+            return;
+        }
+        set_transient(self::PREFIX . md5($conversation), [
+            'target' => $target_key,
+            'turn'   => $turn,
+        ], self::TTL);
+    }
+
+    public static function consume(string $conversation, string $target_key, int $current_turn): bool {
+        if ($conversation === '') {
+            return false;
+        }
+        $key     = self::PREFIX . md5($conversation);
+        $pending = get_transient($key);
+        if (!is_array($pending)
+            || ($pending['target'] ?? null) !== $target_key
+            || (int) ($pending['turn'] ?? PHP_INT_MAX) >= $current_turn) {
+            return false;
+        }
+        delete_transient($key);
+        return true;
+    }
+}
+
+/**
  * Router: looks up the registered backends and dispatches calls to
  * whichever one claims the target's kind. WPContentBackend is registered
  * by default at priority 10 so user filters can prepend higher-priority

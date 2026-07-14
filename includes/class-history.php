@@ -69,6 +69,22 @@ class History {
         return self::uuid4();
     }
 
+    /**
+     * Count the user-role messages in a conversation. Used as a monotonic
+     * per-conversation "turn" index (one user message is appended per chat
+     * request) to bind mutation confirmations to a real, earlier user turn.
+     */
+    public static function user_message_count(int $user_id, string $conversation): int {
+        global $wpdb;
+        $table = self::table_name();
+        return (int) $wpdb->get_var($wpdb->prepare(
+            "SELECT COUNT(*) FROM $table WHERE user_id = %d AND conversation = %s AND role = %s",
+            $user_id,
+            $conversation,
+            'user'
+        ));
+    }
+
     /** Append one message. Returns the inserted row id or 0 on failure. */
     public static function append(int $user_id, string $conversation, string $role, string $content, array $tool_calls = []): int {
         global $wpdb;

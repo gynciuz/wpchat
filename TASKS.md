@@ -102,7 +102,16 @@ architecture notes; this section is the short, checkable version.
 
 > Newest at the top. Work bottom-up. One commit per task. Use `[x]` to check off.
 
-[ ] (scope and discuss) **Harden the preview→apply confirmation with a server-minted token.**
+[x](done 2026-07-14) **Harden the preview→apply confirmation (audit finding #2).**
+    Implemented approach B: a per-conversation `PendingConfirmation` record minted
+    by preview/needs_confirmation (stamped with the user-turn index) that an apply
+    must consume from a *strictly earlier* turn — binding consent to a real user
+    message that prompt-injected content can't fabricate. `PendingConfirmation` +
+    `Tools` gating (`order_confirm_gate`, content preview/apply) + `Rest` request
+    context + `History::user_message_count`. Tests: PendingConfirmationTest (5) +
+    ConfirmationTurnGuardTest (2). Full suite 243 green. Spec:
+    docs/superpowers/specs/2026-07-14-confirmation-token-design.md.
+    Follow-up (optional): extend the same gate to `publish_content`.
     Security-audit finding #2 (medium): the two-step preview→apply / order-confirm
     gate currently trusts the model to (a) actually run a `preview_*` before
     `apply_*` and (b) supply a genuine `confirmation` phrase — both are only

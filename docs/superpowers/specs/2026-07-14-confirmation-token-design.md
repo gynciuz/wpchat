@@ -1,6 +1,10 @@
 # Server-enforced confirmation for mutations (audit finding #2)
 
-_Spec · 2026-07-14 · status: scope-and-discuss, awaiting sign-off_
+_Spec · 2026-07-14 · status: **IMPLEMENTED** (approach B) — `PendingConfirmation` in
+`class-content-backends.php`, gating in `Tools`, context in `Rest::handle_chat`,
+turn index via `History::user_message_count`. Tests: `PendingConfirmationTest` +
+`ConfirmationTurnGuardTest`. Approach A (model-echoed token) kept below as the
+rejected alternative and its rationale._
 
 ## Problem
 

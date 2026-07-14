@@ -141,6 +141,16 @@ class Rest {
             }
         }
 
+        // Bind mutation confirmations to a real user turn (audit finding #2):
+        // the turn index is the count of user messages in this conversation, so
+        // an apply can require a preview from a strictly earlier turn.
+        if (!$is_support) {
+            Tools::set_request_context([
+                'conversation_id' => $conversation_id,
+                'turn'            => History::user_message_count($user_id, $conversation_id),
+            ]);
+        }
+
         try {
             $result = LLM::run_with_tools(
                 $messages,
@@ -154,6 +164,8 @@ class Rest {
         } catch (\Throwable $e) {
             Telemetry::log($is_support ? 'support_chat_failed' : 'chat_failed', ['message' => $e->getMessage()]);
             return new \WP_REST_Response(['error' => $e->getMessage(), 'conversation_id' => $conversation_id], 500);
+        } finally {
+            Tools::clear_request_context();
         }
 
         if (!$is_support) {

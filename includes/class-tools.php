@@ -16,6 +16,25 @@ if (!defined('ABSPATH')) {
 
 class Tools {
 
+    /**
+     * Per-request context set by Rest::handle_chat on the LLM path
+     * (conversation_id + user-turn index) so a mutation confirmation can be
+     * bound to a real, earlier user turn (audit finding #2). Empty for
+     * direct/programmatic callers (the direct-action REST routes and tests),
+     * which are trusted.
+     *
+     * @var array{conversation_id?:string, turn?:int}
+     */
+    private static array $request_context = [];
+
+    public static function set_request_context(array $ctx): void {
+        self::$request_context = $ctx;
+    }
+
+    public static function clear_request_context(): void {
+        self::$request_context = [];
+    }
+
     /** Schemas exposed to the model. */
     public static function definitions(): array {
         return [
@@ -383,6 +402,10 @@ class Tools {
                 'available_kinds' => ContentRouter::all_kinds(),
             ];
         }
+        // Record that a preview ran for this target in the current user turn,
+        // so a later apply can prove it followed a real preview (finding #2).
+        // No-op off the LLM path (no request context).
+        self::record_pending(self::content_target_key($kind, $target, $field));
         return $backend->preview($target, $field, $value);
     }
 
@@ -404,6 +427,20 @@ class Tools {
                 'error'           => "No backend registered for kind: $kind",
                 'available_kinds' => ContentRouter::all_kinds(),
             ];
+        }
+        // On the LLM path, an apply must follow a preview from an EARLIER user
+        // turn (finding #2). Off that path (trusted callers) fall through to the
+        // backend's own phrase check, unchanged.
+        if (self::request_conversation() !== '' && empty($args['_confirmed'])) {
+            $confirmed = ContentConfirmation::is_confirmed($confirmation)
+                && self::consume_pending(self::content_target_key($kind, $target, $field));
+            if (!$confirmed) {
+                return [
+                    'needs_confirmation' => true,
+                    'code'    => 'needs_preview',
+                    'message' => 'Call preview_content_change to show this change and ask the user to confirm in their next message, then call apply_content_change again with their confirmation.',
+                ];
+            }
         }
         return $backend->apply($target, $field, $value, $confirmation);
     }
@@ -480,22 +517,60 @@ class Tools {
         return self::detail($order);
     }
 
+    // ---- confirmation gating (audit finding #2, approach B) --------------
+    //
+    // A mutating tool proceeds only when consent is proven. On the chat/LLM
+    // path (a request context is set) that means: a whitelisted confirmation
+    // phrase AND a pending record for the target, minted by a preview /
+    // needs_confirmation in a STRICTLY earlier user turn — which content the
+    // model merely *read* (prompt injection) cannot fabricate. Direct-action
+    // REST routes pass `_confirmed` (the click is consent); direct/programmatic
+    // callers with no request context keep the phrase-only contract.
+
+    private static function request_conversation(): string {
+        return (string) (self::$request_context['conversation_id'] ?? '');
+    }
+
+    private static function request_turn(): int {
+        return (int) (self::$request_context['turn'] ?? 0);
+    }
+
+    private static function record_pending(string $target_key): void {
+        PendingConfirmation::record(self::request_conversation(), $target_key, self::request_turn());
+    }
+
+    private static function consume_pending(string $target_key): bool {
+        return PendingConfirmation::consume(self::request_conversation(), $target_key, self::request_turn());
+    }
+
+    /** Stable key binding a confirmation to a specific content edit. */
+    private static function content_target_key(string $kind, array $target, string $field): string {
+        return 'content:' . md5((string) wp_json_encode([$kind, $target, $field]));
+    }
+
     /**
-     * Confirmation gate for order-mutating tools. Returns true when the LLM
-     * must pause and get the user's go-ahead before the action runs.
-     *
-     * The direct-action REST routes (the order-table 3-dot menus) pass
-     * `_confirmed => true` because the click itself IS the confirmation — so
-     * only the chat/LLM path is gated. On that path the model first calls the
-     * tool with no `confirmation`, gets a `needs_confirmation` response, shows
-     * the user what will happen, and re-calls with their phrase once they agree
-     * (validated by the same multilingual whitelist as content edits).
+     * Order-mutation confirmation gate. Returns true to proceed.
+     *   - `_confirmed` (a direct-action REST click) is consent.
+     *   - Off the LLM path (no request context) the phrase whitelist alone
+     *     applies — preserving the direct/programmatic contract.
+     *   - On the LLM path, require a whitelisted phrase AND a pending record
+     *     for this target minted in an EARLIER user turn; otherwise (re)record
+     *     the pending entry and refuse. This binds consent to a real, separate
+     *     user turn that prompt-injected content cannot fabricate.
      */
-    private static function needs_confirmation(array $args): bool {
+    private static function order_confirm_gate(array $args, string $target_key): bool {
         if (!empty($args['_confirmed'])) {
-            return false;
+            return true;
         }
-        return !ContentConfirmation::is_confirmed((string) ($args['confirmation'] ?? ''));
+        $phrase_ok = ContentConfirmation::is_confirmed((string) ($args['confirmation'] ?? ''));
+        if (self::request_conversation() === '') {
+            return $phrase_ok;
+        }
+        if ($phrase_ok && self::consume_pending($target_key)) {
+            return true;
+        }
+        self::record_pending($target_key);
+        return false;
     }
 
     public static function update_order_status(array $args): array {
@@ -514,7 +589,7 @@ class Tools {
         }
         $note = isset($args['note']) ? (string) $args['note'] : '';
         // Confirm before mutating — a status change can email the customer.
-        if (self::needs_confirmation($args)) {
+        if (!self::order_confirm_gate($args, 'order:' . $order->get_id() . ':status')) {
             return [
                 'needs_confirmation' => true,
                 'order_id'    => $order->get_id(),
@@ -546,7 +621,7 @@ class Tools {
         $customer_visible = !empty($args['customer_visible']);
         // A private note is internal and low-risk, so it runs straight away.
         // A customer-visible note is emailed to the customer — confirm first.
-        if ($customer_visible && self::needs_confirmation($args)) {
+        if ($customer_visible && !self::order_confirm_gate($args, 'order:' . $order->get_id() . ':note')) {
             return [
                 'needs_confirmation' => true,
                 'order_id'         => $order->get_id(),
@@ -735,7 +810,7 @@ class Tools {
         }
 
         // Order actions send emails / fire plugin side-effects — confirm first.
-        if (self::needs_confirmation($args)) {
+        if (!self::order_confirm_gate($args, 'order:' . $order->get_id() . ':action:' . $action)) {
             return [
                 'needs_confirmation' => true,
                 'order_id' => $order->get_id(),
