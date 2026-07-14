@@ -76,6 +76,12 @@ See the Privacy section above and PRIVACY.md for full details.
 Open the Help panel in the chat (footer) — it answers common questions,
 and "Report a problem" sends the details to the developer.
 
+== Screenshots ==
+
+1. Ask in plain language — WPChat runs the real WooCommerce/WordPress action and shows the result inline.
+2. Rich order cards: list, filter, change status, add notes — with a confirmation step before anything reaches a customer.
+3. A two-minute first-run wizard gets the plugin ready for your site.
+
 == Changelog ==
 
 = 0.7.2 =

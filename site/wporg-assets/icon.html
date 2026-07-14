@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<style>
+  html, body { margin: 0; padding: 0; width: 256px; height: 256px; }
+  .tile {
+    width: 256px; height: 256px; display: grid; place-items: center; position: relative; overflow: hidden;
+    background: radial-gradient(125% 125% at 28% 18%, #191a2e 0%, #0a0a0b 68%);
+  }
+  .tile::before {
+    content: ""; position: absolute; inset: 0;
+    background: radial-gradient(58% 52% at 74% 10%, rgba(139,147,255,0.55), transparent 70%);
+  }
+  .circle {
+    position: relative; width: 190px; height: 190px; border-radius: 50%;
+    background: linear-gradient(150deg, #edeef4, #c5c5cf);
+    display: grid; place-items: center;
+    box-shadow: 0 22px 55px -14px rgba(0,0,0,0.75), 0 0 0 1px rgba(255,255,255,0.14);
+  }
+  .glyph {
+    font-family: system-ui, "Segoe UI Symbol", "Apple Symbols", sans-serif;
+    font-size: 150px; line-height: 1; color: #0a0a0b; margin-top: -4px;
+  }
+</style>
+</head>
+<body>
+  <div class="tile"><div class="circle"><span class="glyph">❡</span></div></div>
+</body>
+</html>

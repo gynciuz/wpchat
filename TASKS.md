@@ -102,6 +102,21 @@ architecture notes; this section is the short, checkable version.
 
 > Newest at the top. Work bottom-up. One commit per task. Use `[x]` to check off.
 
+[ ] (priority) **Prep for WordPress.org plugin-directory submission.**
+    - Install the official **Plugin Check (PCP)** plugin locally; fix every error/
+      warning (escaping, nonces, sanitization, direct-file-access, i18n text-domain).
+    - Validate `readme.txt` with the official readme validator.
+    - Directory assets (icon 256×256 + 128×128, banner 1544×500 + 772×250,
+      screenshots) — generated under `site/wporg-assets/`.
+    - **Decide the update channel:** listing on WP.org means WP.org serves updates;
+      reconcile with the current GitHub-Releases + PUC + `Update URI` auto-update
+      (recommend: drop PUC, remove the `Update URI` pin, use WP.org as the update
+      source; keep `bin/release.sh` GitHub ZIP as a pre-release/secondary channel).
+    - Guideline compliance: GPL-compat (MIT ✓), Anthropic external-service disclosure
+      + privacy policy (✓), no remote code loading, slug `wpchat` (no trademarked
+      terms). Submit at wordpress.org/plugins/developers/add/.
+    - Address findings from the security audit (see the separate `(priority)` fix task) first.
+
 [x](done 2026-07-14) **Expand built-in language coverage to the marketing-priority set.**
     Done: added EN/ES/FR/PT/HI/ZH/DE affirmatives + negations to
     `ContentConfirmation::is_confirmed` (Mandarin matched by substring — no word
