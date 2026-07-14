@@ -295,6 +295,7 @@ class WPStatisticsAnalyticsProvider implements AnalyticsProvider {
     public function is_available(): bool {
         global $wpdb;
         $table = $wpdb->prefix . 'statistics_visitor';
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- existence probe on the detected analytics plugin's own table.
         return (bool) $wpdb->get_var($wpdb->prepare('SHOW TABLES LIKE %s', $table));
     }
 
@@ -305,6 +306,9 @@ class WPStatisticsAnalyticsProvider implements AnalyticsProvider {
         $visitor_tbl = $wpdb->prefix . 'statistics_visitor';
         $pages_tbl   = $wpdb->prefix . 'statistics_pages';
 
+        // Reads the detected WP Statistics plugin's own tables (names derived
+        // from $wpdb->prefix, values passed as prepare() args); live data.
+        // phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared,PluginCheck.Security.DirectDB.UnescapedDBParameter
         $users = (int) $wpdb->get_var($wpdb->prepare(
             "SELECT COUNT(DISTINCT IFNULL(`ip`, `id`)) FROM `$visitor_tbl` WHERE `last_counter` BETWEEN %s AND %s",
             $range['start'],
@@ -341,6 +345,7 @@ class WPStatisticsAnalyticsProvider implements AnalyticsProvider {
             }
         }
 
+        // phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared,PluginCheck.Security.DirectDB.UnescapedDBParameter
         return [
             'provider'    => $this->name(),
             'range'       => $range,
@@ -364,6 +369,7 @@ class KokoAnalyticsAnalyticsProvider implements AnalyticsProvider {
     public function is_available(): bool {
         global $wpdb;
         $table = $wpdb->prefix . 'koko_analytics_site_stats';
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- existence probe on the detected analytics plugin's own table.
         return (bool) $wpdb->get_var($wpdb->prepare('SHOW TABLES LIKE %s', $table));
     }
 
@@ -374,6 +380,9 @@ class KokoAnalyticsAnalyticsProvider implements AnalyticsProvider {
         $site_tbl = $wpdb->prefix . 'koko_analytics_site_stats';
         $pages_tbl = $wpdb->prefix . 'koko_analytics_post_stats';
 
+        // Reads the detected Koko Analytics plugin's own tables (names from
+        // $wpdb->prefix, values passed as prepare() args); live data.
+        // phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared,PluginCheck.Security.DirectDB.UnescapedDBParameter
         $row = $wpdb->get_row($wpdb->prepare(
             "SELECT COALESCE(SUM(`visitors`), 0) AS users, COALESCE(SUM(`pageviews`), 0) AS views FROM `$site_tbl` WHERE `date` BETWEEN %s AND %s",
             $range['start'],
@@ -403,6 +412,7 @@ class KokoAnalyticsAnalyticsProvider implements AnalyticsProvider {
             }
         }
 
+        // phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared,PluginCheck.Security.DirectDB.UnescapedDBParameter
         return [
             'provider'    => $this->name(),
             'range'       => $range,
