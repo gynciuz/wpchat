@@ -47,4 +47,4 @@ rm -f "$ZIP"
 rm -rf "$STAGE"
 
 echo "wp.org build → $ZIP"
-echo "slug: $SLUG   version: $VERSION   (text domain 'chat-admin' matches the slug)"
+echo "slug: $SLUG   version: $VERSION   (text domain 'chatadmin' matches the slug)"
