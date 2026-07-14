@@ -1,11 +1,11 @@
 <?php
 /**
- * WPChat settings (API key, model selection).
+ * ChatAdmin settings (API key, model selection).
  *
- * @package WPChat
+ * @package ChatAdmin
  */
 
-namespace WPChat;
+namespace ChatAdmin;
 
 if (!defined('ABSPATH')) {
     exit;
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
 
 class Settings {
 
-    const OPTION = 'wpchat_settings';
+    const OPTION = 'chatadmin_settings';
 
     public function __construct() {
         add_action('admin_init', [$this, 'register']);
@@ -21,7 +21,7 @@ class Settings {
 
     public function register(): void {
         register_setting(
-            'wpchat_settings_group',
+            'chatadmin_settings_group',
             self::OPTION,
             [
                 'type'              => 'array',
@@ -35,45 +35,45 @@ class Settings {
         );
 
         add_settings_section(
-            'wpchat_settings_section_api',
-            __('AI provider', 'wpchat'),
+            'chatadmin_settings_section_api',
+            __('AI provider', 'chat-admin'),
             function () {
-                echo '<p>' . esc_html__('Paste your Anthropic, OpenAI, or Google Gemini API key — WPChat detects the provider automatically. You are billed by the provider directly.', 'wpchat') . '</p>';
+                echo '<p>' . esc_html__('Paste your Anthropic, OpenAI, or Google Gemini API key — ChatAdmin detects the provider automatically. You are billed by the provider directly.', 'chat-admin') . '</p>';
             },
-            'wpchat-settings'
+            'chatadmin-settings'
         );
 
         add_settings_field(
             'api_key',
-            __('API key', 'wpchat'),
+            __('API key', 'chat-admin'),
             [$this, 'field_api_key'],
-            'wpchat-settings',
-            'wpchat_settings_section_api'
+            'chatadmin-settings',
+            'chatadmin_settings_section_api'
         );
         add_settings_field(
             'model',
-            __('Model', 'wpchat'),
+            __('Model', 'chat-admin'),
             [$this, 'field_model'],
-            'wpchat-settings',
-            'wpchat_settings_section_api'
+            'chatadmin-settings',
+            'chatadmin_settings_section_api'
         );
 
         add_settings_section(
-            'wpchat_settings_section_privacy',
-            __('Privacy & diagnostics', 'wpchat'),
+            'chatadmin_settings_section_privacy',
+            __('Privacy & diagnostics', 'chat-admin'),
             function () {
-                echo '<p>' . esc_html__('WPChat sends the content of your requests (which can include order and customer data) to your chosen AI provider to generate replies.', 'wpchat') . '</p>';
-                echo '<p>' . esc_html__('Two channels also send data to the plugin developer: “Report a problem” sends your recent conversation (which can include customer data) plus your login/email, and error reporting (below, on by default) sends PII-free diagnostics when something fails. Turn error reporting off below. See the plugin README / PRIVACY.md for the full data-handling note.', 'wpchat') . '</p>';
+                echo '<p>' . esc_html__('ChatAdmin sends the content of your requests (which can include order and customer data) to your chosen AI provider to generate replies.', 'chat-admin') . '</p>';
+                echo '<p>' . esc_html__('Two channels also send data to the plugin developer: “Report a problem” sends your recent conversation (which can include customer data) plus your login/email, and error reporting (below, on by default) sends PII-free diagnostics when something fails. Turn error reporting off below. See the plugin README / PRIVACY.md for the full data-handling note.', 'chat-admin') . '</p>';
             },
-            'wpchat-settings'
+            'chatadmin-settings'
         );
 
         add_settings_field(
             'telemetry',
-            __('Error reporting', 'wpchat'),
+            __('Error reporting', 'chat-admin'),
             [$this, 'field_telemetry'],
-            'wpchat-settings',
-            'wpchat_settings_section_privacy'
+            'chatadmin-settings',
+            'chatadmin_settings_section_privacy'
         );
     }
 
@@ -89,7 +89,7 @@ class Settings {
                 $output[$pid . '_api_key'] = sanitize_text_field($key);
                 $output['llm_provider']    = $pid;
             } else {
-                add_settings_error(self::OPTION, 'wpchat_key', __('Couldn’t recognize that API key (expected sk-ant-…, sk-…, or AIza…).', 'wpchat'));
+                add_settings_error(self::OPTION, 'chatadmin_key', __('Couldn’t recognize that API key (expected sk-ant-…, sk-…, or AIza…).', 'chat-admin'));
             }
         }
 
@@ -124,7 +124,7 @@ class Settings {
         if ($source === 'constant') {
             echo '<p class="description">' . esc_html(sprintf(
                 /* translators: %s = provider label */
-                __('A %s key is set via a wp-config.php constant (ignored here).', 'wpchat'),
+                __('A %s key is set via a wp-config.php constant (ignored here).', 'chat-admin'),
                 $provider->label()
             )) . '</p>';
             return;
@@ -134,17 +134,17 @@ class Settings {
         printf(
             '<input type="password" name="%s[api_key]" value="" class="regular-text" autocomplete="off" placeholder="%s" />',
             esc_attr(self::OPTION),
-            esc_attr($value ? __('Leave blank to keep current key', 'wpchat') : 'sk-ant-…  ·  sk-…  ·  AIza…')
+            esc_attr($value ? __('Leave blank to keep current key', 'chat-admin') : 'sk-ant-…  ·  sk-…  ·  AIza…')
         );
         if ($masked) {
             echo '<p class="description">' . esc_html(sprintf(
                 /* translators: 1: provider label, 2: masked key */
-                __('Connected to %1$s · %2$s', 'wpchat'),
+                __('Connected to %1$s · %2$s', 'chat-admin'),
                 $provider->label(),
                 $masked
             )) . '</p>';
         }
-        echo '<p class="description">' . esc_html__('Get a key: Anthropic (console.anthropic.com) · OpenAI (platform.openai.com) · Google (aistudio.google.com).', 'wpchat') . '</p>';
+        echo '<p class="description">' . esc_html__('Get a key: Anthropic (console.anthropic.com) · OpenAI (platform.openai.com) · Google (aistudio.google.com).', 'chat-admin') . '</p>';
     }
 
     public function field_model(): void {
@@ -168,17 +168,17 @@ class Settings {
             '<label><input type="checkbox" name="%s[telemetry]" value="1" %s /> %s</label>',
             esc_attr(self::OPTION),
             checked($enabled, true, false),
-            esc_html__('Send anonymous error reports (no order or customer data) so the developer can fix failures you hit. You can turn this off any time.', 'wpchat')
+            esc_html__('Send anonymous error reports (no order or customer data) so the developer can fix failures you hit. You can turn this off any time.', 'chat-admin')
         );
     }
 
     /**
      * The active LLM provider id ('anthropic' | 'openai' | 'gemini'), preferring
-     * the WPCHAT_LLM_PROVIDER constant over the DB option.
+     * the CHATADMIN_LLM_PROVIDER constant over the DB option.
      */
     public static function get_provider(): string {
-        if (defined('WPCHAT_LLM_PROVIDER') && WPCHAT_LLM_PROVIDER) {
-            return (string) WPCHAT_LLM_PROVIDER;
+        if (defined('CHATADMIN_LLM_PROVIDER') && CHATADMIN_LLM_PROVIDER) {
+            return (string) CHATADMIN_LLM_PROVIDER;
         }
         $options = get_option(self::OPTION, []);
         $p = (string) ($options['llm_provider'] ?? 'anthropic');
@@ -187,12 +187,12 @@ class Settings {
 
     /**
      * Read the API key for a provider (defaults to the active one), preferring
-     * the WPCHAT_{PROVIDER}_API_KEY constant over the `{provider}_api_key` DB
-     * option. `WPCHAT_ANTHROPIC_API_KEY` / `anthropic_api_key` keep working.
+     * the CHATADMIN_{PROVIDER}_API_KEY constant over the `{provider}_api_key` DB
+     * option. `CHATADMIN_ANTHROPIC_API_KEY` / `anthropic_api_key` keep working.
      */
     public static function get_api_key(string $provider = ''): string {
         $provider = $provider !== '' ? $provider : self::get_provider();
-        $const    = 'WPCHAT_' . strtoupper($provider) . '_API_KEY';
+        $const    = 'CHATADMIN_' . strtoupper($provider) . '_API_KEY';
         if (defined($const) && constant($const)) {
             return (string) constant($const);
         }
@@ -203,7 +203,7 @@ class Settings {
     /** Where the active provider's key comes from: 'constant' | 'option' | 'none'. */
     public static function key_source(string $provider = ''): string {
         $provider = $provider !== '' ? $provider : self::get_provider();
-        $const    = 'WPCHAT_' . strtoupper($provider) . '_API_KEY';
+        $const    = 'CHATADMIN_' . strtoupper($provider) . '_API_KEY';
         if (defined($const) && constant($const)) {
             return 'constant';
         }

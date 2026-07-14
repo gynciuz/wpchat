@@ -2,13 +2,13 @@
 /**
  * Tests for the site-level disabled-kinds option + admin-gated REST route.
  *
- * @package WPChat\Tests
+ * @package ChatAdmin\Tests
  */
 
-namespace WPChat\Tests\Integration;
+namespace ChatAdmin\Tests\Integration;
 
-use WPChat\Onboarding;
-use WPChat\Tests\TestCase;
+use ChatAdmin\Onboarding;
+use ChatAdmin\Tests\TestCase;
 
 class OnboardingDisabledKindsTest extends TestCase {
 
@@ -18,7 +18,7 @@ class OnboardingDisabledKindsTest extends TestCase {
     }
 
     public function test_admin_can_persist_disabled_kinds(): void {
-        $request = new \WP_REST_Request('POST', '/wpchat/v1/onboarding/disabled-kinds');
+        $request = new \WP_REST_Request('POST', '/chatadmin/v1/onboarding/disabled-kinds');
         $request->set_header('Content-Type', 'application/json');
         $request->set_body(json_encode(['disabled' => ['wp_post_meta', 'wp_term']]));
         $response = \rest_get_server()->dispatch($request);
@@ -31,7 +31,7 @@ class OnboardingDisabledKindsTest extends TestCase {
     }
 
     public function test_invalid_payload_is_sanitised_not_rejected(): void {
-        $request = new \WP_REST_Request('POST', '/wpchat/v1/onboarding/disabled-kinds');
+        $request = new \WP_REST_Request('POST', '/chatadmin/v1/onboarding/disabled-kinds');
         $request->set_header('Content-Type', 'application/json');
         $request->set_body(json_encode(['disabled' => ['wp_post', null, '', 123, 'WP_TERM!!!']]));
         $response = \rest_get_server()->dispatch($request);
@@ -49,7 +49,7 @@ class OnboardingDisabledKindsTest extends TestCase {
         $editor = $this->factory()->user->create(['role' => 'editor']);
         \wp_set_current_user($editor);
 
-        $request = new \WP_REST_Request('POST', '/wpchat/v1/onboarding/disabled-kinds');
+        $request = new \WP_REST_Request('POST', '/chatadmin/v1/onboarding/disabled-kinds');
         $request->set_header('Content-Type', 'application/json');
         $request->set_body(json_encode(['disabled' => ['wp_post']]));
         $response = \rest_get_server()->dispatch($request);
@@ -60,7 +60,7 @@ class OnboardingDisabledKindsTest extends TestCase {
     public function test_status_surfaces_disabled_kinds_and_isAdmin(): void {
         \update_option(Onboarding::DISABLED_KINDS_OPT, ['wp_term']);
 
-        $request  = new \WP_REST_Request('GET', '/wpchat/v1/onboarding/status');
+        $request  = new \WP_REST_Request('GET', '/chatadmin/v1/onboarding/status');
         $response = \rest_get_server()->dispatch($request);
         $data     = $response->get_data();
 

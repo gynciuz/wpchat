@@ -3,13 +3,13 @@
  * Pure-unit tests for the confirmation-phrase whitelist that gates every
  * LLM-callable write tool.
  *
- * @package WPChat\Tests
+ * @package ChatAdmin\Tests
  */
 
-namespace WPChat\Tests\Unit;
+namespace ChatAdmin\Tests\Unit;
 
 use PHPUnit\Framework\TestCase;
-use WPChat\ContentConfirmation;
+use ChatAdmin\ContentConfirmation;
 
 class ContentConfirmationTest extends TestCase {
 

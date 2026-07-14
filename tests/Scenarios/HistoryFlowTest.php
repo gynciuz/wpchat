@@ -7,12 +7,12 @@
  *  4. GET /conversations/{id} replays the full transcript.
  *  5. A different user cannot read the first user's conversation.
  *
- * @package WPChat\Tests
+ * @package ChatAdmin\Tests
  */
 
-namespace WPChat\Tests\Scenarios;
+namespace ChatAdmin\Tests\Scenarios;
 
-use WPChat\Tests\TestCase;
+use ChatAdmin\Tests\TestCase;
 
 class HistoryFlowTest extends TestCase {
 

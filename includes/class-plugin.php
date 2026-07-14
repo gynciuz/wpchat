@@ -1,11 +1,11 @@
 <?php
 /**
- * WPChat plugin bootstrap.
+ * ChatAdmin plugin bootstrap.
  *
- * @package WPChat
+ * @package ChatAdmin
  */
 
-namespace WPChat;
+namespace ChatAdmin;
 
 if (!defined('ABSPATH')) {
     exit;
@@ -33,8 +33,8 @@ final class Plugin {
     }
 
     public static function activate(): void {
-        if (!get_option('wpchat_settings')) {
-            add_option('wpchat_settings', [
+        if (!get_option('chatadmin_settings')) {
+            add_option('chatadmin_settings', [
                 'anthropic_api_key' => '',
                 'model'             => 'claude-sonnet-4-6',
             ]);
@@ -43,6 +43,6 @@ final class Plugin {
     }
 
     public static function deactivate(): void {
-        // Intentionally leave wpchat_settings in place — user may reactivate later.
+        // Intentionally leave chatadmin_settings in place — user may reactivate later.
     }
 }

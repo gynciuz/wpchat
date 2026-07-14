@@ -2,13 +2,13 @@
 /**
  * Default WPContentBackend tests — exercise wp_post / wp_page_slug / wp_post_meta.
  *
- * @package WPChat\Tests
+ * @package ChatAdmin\Tests
  */
 
-namespace WPChat\Tests\Integration;
+namespace ChatAdmin\Tests\Integration;
 
-use WPChat\WPContentBackend;
-use WPChat\Tests\TestCase;
+use ChatAdmin\WPContentBackend;
+use ChatAdmin\Tests\TestCase;
 
 class WPContentBackendTest extends TestCase {
 
@@ -66,10 +66,10 @@ class WPContentBackendTest extends TestCase {
         $post_id = $this->factory()->post->create();
         $backend = new WPContentBackend();
 
-        $target = ['kind' => 'wp_post_meta', 'post_id' => $post_id, 'key' => 'wpchat_test_key'];
+        $target = ['kind' => 'wp_post_meta', 'post_id' => $post_id, 'key' => 'chatadmin_test_key'];
         $backend->apply($target, 'value', 'fresh-value', 'taip');
 
-        $this->assertSame('fresh-value', get_post_meta($post_id, 'wpchat_test_key', true));
+        $this->assertSame('fresh-value', get_post_meta($post_id, 'chatadmin_test_key', true));
     }
 
     public function test_unknown_kind_returns_error(): void {

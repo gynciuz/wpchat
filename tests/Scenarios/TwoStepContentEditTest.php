@@ -6,13 +6,13 @@
  * the LLM tries to pass garbage. This is the structural gate on
  * LLM-callable writes.
  *
- * @package WPChat\Tests
+ * @package ChatAdmin\Tests
  */
 
-namespace WPChat\Tests\Scenarios;
+namespace ChatAdmin\Tests\Scenarios;
 
-use WPChat\Tools;
-use WPChat\Tests\TestCase;
+use ChatAdmin\Tools;
+use ChatAdmin\Tests\TestCase;
 
 class TwoStepContentEditTest extends TestCase {
 

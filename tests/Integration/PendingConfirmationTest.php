@@ -6,13 +6,13 @@
  * created it — so a preview and an apply in the SAME turn (a prompt-injection
  * doing both at once) cannot satisfy it.
  *
- * @package WPChat\Tests
+ * @package ChatAdmin\Tests
  */
 
-namespace WPChat\Tests\Integration;
+namespace ChatAdmin\Tests\Integration;
 
-use WPChat\PendingConfirmation;
-use WPChat\Tests\TestCase;
+use ChatAdmin\PendingConfirmation;
+use ChatAdmin\Tests\TestCase;
 
 class PendingConfirmationTest extends TestCase {
 

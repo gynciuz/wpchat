@@ -7,18 +7,18 @@
  * the order-management history). The report route delivers the user's note +
  * recent conversation to the developer (wp_mail fallback in the test env).
  *
- * @package WPChat\Tests
+ * @package ChatAdmin\Tests
  */
 
-namespace WPChat\Tests\Scenarios;
+namespace ChatAdmin\Tests\Scenarios;
 
-use WPChat\Telemetry;
-use WPChat\Tests\TestCase;
+use ChatAdmin\Telemetry;
+use ChatAdmin\Tests\TestCase;
 
 class SupportTest extends TestCase {
 
     private function postSupportChat(string $msg): array {
-        $request = new \WP_REST_Request('POST', '/wpchat/v1/chat');
+        $request = new \WP_REST_Request('POST', '/chatadmin/v1/chat');
         $request->set_header('Content-Type', 'application/json');
         $request->set_body(json_encode([
             'mode'     => 'support',
@@ -37,12 +37,12 @@ class SupportTest extends TestCase {
         // No tools offered in support mode.
         $this->assertArrayNotHasKey('tools', $request, 'Support mode must not expose any tools.');
         // FAQ/help system prompt, not the order-management one.
-        $this->assertStringContainsString('WPChat Help', $request['system'] ?? '');
+        $this->assertStringContainsString('ChatAdmin Help', $request['system'] ?? '');
     }
 
     public function test_support_chat_is_not_persisted_to_history(): void {
         $this->mockAnthropic->enqueueEndTurn('answer');
-        $this->postSupportChat('what can WPChat do?');
+        $this->postSupportChat('what can ChatAdmin do?');
 
         $convos = $this->getConversations();
         $this->assertSame(200, $convos['status']);
@@ -57,7 +57,7 @@ class SupportTest extends TestCase {
         };
         \add_filter('pre_wp_mail', $filter, 10, 2);
 
-        $request = new \WP_REST_Request('POST', '/wpchat/v1/support');
+        $request = new \WP_REST_Request('POST', '/chatadmin/v1/support');
         $request->set_header('Content-Type', 'application/json');
         $request->set_body(json_encode(['note' => 'orders list is blank', 'error' => 'HTTP 500']));
         $response = \rest_get_server()->dispatch($request);

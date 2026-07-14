@@ -2,7 +2,7 @@
 /**
  * PHPUnit bootstrap.
  *
- * Loads the WordPress test framework, then activates the WPChat plugin so
+ * Loads the WordPress test framework, then activates the ChatAdmin plugin so
  * its classes, REST routes, and migrations are available to every test.
  *
  * Expects WP_TESTS_DIR env var (path to the wp-tests-lib checkout) or falls
@@ -14,7 +14,7 @@
  * the WP framework — but the bootstrap still loads it because PHPUnit's
  * bootstrap is global.
  *
- * @package WPChat\Tests
+ * @package ChatAdmin\Tests
  */
 
 $tests_dir = getenv('WP_TESTS_DIR');
@@ -28,18 +28,18 @@ if (!file_exists("{$tests_dir}/includes/functions.php")) {
 }
 
 // Manually load WP-test functions then register a muplugin loader that
-// loads WPChat before WordPress finishes booting.
+// loads ChatAdmin before WordPress finishes booting.
 require_once "{$tests_dir}/includes/functions.php";
 
-function _wpchat_manually_load_plugin() {
-    require dirname(__DIR__) . '/wpchat.php';
+function _chatadmin_manually_load_plugin() {
+    require dirname(__DIR__) . '/chat-admin.php';
 }
-tests_add_filter('muplugins_loaded', '_wpchat_manually_load_plugin');
+tests_add_filter('muplugins_loaded', '_chatadmin_manually_load_plugin');
 
 require "{$tests_dir}/includes/bootstrap.php";
 
 // Make sure the messages table is migrated before any test runs.
-\WPChat\History::migrate();
+\ChatAdmin\History::migrate();
 
 // Load test helpers.
 require_once __DIR__ . '/MockAnthropic.php';

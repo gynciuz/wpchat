@@ -8,13 +8,13 @@
  * dispatch time. Earlier I misdiagnosed this as an LLM hallucination;
  * it was actual code.
  *
- * @package WPChat\Tests
+ * @package ChatAdmin\Tests
  */
 
-namespace WPChat\Tests\Unit;
+namespace ChatAdmin\Tests\Unit;
 
 use PHPUnit\Framework\TestCase;
-use WPChat\Tools;
+use ChatAdmin\Tools;
 
 class UnprefixedStatusTest extends TestCase {
 

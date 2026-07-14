@@ -4,13 +4,13 @@
  * editor account or a looping client can't run up an unbounded Anthropic
  * bill. Direct-action endpoints (no LLM) are intentionally NOT limited.
  *
- * @package WPChat\Tests
+ * @package ChatAdmin\Tests
  */
 
-namespace WPChat\Tests\Scenarios;
+namespace ChatAdmin\Tests\Scenarios;
 
-use WPChat\Rest;
-use WPChat\Tests\TestCase;
+use ChatAdmin\Rest;
+use ChatAdmin\Tests\TestCase;
 
 class RateLimitTest extends TestCase {
 
@@ -28,11 +28,11 @@ class RateLimitTest extends TestCase {
 
     public function test_filter_can_disable_the_limit(): void {
         $off = static fn() => 0;
-        \add_filter('wpchat_rate_limit_max', $off);
+        \add_filter('chatadmin_rate_limit_max', $off);
         for ($i = 0; $i < Rest::RATE_LIMIT_MAX + 5; $i++) {
             $res = $this->postChat("msg $i");
             $this->assertSame(200, $res['status']);
         }
-        \remove_filter('wpchat_rate_limit_max', $off);
+        \remove_filter('chatadmin_rate_limit_max', $off);
     }
 }

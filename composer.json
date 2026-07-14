@@ -12,7 +12,7 @@
     },
     "autoload-dev": {
         "psr-4": {
-            "WPChat\\Tests\\": "tests/"
+            "ChatAdmin\\Tests\\": "tests/"
         }
     },
     "scripts": {

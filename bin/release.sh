@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
 #
-# Build the distributable WPChat plugin ZIP.
+# Build the distributable ChatAdmin plugin ZIP.
 #
 # What it does:
-#   1. Reads the version from the wpchat.php plugin header.
-#   2. Asserts that version matches everywhere it must (WPCHAT_VERSION,
+#   1. Reads the version from the chat-admin.php plugin header.
+#   2. Asserts that version matches everywhere it must (CHATADMIN_VERSION,
 #      readme.txt Stable tag, and a matching changelog heading).
 #   3. Rebuilds the React app and refuses to continue if the committed
 #      build/ assets are stale (the released ZIP serves them).
-#   4. Packages a clean wpchat-vX.Y.Z.zip via `git archive`, which honors
+#   4. Packages a clean chat-admin-vX.Y.Z.zip via `git archive`, which honors
 #      the export-ignore rules in .gitattributes (tests/, app/src/, etc.).
 #   5. Optionally creates the GitHub Release and uploads the asset (--publish).
 #
@@ -28,18 +28,18 @@ PUBLISH=0
 [[ "${1:-}" == "--publish" ]] && PUBLISH=1
 
 # --- 1. Read the canonical version from the plugin header ------------------
-VERSION="$(grep -m1 -E '^\s*\*\s*Version:' wpchat.php | sed -E 's/.*Version:[[:space:]]*//; s/[[:space:]]*$//')"
-[[ -n "$VERSION" ]] || fail "Could not read Version from wpchat.php header."
-echo "Releasing WPChat v$VERSION"
+VERSION="$(grep -m1 -E '^\s*\*\s*Version:' chat-admin.php | sed -E 's/.*Version:[[:space:]]*//; s/[[:space:]]*$//')"
+[[ -n "$VERSION" ]] || fail "Could not read Version from chat-admin.php header."
+echo "Releasing ChatAdmin v$VERSION"
 
 # --- 2. Version consistency across files -----------------------------------
-grep -q "define('WPCHAT_VERSION', '$VERSION')" wpchat.php \
-  || fail "WPCHAT_VERSION in wpchat.php does not match header ($VERSION)."
+grep -q "define('CHATADMIN_VERSION', '$VERSION')" chat-admin.php \
+  || fail "CHATADMIN_VERSION in chat-admin.php does not match header ($VERSION)."
 grep -q "^Stable tag: $VERSION\$" readme.txt \
   || fail "readme.txt 'Stable tag' does not match $VERSION."
 grep -q "^= $VERSION =\$" readme.txt \
   || fail "readme.txt has no changelog heading '= $VERSION ='."
-ok "Version $VERSION is consistent across wpchat.php and readme.txt."
+ok "Version $VERSION is consistent across chat-admin.php and readme.txt."
 
 # --- 3. Build the app and require committed build/ to be current ------------
 if [[ -d app ]]; then
@@ -57,19 +57,19 @@ if ! git diff --quiet || ! git diff --quiet --cached; then
 fi
 
 # --- 4. Package via git archive (honors .gitattributes export-ignore) ------
-OUT="wpchat-v$VERSION.zip"
+OUT="chat-admin-v$VERSION.zip"
 rm -f "$OUT"
-git archive --format=zip --prefix=wpchat/ -o "$OUT" HEAD
+git archive --format=zip --prefix=chat-admin/ -o "$OUT" HEAD
 ok "Wrote $OUT ($(du -h "$OUT" | cut -f1))."
 echo "Top-level contents:"
-unzip -l "$OUT" | awk '{print $4}' | sed -n 's#^wpchat/\([^/]*\)/\?$#  \1#p' | sort -u
+unzip -l "$OUT" | awk '{print $4}' | sed -n 's#^chat-admin/\([^/]*\)/\?$#  \1#p' | sort -u
 
 # Sanity: dev files must NOT be in the package.
-if unzip -l "$OUT" | grep -qE 'wpchat/(tests/|app/src/|composer\.json|phpunit)'; then
+if unzip -l "$OUT" | grep -qE 'chat-admin/(tests/|app/src/|composer\.json|phpunit)'; then
   fail "Package contains dev files that should be export-ignored — check .gitattributes."
 fi
 # Sanity: the built assets MUST be in the package.
-unzip -l "$OUT" | grep -q 'wpchat/build/manifest.json' \
+unzip -l "$OUT" | grep -q 'chat-admin/build/manifest.json' \
   || fail "Package is missing build/manifest.json — the plugin would 500 on load."
 ok "Package sanity checks passed."
 
@@ -79,7 +79,7 @@ if [[ "$PUBLISH" == "1" ]]; then
   TAG="v$VERSION"
   git rev-parse "$TAG" >/dev/null 2>&1 && fail "Tag $TAG already exists."
   gh release create "$TAG" "$OUT" \
-    --title "WPChat $TAG" \
+    --title "ChatAdmin $TAG" \
     --notes "See readme.txt changelog for $VERSION." \
     || fail "gh release create failed."
   ok "Published GitHub release $TAG."

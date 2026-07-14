@@ -10,13 +10,13 @@
  *  - list_conversations() respects the user_id filter (cross-user isolation)
  *  - get_conversation() refuses to return another user's conversation
  *
- * @package WPChat\Tests
+ * @package ChatAdmin\Tests
  */
 
-namespace WPChat\Tests\Integration;
+namespace ChatAdmin\Tests\Integration;
 
-use WPChat\History;
-use WPChat\Tests\TestCase;
+use ChatAdmin\History;
+use ChatAdmin\Tests\TestCase;
 
 class HistoryTest extends TestCase {
 
@@ -24,7 +24,7 @@ class HistoryTest extends TestCase {
         global $wpdb;
         $table = History::table_name();
         $found = $wpdb->get_var("SHOW TABLES LIKE '$table'");
-        $this->assertSame($table, $found, 'wpchat_messages table should exist after migration.');
+        $this->assertSame($table, $found, 'chatadmin_messages table should exist after migration.');
     }
 
     public function test_append_inserts_row(): void {

@@ -1,6 +1,6 @@
 <?php
 /**
- * WPChat telemetry + support sink.
+ * ChatAdmin telemetry + support sink.
  *
  * Two jobs, one destination:
  *  - Telemetry::log() records every production failure to a capped local
@@ -11,13 +11,13 @@
  *    info — to the developer.
  *
  * Both route to the same sink: an HTTPS collector endpoint
- * (WPCHAT_SUPPORT_ENDPOINT) when configured, with wp_mail to
- * WPCHAT_SUPPORT_EMAIL as the fallback for explicit reports.
+ * (CHATADMIN_SUPPORT_ENDPOINT) when configured, with wp_mail to
+ * CHATADMIN_SUPPORT_EMAIL as the fallback for explicit reports.
  *
- * @package WPChat
+ * @package ChatAdmin
  */
 
-namespace WPChat;
+namespace ChatAdmin;
 
 if (!defined('ABSPATH')) {
     exit;
@@ -25,31 +25,31 @@ if (!defined('ABSPATH')) {
 
 class Telemetry {
 
-    const LOG_OPTION  = 'wpchat_error_log';
+    const LOG_OPTION  = 'chatadmin_error_log';
     const MAX_ENTRIES = 50;
 
-    /** Developer fallback inbox (overridable via WPCHAT_SUPPORT_EMAIL). */
+    /** Developer fallback inbox (overridable via CHATADMIN_SUPPORT_EMAIL). */
     const DEFAULT_EMAIL = 'gintaras.lukosevicius@gmail.com';
 
     /** Where explicit reports / opt-in telemetry are POSTed, if set. Filterable. */
     public static function endpoint(): string {
-        $endpoint = (defined('WPCHAT_SUPPORT_ENDPOINT') && WPCHAT_SUPPORT_ENDPOINT) ? (string) WPCHAT_SUPPORT_ENDPOINT : '';
-        return (string) apply_filters('wpchat_support_endpoint', $endpoint);
+        $endpoint = (defined('CHATADMIN_SUPPORT_ENDPOINT') && CHATADMIN_SUPPORT_ENDPOINT) ? (string) CHATADMIN_SUPPORT_ENDPOINT : '';
+        return (string) apply_filters('chatadmin_support_endpoint', $endpoint);
     }
 
     public static function support_email(): string {
-        $email = (defined('WPCHAT_SUPPORT_EMAIL') && WPCHAT_SUPPORT_EMAIL) ? (string) WPCHAT_SUPPORT_EMAIL : self::DEFAULT_EMAIL;
-        return (string) apply_filters('wpchat_support_email', $email);
+        $email = (defined('CHATADMIN_SUPPORT_EMAIL') && CHATADMIN_SUPPORT_EMAIL) ? (string) CHATADMIN_SUPPORT_EMAIL : self::DEFAULT_EMAIL;
+        return (string) apply_filters('chatadmin_support_email', $email);
     }
 
     /**
-     * Shared secret for the X-WPChat-Signature HMAC, so the collector can reject
+     * Shared secret for the X-ChatAdmin-Signature HMAC, so the collector can reject
      * junk. Filterable. NOTE: a shipped default only deters casual spam (anyone
      * reading the plugin can compute it) — the collector should also rate-limit.
      */
     private static function secret(): string {
-        $secret = (defined('WPCHAT_SUPPORT_SECRET') && WPCHAT_SUPPORT_SECRET) ? (string) WPCHAT_SUPPORT_SECRET : '';
-        return (string) apply_filters('wpchat_support_secret', $secret);
+        $secret = (defined('CHATADMIN_SUPPORT_SECRET') && CHATADMIN_SUPPORT_SECRET) ? (string) CHATADMIN_SUPPORT_SECRET : '';
+        return (string) apply_filters('chatadmin_support_secret', $secret);
     }
 
     /** Opt-in telemetry — default ON, disclosed in onboarding; admin can disable. */
@@ -78,7 +78,7 @@ class Telemetry {
                     'message'     => isset($ctx['message']) ? self::truncate((string) $ctx['message'], 500) : '',
                     'tool'        => isset($ctx['tool']) ? (string) $ctx['tool'] : '',
                     'code'        => isset($ctx['code']) ? (string) $ctx['code'] : '',
-                    'plugin'      => defined('WPCHAT_VERSION') ? WPCHAT_VERSION : '',
+                    'plugin'      => defined('CHATADMIN_VERSION') ? CHATADMIN_VERSION : '',
                     'php'         => PHP_VERSION,
                     'wp'          => get_bloginfo('version'),
                     'site'        => self::site_host(),
@@ -108,7 +108,7 @@ class Telemetry {
     public static function send_report(array $payload): bool {
         $payload = array_merge([
             'kind'   => 'support_report',
-            'plugin' => defined('WPCHAT_VERSION') ? WPCHAT_VERSION : '',
+            'plugin' => defined('CHATADMIN_VERSION') ? CHATADMIN_VERSION : '',
             'php'    => PHP_VERSION,
             'wp'     => get_bloginfo('version'),
             'site'   => self::site_host(),
@@ -157,8 +157,8 @@ class Telemetry {
     private static function email_report(array $payload): bool {
         $to      = self::support_email();
         $site    = $payload['site'] ?? self::site_host();
-        $subject = sprintf('[WPChat] Support report from %s', $site);
-        $body    = "A WPChat user submitted a problem report.\n\n"
+        $subject = sprintf('[ChatAdmin] Support report from %s', $site);
+        $body    = "A ChatAdmin user submitted a problem report.\n\n"
                  . wp_json_encode($payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
         return (bool) wp_mail($to, $subject, $body);
     }
@@ -169,8 +169,8 @@ class Telemetry {
         $headers = ['content-type' => 'application/json'];
         $secret  = self::secret();
         if ($secret !== '') {
-            // Lets the collector verify the payload came from a WPChat install.
-            $headers['X-WPChat-Signature'] = 'sha256=' . hash_hmac('sha256', (string) $body, $secret);
+            // Lets the collector verify the payload came from a ChatAdmin install.
+            $headers['X-ChatAdmin-Signature'] = 'sha256=' . hash_hmac('sha256', (string) $body, $secret);
         }
         return wp_remote_post($url, [
             'timeout'  => $blocking ? 15 : 1,

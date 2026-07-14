@@ -5,17 +5,17 @@
  * Builds a temporary git repository with a remote (also local) so we can
  * exercise the full commit + push path without external network access.
  *
- * Default behaviour: WPCHAT_GIT_SYNC_ENABLED is NOT defined, every call
+ * Default behaviour: CHATADMIN_GIT_SYNC_ENABLED is NOT defined, every call
  * returns skipped_reason. The first test asserts that. Subsequent tests
  * runkit-define the constant for the duration of the test method.
  *
- * @package WPChat\Tests
+ * @package ChatAdmin\Tests
  */
 
-namespace WPChat\Tests\Integration;
+namespace ChatAdmin\Tests\Integration;
 
-use WPChat\GitSync;
-use WPChat\Tests\TestCase;
+use ChatAdmin\GitSync;
+use ChatAdmin\Tests\TestCase;
 
 class GitSyncTest extends TestCase {
 
@@ -32,8 +32,8 @@ class GitSyncTest extends TestCase {
             $this->markTestSkipped('git not available on this runner');
         }
 
-        $this->remote = sys_get_temp_dir() . '/wpchat-gs-remote-' . uniqid();
-        $this->repo   = sys_get_temp_dir() . '/wpchat-gs-repo-' . uniqid();
+        $this->remote = sys_get_temp_dir() . '/chatadmin-gs-remote-' . uniqid();
+        $this->repo   = sys_get_temp_dir() . '/chatadmin-gs-repo-' . uniqid();
         mkdir($this->remote);
         mkdir($this->repo);
 
@@ -63,7 +63,7 @@ class GitSyncTest extends TestCase {
         $result = GitSync::commit_files([$this->file], 'no-op', []);
         $this->assertFalse($result['ok']);
         $this->assertArrayHasKey('skipped_reason', $result);
-        $this->assertStringContainsString('WPCHAT_GIT_SYNC_ENABLED', $result['skipped_reason']);
+        $this->assertStringContainsString('CHATADMIN_GIT_SYNC_ENABLED', $result['skipped_reason']);
     }
 
     public function test_commits_and_pushes_when_enabled(): void {
@@ -128,17 +128,17 @@ class GitSyncTest extends TestCase {
         // otherwise rely on the constant being defined ONCE for the test process
         // via phpunit bootstrap or test-specific env. For portability the test
         // skips if neither approach can flip the flag.
-        if (!defined('WPCHAT_GIT_SYNC_ENABLED')) {
-            define('WPCHAT_GIT_SYNC_ENABLED', true);
+        if (!defined('CHATADMIN_GIT_SYNC_ENABLED')) {
+            define('CHATADMIN_GIT_SYNC_ENABLED', true);
         }
-        if (!defined('WPCHAT_GIT_SYNC_PATH')) {
-            define('WPCHAT_GIT_SYNC_PATH', $this->repo);
+        if (!defined('CHATADMIN_GIT_SYNC_PATH')) {
+            define('CHATADMIN_GIT_SYNC_PATH', $this->repo);
         }
         // If the constants were already defined to other values (because a
         // previous test ran first), the helper will use those — skip when
-        // WPCHAT_GIT_SYNC_PATH doesn't match this run's repo.
-        if (defined('WPCHAT_GIT_SYNC_PATH') && WPCHAT_GIT_SYNC_PATH !== $this->repo) {
-            $this->markTestSkipped('WPCHAT_GIT_SYNC_PATH pinned to another repo by an earlier test');
+        // CHATADMIN_GIT_SYNC_PATH doesn't match this run's repo.
+        if (defined('CHATADMIN_GIT_SYNC_PATH') && CHATADMIN_GIT_SYNC_PATH !== $this->repo) {
+            $this->markTestSkipped('CHATADMIN_GIT_SYNC_PATH pinned to another repo by an earlier test');
             return;
         }
         $cb();

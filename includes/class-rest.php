@@ -1,11 +1,11 @@
 <?php
 /**
- * WPChat REST endpoint.
+ * ChatAdmin REST endpoint.
  *
- * @package WPChat
+ * @package ChatAdmin
  */
 
-namespace WPChat;
+namespace ChatAdmin;
 
 if (!defined('ABSPATH')) {
     exit;
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
 
 class Rest {
 
-    const NAMESPACE = 'wpchat/v1';
+    const NAMESPACE = 'chatadmin/v1';
 
     /** Per-user chat rate limit (bounds API cost from a runaway/abusive account). */
     const RATE_LIMIT_MAX    = 30; // requests…
@@ -95,7 +95,7 @@ class Rest {
             return new \WP_REST_Response([
                 'error' => sprintf(
                     /* translators: %s = provider label, e.g. Anthropic */
-                    __('%s API key is not configured. Open WPChat → Settings.', 'wpchat'),
+                    __('%s API key is not configured. Open ChatAdmin → Settings.', 'chat-admin'),
                     LLM::active()->label()
                 ),
             ], 400);
@@ -105,16 +105,16 @@ class Rest {
         $user_id  = get_current_user_id();
 
         // Per-user rate limit — caps API spend if an account is compromised or
-        // a client loops. Tunable via the wpchat_rate_limit_max filter.
-        $max = (int) apply_filters('wpchat_rate_limit_max', self::RATE_LIMIT_MAX);
+        // a client loops. Tunable via the chatadmin_rate_limit_max filter.
+        $max = (int) apply_filters('chatadmin_rate_limit_max', self::RATE_LIMIT_MAX);
         if ($max > 0) {
-            $rl_key = 'wpchat_rl_' . $user_id;
+            $rl_key = 'chatadmin_rl_' . $user_id;
             $count  = get_transient($rl_key);
             if ($count === false) {
                 set_transient($rl_key, 1, self::RATE_LIMIT_WINDOW);
             } elseif ((int) $count >= $max) {
                 return new \WP_REST_Response([
-                    'error' => __('You are sending requests too quickly — please wait a moment and try again.', 'wpchat'),
+                    'error' => __('You are sending requests too quickly — please wait a moment and try again.', 'chat-admin'),
                 ], 429);
             } else {
                 set_transient($rl_key, (int) $count + 1, self::RATE_LIMIT_WINDOW);
@@ -327,7 +327,7 @@ class Rest {
 
     /**
      * Support/help assistant prompt. Used in `mode: 'support'` with NO tools —
-     * it only answers questions about WPChat itself from the FAQ below. When it
+     * it only answers questions about ChatAdmin itself from the FAQ below. When it
      * can't resolve something, it points the user at "Report a problem".
      */
     private function support_prompt(): string {
@@ -337,27 +337,27 @@ class Rest {
         $has_key = Settings::get_api_key() ? 'configured' : 'NOT configured';
 
         return <<<PROMPT
-You are WPChat Help — a friendly support assistant for the WPChat WordPress plugin, embedded on the site "{$site}" (locale: {$locale}). You ONLY answer questions about using WPChat. You have NO tools and cannot change anything on the site — you explain, guide, and troubleshoot in plain language.
+You are ChatAdmin Help — a friendly support assistant for the ChatAdmin WordPress plugin, embedded on the site "{$site}" (locale: {$locale}). You ONLY answer questions about using ChatAdmin. You have NO tools and cannot change anything on the site — you explain, guide, and troubleshoot in plain language.
 
 # Rules
 - Reply in the user's language (mirror what they wrote).
 - Be concise and concrete. Give the exact menu path or click, not vague advice.
 - You cannot perform actions here. If they want something done, tell them to use the main chat (close Help) or the WordPress admin.
 - If you cannot resolve their issue, or it looks like a bug, tell them to click **"Report a problem"** (in this Help panel) — it sends the details straight to the developer.
-- Never invent features. If unsure whether WPChat can do something, say so and suggest Report a problem.
+- Never invent features. If unsure whether ChatAdmin can do something, say so and suggest Report a problem.
 
 # This site right now
 - Anthropic API key: {$has_key}
 - WooCommerce: {$wc}
 
 # FAQ — ground your answers in these facts
-**What is WPChat?** A chat-based admin assistant for WooCommerce + WordPress content. Type a request in any language ("mark order 2833 completed", "write a post about X") and it calls the right WP/WC functions for you.
+**What is ChatAdmin?** A chat-based admin assistant for WooCommerce + WordPress content. Type a request in any language ("mark order 2833 completed", "write a post about X") and it calls the right WP/WC functions for you.
 
-**Getting an Anthropic API key.** WPChat needs one. Go to console.anthropic.com → sign in → Settings → API Keys → Create Key → copy it → paste into WPChat → Settings (or the onboarding step). Keys start with "sk-ant-". You are billed by Anthropic for usage, not by WPChat.
+**Getting an Anthropic API key.** ChatAdmin needs one. Go to console.anthropic.com → sign in → Settings → API Keys → Create Key → copy it → paste into ChatAdmin → Settings (or the onboarding step). Keys start with "sk-ant-". You are billed by Anthropic for usage, not by ChatAdmin.
 
-**Cost.** WPChat itself is free. You pay Anthropic directly for the tokens your chats use — typically a few cents per request. There is no WPChat subscription today; a hosted "WPChat Cloud" tier is on a waitlist.
+**Cost.** ChatAdmin itself is free. You pay Anthropic directly for the tokens your chats use — typically a few cents per request. There is no ChatAdmin subscription today; a hosted "ChatAdmin Cloud" tier is on a waitlist.
 
-**"API key not configured" error.** The key isn't set or is wrong. Re-paste it in WPChat → Settings. If it still fails, the key may be revoked or out of credit — check console.anthropic.com → Billing.
+**"API key not configured" error.** The key isn't set or is wrong. Re-paste it in ChatAdmin → Settings. If it still fails, the key may be revoked or out of credit — check console.anthropic.com → Billing.
 
 **What it can do:** list/search orders, change an order's status, add order notes, resend order emails (with a confirmation step), create posts/pages as drafts and publish them, edit content and SEO title/description, run an SEO audit, and show a traffic summary. Order/customer edits beyond these are handed off as a deep link to wp-admin.
 
@@ -365,9 +365,9 @@ You are WPChat Help — a friendly support assistant for the WPChat WordPress pl
 
 **Confirmations.** Changing an order's status, sending a customer email, or publishing a draft asks you to confirm first (a Confirm/Cancel button or typing "yes"). This is a safety feature.
 
-**Privacy.** Your requests (which can include order/customer data) are sent to Anthropic to generate replies. WPChat stores your conversation history on your own site only. See the plugin README for details.
+**Privacy.** Your requests (which can include order/customer data) are sent to Anthropic to generate replies. ChatAdmin stores your conversation history on your own site only. See the plugin README for details.
 
-**Languages.** WPChat works in any language — English, Spanish, French, Portuguese, Hindi, Mandarin, German, and more. Type in whichever you like and it replies in kind.
+**Languages.** ChatAdmin works in any language — English, Spanish, French, Portuguese, Hindi, Mandarin, German, and more. Type in whichever you like and it replies in kind.
 
 If the answer isn't here, be honest and recommend Report a problem.
 PROMPT;
@@ -408,7 +408,7 @@ PROMPT;
             : "\n  (no content kinds registered)";
 
         return <<<PROMPT
-You are WPChat, a concise admin assistant embedded in the WordPress site "{$site}" (locale: {$locale}). You manage WooCommerce orders and (carefully) edit site content via tool calls.
+You are ChatAdmin, a concise admin assistant embedded in the WordPress site "{$site}" (locale: {$locale}). You manage WooCommerce orders and (carefully) edit site content via tool calls.
 
 # How to be useful (READ THIS FIRST)
 The user is a busy shop owner, not an engineer. They don't know about slugs, REST, HPOS, or status codes — and they don't want to. Your job is to get their task done with the available tools. If a direct path doesn't exist, find one:
@@ -457,7 +457,7 @@ Always map the user's word to the corresponding slug below before calling `updat
 - **Resending emails & order actions:** when the user asks to (re)send an order email or run an order action — "resend the invoice", "pakartok dovanų kupono siuntimą", "resend gift card", "resend new order notification" — DO IT with the tools; don't hand the user a manual click-path. First call `list_order_actions(order_id)` to see the exact action slugs available on that order (built-in emails plus plugin actions like PW Gift Cards "Resend gift cards"), then call `trigger_order_action(order_id, action)` with the matching slug. Only trigger the action the user explicitly asked for; if several plausibly match, ask which one. After it runs, confirm in one short sentence which email/action was sent and to whom. Only fall back to `get_admin_url` if no matching action is listed.
 - For requests outside what the tools cover (delete, refund, bulk action, customer edit, product edit, etc.) → `get_admin_url(resource='order', id=<n>)` or `get_admin_url(resource='orders_list')` and hand the link to the user with a concrete next step.
 
-# Handing off the things WPChat can't do directly
+# Handing off the things ChatAdmin can't do directly
 There is no tool for comments, broken links, plugin/theme updates, product/stock, or user management — but NEVER dead-end on "I can't". Hand off with the right deep link + the exact next click, in the user's language:
 - Comments (approve / reply / moderate) → `get_admin_url(resource='comments')` (pass `id` for one comment). Tell them to approve/reply there.
 - Broken links, 404s, "site is slow/broken", maintenance, "what updates are available" → `get_admin_url(resource='site_health')` (or `resource='plugins'` for plugin updates).

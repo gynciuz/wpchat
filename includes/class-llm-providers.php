@@ -15,12 +15,12 @@
  * - `OpenAIProvider`     — Chat Completions.
  * - `GeminiProvider`     — generateContent.
  * - `AnthropicProvider`  — in class-anthropic.php (near-identity adapter).
- * - `LLM`                — registry/router; `apply_filters('wpchat_llm_providers')`.
+ * - `LLM`                — registry/router; `apply_filters('chatadmin_llm_providers')`.
  *
- * @package WPChat
+ * @package ChatAdmin
  */
 
-namespace WPChat;
+namespace ChatAdmin;
 
 if (!defined('ABSPATH')) {
     exit;
@@ -70,7 +70,7 @@ abstract class BaseLLMProvider implements LLMProvider {
         if (!$key) {
             throw new \RuntimeException(sprintf(
                 /* translators: %s = provider label */
-                __('%s API key not configured. Set it in WPChat → Settings.', 'wpchat'),
+                __('%s API key not configured. Set it in ChatAdmin → Settings.', 'chat-admin'),
                 $this->label()
             ));
         }
@@ -209,7 +209,7 @@ abstract class BaseLLMProvider implements LLMProvider {
         if ($code === 401 || $code === 403) {
             return ['ok' => false, 'error' => sprintf(
                 /* translators: %s = provider label */
-                __('%s rejected this key (invalid or revoked).', 'wpchat'),
+                __('%s rejected this key (invalid or revoked).', 'chat-admin'),
                 $this->label()
             )];
         }
@@ -277,7 +277,7 @@ class OpenAIProvider extends BaseLLMProvider {
         ];
     }
 
-    protected function seam_filter(): string { return 'wpchat_openai_http_response'; }
+    protected function seam_filter(): string { return 'chatadmin_openai_http_response'; }
 
     protected function build_request(array $messages, array $tools, string $system, string $model): array {
         $out = ['model' => $model, 'max_tokens' => 4096, 'messages' => []];
@@ -438,7 +438,7 @@ class GeminiProvider extends BaseLLMProvider {
         ];
     }
 
-    protected function seam_filter(): string { return 'wpchat_gemini_http_response'; }
+    protected function seam_filter(): string { return 'chatadmin_gemini_http_response'; }
 
     protected function build_request(array $messages, array $tools, string $system, string $model): array {
         // Gemini has no tool-call ids; functionResponse is matched by name.
@@ -574,7 +574,7 @@ class LLM {
             new GeminiProvider(),
         ];
         /** Sites can register custom providers (e.g. a self-hosted proxy). */
-        $list = apply_filters('wpchat_llm_providers', $defaults);
+        $list = apply_filters('chatadmin_llm_providers', $defaults);
 
         $out = [];
         foreach ($list as $p) {

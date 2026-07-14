@@ -4,13 +4,13 @@
  * each supported resource. Critical for the proactive-handoff pattern:
  * if this tool is broken, the LLM can't gracefully delegate to wp-admin.
  *
- * @package WPChat\Tests
+ * @package ChatAdmin\Tests
  */
 
-namespace WPChat\Tests\Integration;
+namespace ChatAdmin\Tests\Integration;
 
-use WPChat\Tools;
-use WPChat\Tests\TestCase;
+use ChatAdmin\Tools;
+use ChatAdmin\Tests\TestCase;
 
 class AdminUrlTest extends TestCase {
 

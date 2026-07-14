@@ -2,14 +2,14 @@
 /**
  * Scriptable OpenAI Chat Completions transport for tests.
  *
- * Mirrors MockAnthropic but on the `wpchat_openai_http_response` seam, emitting
+ * Mirrors MockAnthropic but on the `chatadmin_openai_http_response` seam, emitting
  * OpenAI-shaped responses so the OpenAIProvider adapter can be exercised
  * end-to-end without a network call.
  *
- * @package WPChat\Tests
+ * @package ChatAdmin\Tests
  */
 
-namespace WPChat\Tests;
+namespace ChatAdmin\Tests;
 
 class MockOpenAI {
 
@@ -17,12 +17,12 @@ class MockOpenAI {
     private array $recorded = [];
 
     public function register(): self {
-        \add_filter('wpchat_openai_http_response', [$this, 'handle'], 10, 2);
+        \add_filter('chatadmin_openai_http_response', [$this, 'handle'], 10, 2);
         return $this;
     }
 
     public function unregister(): void {
-        \remove_filter('wpchat_openai_http_response', [$this, 'handle'], 10);
+        \remove_filter('chatadmin_openai_http_response', [$this, 'handle'], 10);
         $this->queue    = [];
         $this->recorded = [];
     }

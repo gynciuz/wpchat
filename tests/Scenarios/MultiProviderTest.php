@@ -7,19 +7,19 @@
  * yields the SAME neutral {name, input, output} captures the frontend consumes,
  * and the outgoing request carries that provider's tool envelope.
  *
- * @package WPChat\Tests
+ * @package ChatAdmin\Tests
  */
 
-namespace WPChat\Tests\Scenarios;
+namespace ChatAdmin\Tests\Scenarios;
 
-use WPChat\Tests\TestCase;
-use WPChat\Tests\MockOpenAI;
-use WPChat\Tests\MockGemini;
+use ChatAdmin\Tests\TestCase;
+use ChatAdmin\Tests\MockOpenAI;
+use ChatAdmin\Tests\MockGemini;
 
 class MultiProviderTest extends TestCase {
 
     private function use_provider(string $id, string $key, string $model): void {
-        \update_option('wpchat_settings', [
+        \update_option('chatadmin_settings', [
             'llm_provider'    => $id,
             $id . '_api_key'  => $key,
             'model'           => $model,

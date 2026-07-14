@@ -3,14 +3,14 @@
  * Telemetry — local error ring buffer, opt-in flag, and explicit report
  * delivery (endpoint POST with wp_mail fallback).
  *
- * @package WPChat\Tests
+ * @package ChatAdmin\Tests
  */
 
-namespace WPChat\Tests\Integration;
+namespace ChatAdmin\Tests\Integration;
 
-use WPChat\Telemetry;
-use WPChat\Settings;
-use WPChat\Tests\TestCase;
+use ChatAdmin\Telemetry;
+use ChatAdmin\Settings;
+use ChatAdmin\Tests\TestCase;
 
 class TelemetryTest extends TestCase {
 
@@ -57,7 +57,7 @@ class TelemetryTest extends TestCase {
     }
 
     public function test_send_report_falls_back_to_email_when_no_endpoint(): void {
-        // No WPCHAT_SUPPORT_ENDPOINT constant in the test env → email path.
+        // No CHATADMIN_SUPPORT_ENDPOINT constant in the test env → email path.
         $captured = [];
         $filter = function ($null, $atts) use (&$captured) {
             $captured = $atts;
@@ -74,15 +74,15 @@ class TelemetryTest extends TestCase {
 
         $this->assertTrue($ok, 'Report should be delivered via wp_mail fallback.');
         $this->assertSame(Telemetry::support_email(), is_array($captured['to']) ? $captured['to'][0] : $captured['to']);
-        $this->assertStringContainsString('WPChat', $captured['subject']);
+        $this->assertStringContainsString('ChatAdmin', $captured['subject']);
         $this->assertStringContainsString('It broke', $captured['message']);
     }
 
     public function test_report_to_endpoint_is_hmac_signed_when_secret_set(): void {
         $endpoint = function () { return 'https://collector.example/hook'; };
         $secret   = function () { return 'test-secret-123'; };
-        \add_filter('wpchat_support_endpoint', $endpoint);
-        \add_filter('wpchat_support_secret', $secret);
+        \add_filter('chatadmin_support_endpoint', $endpoint);
+        \add_filter('chatadmin_support_secret', $secret);
 
         $captured = [];
         $pre = function ($preempt, $args, $url) use (&$captured) {
@@ -94,18 +94,18 @@ class TelemetryTest extends TestCase {
         $ok = Telemetry::send_report(['kind' => 'support_report', 'note' => 'hi']);
 
         \remove_filter('pre_http_request', $pre, 10);
-        \remove_filter('wpchat_support_endpoint', $endpoint);
-        \remove_filter('wpchat_support_secret', $secret);
+        \remove_filter('chatadmin_support_endpoint', $endpoint);
+        \remove_filter('chatadmin_support_secret', $secret);
 
         $this->assertTrue($ok, 'Report should deliver to the endpoint.');
         $this->assertSame('https://collector.example/hook', $captured['url']);
         $expected = 'sha256=' . hash_hmac('sha256', $captured['args']['body'], 'test-secret-123');
-        $this->assertSame($expected, $captured['args']['headers']['X-WPChat-Signature'] ?? '');
+        $this->assertSame($expected, $captured['args']['headers']['X-ChatAdmin-Signature'] ?? '');
     }
 
     public function test_report_to_endpoint_has_no_signature_without_secret(): void {
         $endpoint = function () { return 'https://collector.example/hook'; };
-        \add_filter('wpchat_support_endpoint', $endpoint);
+        \add_filter('chatadmin_support_endpoint', $endpoint);
 
         $captured = [];
         $pre = function ($preempt, $args) use (&$captured) {
@@ -117,8 +117,8 @@ class TelemetryTest extends TestCase {
         Telemetry::send_report(['kind' => 'support_report']);
 
         \remove_filter('pre_http_request', $pre, 10);
-        \remove_filter('wpchat_support_endpoint', $endpoint);
+        \remove_filter('chatadmin_support_endpoint', $endpoint);
 
-        $this->assertArrayNotHasKey('X-WPChat-Signature', $captured['headers'] ?? []);
+        $this->assertArrayNotHasKey('X-ChatAdmin-Signature', $captured['headers'] ?? []);
     }
 }

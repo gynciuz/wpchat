@@ -151,7 +151,7 @@ function Header({ total, current }: { total: number; current: number }) {
     >
       <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
         <Sparkles className="size-4 text-foreground" />
-        WPChat
+        ChatAdmin
       </div>
       <div className="flex items-center gap-1.5" aria-label={`Step ${current + 1} of ${total}`}>
         {Array.from({ length: total }).map((_, i) => (
@@ -292,9 +292,9 @@ function buildSteps(status: OnboardingStatus | null, boot: Boot): Step[] {
   // No provider picker — the key step auto-detects Anthropic / OpenAI / Gemini
   // from the key prefix (see ApiKeyCard).
 
-  // WPChat Cloud isn't live yet — joining the waitlist is additive, NOT a
+  // ChatAdmin Cloud isn't live yet — joining the waitlist is additive, NOT a
   // substitute for setup. Everyone still needs a provider key + model to
-  // actually use WPChat today, so we always walk through these steps (the
+  // actually use ChatAdmin today, so we always walk through these steps (the
   // waitlist just means "ping me when Cloud opens").
   if (!status.apiKey.ok) {
     steps.push({

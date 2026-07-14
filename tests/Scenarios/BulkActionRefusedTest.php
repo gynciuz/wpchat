@@ -7,13 +7,13 @@
  * Structural test: no tool definition exposes an array-of-ids field,
  * and the system prompt contains the bulk-action ban.
  *
- * @package WPChat\Tests
+ * @package ChatAdmin\Tests
  */
 
-namespace WPChat\Tests\Scenarios;
+namespace ChatAdmin\Tests\Scenarios;
 
-use WPChat\Tools;
-use WPChat\Tests\TestCase;
+use ChatAdmin\Tools;
+use ChatAdmin\Tests\TestCase;
 
 class BulkActionRefusedTest extends TestCase {
 

@@ -4,14 +4,14 @@
  * /onboarding/llm-provider route, per-provider key validation, and the
  * model list scoping to the active provider.
  *
- * @package WPChat\Tests
+ * @package ChatAdmin\Tests
  */
 
-namespace WPChat\Tests\Integration;
+namespace ChatAdmin\Tests\Integration;
 
-use WPChat\Settings;
-use WPChat\LLM;
-use WPChat\Tests\TestCase;
+use ChatAdmin\Settings;
+use ChatAdmin\LLM;
+use ChatAdmin\Tests\TestCase;
 
 class ProviderConfigTest extends TestCase {
 
@@ -27,17 +27,17 @@ class ProviderConfigTest extends TestCase {
         $ok = function () {
             return ['response' => ['code' => 200], 'body' => json_encode(['candidates' => [['content' => ['parts' => [['text' => 'ok']]]]]]), 'headers' => []];
         };
-        \add_filter('wpchat_gemini_http_response', $ok, 99, 2);
+        \add_filter('chatadmin_gemini_http_response', $ok, 99, 2);
 
-        $request = new \WP_REST_Request('POST', '/wpchat/v1/onboarding/api-key');
+        $request = new \WP_REST_Request('POST', '/chatadmin/v1/onboarding/api-key');
         $request->set_header('Content-Type', 'application/json');
         $request->set_body(json_encode(['key' => 'AIzaSyTESTKEY123'])); // no provider param
         $response = \rest_get_server()->dispatch($request);
 
-        \remove_filter('wpchat_gemini_http_response', $ok, 99);
+        \remove_filter('chatadmin_gemini_http_response', $ok, 99);
 
         $this->assertSame(200, $response->get_status());
-        $options = \get_option('wpchat_settings');
+        $options = \get_option('chatadmin_settings');
         $this->assertSame('gemini', $options['llm_provider']);
         $this->assertSame('AIzaSyTESTKEY123', $options['gemini_api_key']);
         $this->assertStringStartsWith('gemini-', $options['model']); // model reset to gemini default
@@ -45,7 +45,7 @@ class ProviderConfigTest extends TestCase {
     }
 
     public function test_api_key_save_rejects_unrecognized_key(): void {
-        $request = new \WP_REST_Request('POST', '/wpchat/v1/onboarding/api-key');
+        $request = new \WP_REST_Request('POST', '/chatadmin/v1/onboarding/api-key');
         $request->set_header('Content-Type', 'application/json');
         $request->set_body(json_encode(['key' => 'random-string-no-prefix']));
         $response = \rest_get_server()->dispatch($request);
@@ -53,7 +53,7 @@ class ProviderConfigTest extends TestCase {
     }
 
     public function test_provider_and_per_provider_keys_resolve(): void {
-        \update_option('wpchat_settings', [
+        \update_option('chatadmin_settings', [
             'llm_provider'      => 'openai',
             'openai_api_key'    => 'sk-oai',
             'anthropic_api_key' => 'sk-ant',
@@ -67,7 +67,7 @@ class ProviderConfigTest extends TestCase {
     }
 
     public function test_set_llm_provider_switches_and_resets_model(): void {
-        $request = new \WP_REST_Request('POST', '/wpchat/v1/onboarding/llm-provider');
+        $request = new \WP_REST_Request('POST', '/chatadmin/v1/onboarding/llm-provider');
         $request->set_header('Content-Type', 'application/json');
         $request->set_body(json_encode(['provider' => 'gemini']));
         $response = \rest_get_server()->dispatch($request);
@@ -80,7 +80,7 @@ class ProviderConfigTest extends TestCase {
     }
 
     public function test_set_llm_provider_rejects_unknown(): void {
-        $request = new \WP_REST_Request('POST', '/wpchat/v1/onboarding/llm-provider');
+        $request = new \WP_REST_Request('POST', '/chatadmin/v1/onboarding/llm-provider');
         $request->set_header('Content-Type', 'application/json');
         $request->set_body(json_encode(['provider' => 'bogus']));
         $response = \rest_get_server()->dispatch($request);
@@ -88,8 +88,8 @@ class ProviderConfigTest extends TestCase {
     }
 
     public function test_status_lists_active_provider_models(): void {
-        \update_option('wpchat_settings', ['llm_provider' => 'openai']);
-        $request  = new \WP_REST_Request('GET', '/wpchat/v1/onboarding/status');
+        \update_option('chatadmin_settings', ['llm_provider' => 'openai']);
+        $request  = new \WP_REST_Request('GET', '/chatadmin/v1/onboarding/status');
         $response = \rest_get_server()->dispatch($request);
         $data     = $response->get_data();
 
@@ -101,43 +101,43 @@ class ProviderConfigTest extends TestCase {
     }
 
     public function test_api_key_save_validates_against_chosen_provider(): void {
-        \update_option('wpchat_settings', ['llm_provider' => 'openai']);
+        \update_option('chatadmin_settings', ['llm_provider' => 'openai']);
         // Simulate OpenAI rejecting the key on its own seam.
         $reject = function () {
             return ['response' => ['code' => 401], 'body' => json_encode(['error' => ['message' => 'bad key']]), 'headers' => []];
         };
-        \add_filter('wpchat_openai_http_response', $reject, 99, 2);
+        \add_filter('chatadmin_openai_http_response', $reject, 99, 2);
 
-        $request = new \WP_REST_Request('POST', '/wpchat/v1/onboarding/api-key');
+        $request = new \WP_REST_Request('POST', '/chatadmin/v1/onboarding/api-key');
         $request->set_header('Content-Type', 'application/json');
         $request->set_body(json_encode(['provider' => 'openai', 'key' => 'sk-looks-ok-but-bad']));
         $response = \rest_get_server()->dispatch($request);
 
-        \remove_filter('wpchat_openai_http_response', $reject, 99);
+        \remove_filter('chatadmin_openai_http_response', $reject, 99);
 
         $this->assertSame(400, $response->get_status());
-        $options = \get_option('wpchat_settings');
+        $options = \get_option('chatadmin_settings');
         $this->assertArrayNotHasKey('openai_api_key', $options);
     }
 
     public function test_api_key_save_stores_under_provider_key(): void {
-        \update_option('wpchat_settings', ['llm_provider' => 'openai']);
+        \update_option('chatadmin_settings', ['llm_provider' => 'openai']);
         // MockOpenAI not registered → no seam → but validate fails open only on
         // WP_Error; here we register a 200 so validation passes deterministically.
         $ok = function () {
             return ['response' => ['code' => 200], 'body' => json_encode(['choices' => [['message' => ['content' => 'ok']]]]), 'headers' => []];
         };
-        \add_filter('wpchat_openai_http_response', $ok, 99, 2);
+        \add_filter('chatadmin_openai_http_response', $ok, 99, 2);
 
-        $request = new \WP_REST_Request('POST', '/wpchat/v1/onboarding/api-key');
+        $request = new \WP_REST_Request('POST', '/chatadmin/v1/onboarding/api-key');
         $request->set_header('Content-Type', 'application/json');
         $request->set_body(json_encode(['provider' => 'openai', 'key' => 'sk-good-key']));
         $response = \rest_get_server()->dispatch($request);
 
-        \remove_filter('wpchat_openai_http_response', $ok, 99);
+        \remove_filter('chatadmin_openai_http_response', $ok, 99);
 
         $this->assertSame(200, $response->get_status());
-        $options = \get_option('wpchat_settings');
+        $options = \get_option('chatadmin_settings');
         $this->assertSame('sk-good-key', $options['openai_api_key']);
     }
 
@@ -152,7 +152,7 @@ class ProviderConfigTest extends TestCase {
         $manager = $this->factory()->user->create(['role' => 'shop_manager']);
         \wp_set_current_user($manager);
 
-        $request = new \WP_REST_Request('POST', '/wpchat/v1/onboarding/api-key');
+        $request = new \WP_REST_Request('POST', '/chatadmin/v1/onboarding/api-key');
         $request->set_header('Content-Type', 'application/json');
         $request->set_body(json_encode(['key' => 'sk-ant-should-be-blocked']));
         $response = \rest_get_server()->dispatch($request);
@@ -160,7 +160,7 @@ class ProviderConfigTest extends TestCase {
         $this->assertContains($response->get_status(), [401, 403]);
         // The base fixture seeds an anthropic_api_key; assert the blocked
         // request did not overwrite it with the caller-supplied value.
-        $options = \get_option('wpchat_settings') ?: [];
+        $options = \get_option('chatadmin_settings') ?: [];
         $this->assertNotSame(
             'sk-ant-should-be-blocked',
             $options['anthropic_api_key'] ?? null,

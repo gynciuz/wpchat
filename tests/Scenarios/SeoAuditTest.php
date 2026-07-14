@@ -1,16 +1,16 @@
 <?php
 /**
- * SCENARIO — WPChat can audit a site's SEO/AEO state via the read-only
+ * SCENARIO — ChatAdmin can audit a site's SEO/AEO state via the read-only
  * `seo_audit` tool, and the system prompt steers it to audit-first + fix
  * via the seo_setting / seo_meta content kinds.
  *
- * @package WPChat\Tests
+ * @package ChatAdmin\Tests
  */
 
-namespace WPChat\Tests\Scenarios;
+namespace ChatAdmin\Tests\Scenarios;
 
-use WPChat\Tools;
-use WPChat\Tests\TestCase;
+use ChatAdmin\Tools;
+use ChatAdmin\Tests\TestCase;
 
 class SeoAuditTest extends TestCase {
 

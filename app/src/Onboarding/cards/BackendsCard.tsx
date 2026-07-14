@@ -178,7 +178,7 @@ function labelsFor(locale?: string) {
       return {
         title: "Ką pokalbis gali redaguoti",
         subtitleAdmin:
-          "Atžymėkite turinio tipus, kurių WPChat neturėtų liesti šioje svetainėje. Nustatymai galioja visiems vartotojams.",
+          "Atžymėkite turinio tipus, kurių ChatAdmin neturėtų liesti šioje svetainėje. Nustatymai galioja visiems vartotojams.",
         subtitleUser:
           "Šie turinio tipai pasiekiami pokalbiu. Administratorius valdo sąrašą; jūsų WordPress rolė nulemia, kas rodoma kaip „Pasiekiama\".",
         custom: "Šios svetainės",
@@ -193,7 +193,7 @@ function labelsFor(locale?: string) {
       return {
         title: "Что чат может редактировать",
         subtitleAdmin:
-          "Снимите галочки с типов контента, к которым WPChat не должен прикасаться на этом сайте. Настройки действуют для всех.",
+          "Снимите галочки с типов контента, к которым ChatAdmin не должен прикасаться на этом сайте. Настройки действуют для всех.",
         subtitleUser:
           "Эти типы контента доступны через чат. Список контролирует администратор; ваша роль WordPress определяет, что показано как «Доступно».",
         custom: "Этого сайта",
@@ -208,7 +208,7 @@ function labelsFor(locale?: string) {
       return {
         title: "Co czat może edytować",
         subtitleAdmin:
-          "Odznacz typy treści, których WPChat nie powinien dotykać. Ustawienia obowiązują wszystkich.",
+          "Odznacz typy treści, których ChatAdmin nie powinien dotykać. Ustawienia obowiązują wszystkich.",
         subtitleUser:
           "Te typy treści są dostępne przez czat. Listę kontroluje administrator; Twoja rola WordPress decyduje, co pokazuje się jako „Dostępne\".",
         custom: "Tej witryny",
@@ -223,7 +223,7 @@ function labelsFor(locale?: string) {
       return {
         title: "What the chat can edit",
         subtitleAdmin:
-          "Untick any content type WPChat shouldn't touch on this site. Settings apply to everyone.",
+          "Untick any content type ChatAdmin shouldn't touch on this site. Settings apply to everyone.",
         subtitleUser:
           "These content types are reachable via chat. The site admin controls this list; your WordPress role determines what shows as Available.",
         custom: "Site",

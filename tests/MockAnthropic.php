@@ -2,9 +2,9 @@
 /**
  * Scriptable Anthropic transport for tests.
  *
- * The production code in WPChat\Anthropic::run_with_tools calls
+ * The production code in ChatAdmin\Anthropic::run_with_tools calls
  * wp_remote_post once per turn of the tool-use loop. Each call passes
- * through the `wpchat_anthropic_http_response` filter — if a filter
+ * through the `chatadmin_anthropic_http_response` filter — if a filter
  * returns a wp_remote response array, the real HTTP is skipped.
  *
  * MockAnthropic registers a filter that pops scripted responses off a
@@ -22,10 +22,10 @@
  *
  *   $this->assertSame('list_orders', $mock->requestedToolCalls()[0]['name']);
  *
- * @package WPChat\Tests
+ * @package ChatAdmin\Tests
  */
 
-namespace WPChat\Tests;
+namespace ChatAdmin\Tests;
 
 class MockAnthropic {
 
@@ -53,12 +53,12 @@ class MockAnthropic {
 
     /** Register the filter and reset state. */
     public function register(): self {
-        \add_filter('wpchat_anthropic_http_response', [$this, 'handle'], 10, 2);
+        \add_filter('chatadmin_anthropic_http_response', [$this, 'handle'], 10, 2);
         return $this;
     }
 
     public function unregister(): void {
-        \remove_filter('wpchat_anthropic_http_response', [$this, 'handle'], 10);
+        \remove_filter('chatadmin_anthropic_http_response', [$this, 'handle'], 10);
         $this->queue     = [];
         $this->recorded  = [];
         $this->dispatched = [];

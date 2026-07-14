@@ -1,6 +1,6 @@
 <?php
 /**
- * WPChat first-run onboarding REST routes.
+ * ChatAdmin first-run onboarding REST routes.
  *
  * Backs the capability matrix the React wizard renders + the interactive
  * cards (API key + model picker). Same permission gate as the chat route.
@@ -10,10 +10,10 @@
  * caps, their installed plugins) so each card can render something the
  * user recognises, not a generic tour.
  *
- * @package WPChat
+ * @package ChatAdmin
  */
 
-namespace WPChat;
+namespace ChatAdmin;
 
 if (!defined('ABSPATH')) {
     exit;
@@ -21,11 +21,11 @@ if (!defined('ABSPATH')) {
 
 class Onboarding {
 
-    const NAMESPACE          = 'wpchat/v1';
-    const USER_META_KEY      = 'wpchat_onboarding_done';
-    const DISABLED_KINDS_OPT = 'wpchat_disabled_kinds';
-    const PROVIDER_OPT       = 'wpchat_provider_choice';
-    const WAITLIST_OPT       = 'wpchat_cloud_waitlist';
+    const NAMESPACE          = 'chatadmin/v1';
+    const USER_META_KEY      = 'chatadmin_onboarding_done';
+    const DISABLED_KINDS_OPT = 'chatadmin_disabled_kinds';
+    const PROVIDER_OPT       = 'chatadmin_provider_choice';
+    const WAITLIST_OPT       = 'chatadmin_cloud_waitlist';
 
     public function __construct() {
         add_action('rest_api_init', [$this, 'register_routes']);
@@ -128,14 +128,14 @@ class Onboarding {
         $provider_id = LLM::detect($key);
         if (!$provider_id) {
             return new \WP_REST_Response([
-                'error' => __('Couldn’t recognize this key. Supported: Anthropic (sk-ant-…), OpenAI (sk-…), or Google Gemini (AIza…).', 'wpchat'),
+                'error' => __('Couldn’t recognize this key. Supported: Anthropic (sk-ant-…), OpenAI (sk-…), or Google Gemini (AIza…).', 'chat-admin'),
             ], 400);
         }
         $provider = LLM::get($provider_id);
 
         if (Settings::key_source($provider_id) === 'constant') {
             return new \WP_REST_Response([
-                'error'  => sprintf('WPCHAT_%s_API_KEY is defined in wp-config.php and takes precedence. Edit wp-config.php to change it.', strtoupper($provider_id)),
+                'error'  => sprintf('CHATADMIN_%s_API_KEY is defined in wp-config.php and takes precedence. Edit wp-config.php to change it.', strtoupper($provider_id)),
                 'apiKey' => $this->api_key_status(),
             ], 409);
         }
@@ -168,9 +168,9 @@ class Onboarding {
     }
 
     public function handle_set_llm_provider(\WP_REST_Request $request): \WP_REST_Response {
-        if (defined('WPCHAT_LLM_PROVIDER') && WPCHAT_LLM_PROVIDER) {
+        if (defined('CHATADMIN_LLM_PROVIDER') && CHATADMIN_LLM_PROVIDER) {
             return new \WP_REST_Response([
-                'error'       => 'WPCHAT_LLM_PROVIDER is set in wp-config.php and takes precedence.',
+                'error'       => 'CHATADMIN_LLM_PROVIDER is set in wp-config.php and takes precedence.',
                 'llmProvider' => $this->llm_provider_status(),
             ], 409);
         }
@@ -324,7 +324,7 @@ class Onboarding {
         }, array_values(LLM::providers()));
         return [
             'current' => Settings::get_provider(),
-            'locked'  => defined('WPCHAT_LLM_PROVIDER') && WPCHAT_LLM_PROVIDER,
+            'locked'  => defined('CHATADMIN_LLM_PROVIDER') && CHATADMIN_LLM_PROVIDER,
             'options' => $options,
         ];
     }
@@ -406,8 +406,8 @@ class Onboarding {
     private function backends_status(): array {
         $out      = [];
         $disabled = self::get_site_disabled_kinds();
-        if (class_exists('\WPChat\ContentRouter')) {
-            foreach (\WPChat\ContentRouter::all_descriptions() as $kind => $desc) {
+        if (class_exists('\ChatAdmin\ContentRouter')) {
+            foreach (\ChatAdmin\ContentRouter::all_descriptions() as $kind => $desc) {
                 $is_core = in_array($kind, ['wp_post', 'wp_page_slug', 'wp_post_meta', 'wp_term'], true);
                 $out[] = [
                     'kind'           => $kind,
@@ -430,8 +430,8 @@ class Onboarding {
                 'snippet'    => "define('CLOUDFLARE_API_TOKEN', '...');\ndefine('CLOUDFLARE_ZONE_ID', '...');",
             ],
             'git_sync' => [
-                'configured' => defined('WPCHAT_GIT_SYNC_ENABLED') && WPCHAT_GIT_SYNC_ENABLED === true,
-                'snippet'    => "define('WPCHAT_GIT_SYNC_ENABLED', true);",
+                'configured' => defined('CHATADMIN_GIT_SYNC_ENABLED') && CHATADMIN_GIT_SYNC_ENABLED === true,
+                'snippet'    => "define('CHATADMIN_GIT_SYNC_ENABLED', true);",
             ],
         ];
     }

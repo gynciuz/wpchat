@@ -1,6 +1,6 @@
 <?php
 /**
- * SCENARIO — WPChat can TRIGGER order emails / order actions instead of
+ * SCENARIO — ChatAdmin can TRIGGER order emails / order actions instead of
  * dead-ending with a manual "go click this in wp-admin" handoff.
  *
  * Motivating case (Gentleman's Empire): "pakartok dovanų kupono siuntimą
@@ -12,13 +12,13 @@
  * dispatch but bottom out in require_wc()'s "WooCommerce is not active."
  * — which is enough to prove the routing + system-prompt wiring.
  *
- * @package WPChat\Tests
+ * @package ChatAdmin\Tests
  */
 
-namespace WPChat\Tests\Scenarios;
+namespace ChatAdmin\Tests\Scenarios;
 
-use WPChat\Tools;
-use WPChat\Tests\TestCase;
+use ChatAdmin\Tools;
+use ChatAdmin\Tests\TestCase;
 
 class OrderActionsTest extends TestCase {
 

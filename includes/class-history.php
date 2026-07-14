@@ -1,16 +1,16 @@
 <?php
 /**
- * WPChat conversation history.
+ * ChatAdmin conversation history.
  *
  * Stores every user + assistant message keyed by conversation UUID and
  * WP user id. Conversations are auto-grouped by a 30-minute idle gap:
  * the next message after a 30-min pause starts a new UUID. Each user
  * sees only their own conversations.
  *
- * @package WPChat
+ * @package ChatAdmin
  */
 
-namespace WPChat;
+namespace ChatAdmin;
 
 if (!defined('ABSPATH')) {
     exit;
@@ -18,7 +18,7 @@ if (!defined('ABSPATH')) {
 
 class History {
 
-    const TABLE         = 'wpchat_messages';
+    const TABLE         = 'chatadmin_messages';
     const IDLE_GAP_SECS = 1800; // 30 min
 
     public static function table_name(): string {

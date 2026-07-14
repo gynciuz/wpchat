@@ -242,7 +242,7 @@ export function Chat({ boot }: { boot?: Boot }) {
           >
             <HistoryIcon className="size-4" />
           </Button>
-          <h1 className="text-2xl font-semibold tracking-tight">WPChat</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">ChatAdmin</h1>
           <Badge variant="secondary" className="hidden sm:inline-flex">
             v0.4
           </Badge>
@@ -536,7 +536,7 @@ export function Chat({ boot }: { boot?: Boot }) {
             <LifeBuoy className="size-3" /> {helpLabel(boot?.locale)}
           </button>
           <a
-            href="/wp-admin/admin.php?page=wpchat-settings"
+            href="/wp-admin/admin.php?page=chatadmin-settings"
             className="inline-flex items-center gap-1 hover:text-foreground"
           >
             Settings <ExternalLink className="size-3" />

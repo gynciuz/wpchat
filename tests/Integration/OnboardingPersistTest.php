@@ -2,29 +2,29 @@
 /**
  * Onboarding interactive endpoints — api-key save, model save, complete.
  *
- * @package WPChat\Tests
+ * @package ChatAdmin\Tests
  */
 
-namespace WPChat\Tests\Integration;
+namespace ChatAdmin\Tests\Integration;
 
-use WPChat\Onboarding;
-use WPChat\Tests\TestCase;
+use ChatAdmin\Onboarding;
+use ChatAdmin\Tests\TestCase;
 
 class OnboardingPersistTest extends TestCase {
 
     public function test_api_key_save_updates_option(): void {
-        $request = new \WP_REST_Request('POST', '/wpchat/v1/onboarding/api-key');
+        $request = new \WP_REST_Request('POST', '/chatadmin/v1/onboarding/api-key');
         $request->set_header('Content-Type', 'application/json');
         $request->set_body(json_encode(['key' => 'sk-ant-fixture-abcd']));
         $response = \rest_get_server()->dispatch($request);
 
         $this->assertSame(200, $response->get_status());
-        $options = \get_option('wpchat_settings');
+        $options = \get_option('chatadmin_settings');
         $this->assertSame('sk-ant-fixture-abcd', $options['anthropic_api_key']);
     }
 
     public function test_api_key_save_rejects_malformed(): void {
-        $request = new \WP_REST_Request('POST', '/wpchat/v1/onboarding/api-key');
+        $request = new \WP_REST_Request('POST', '/chatadmin/v1/onboarding/api-key');
         $request->set_header('Content-Type', 'application/json');
         $request->set_body(json_encode(['key' => 'not a real key']));
         $response = \rest_get_server()->dispatch($request);
@@ -43,28 +43,28 @@ class OnboardingPersistTest extends TestCase {
                 'headers'  => [],
             ];
         };
-        \add_filter('wpchat_anthropic_http_response', $reject, 99, 2);
+        \add_filter('chatadmin_anthropic_http_response', $reject, 99, 2);
 
-        $request = new \WP_REST_Request('POST', '/wpchat/v1/onboarding/api-key');
+        $request = new \WP_REST_Request('POST', '/chatadmin/v1/onboarding/api-key');
         $request->set_header('Content-Type', 'application/json');
         $request->set_body(json_encode(['key' => 'sk-ant-looks-valid-but-revoked']));
         $response = \rest_get_server()->dispatch($request);
 
-        \remove_filter('wpchat_anthropic_http_response', $reject, 99);
+        \remove_filter('chatadmin_anthropic_http_response', $reject, 99);
 
         $this->assertSame(400, $response->get_status());
         // The bad key must NOT have been persisted.
-        $options = \get_option('wpchat_settings');
+        $options = \get_option('chatadmin_settings');
         $this->assertNotSame('sk-ant-looks-valid-but-revoked', $options['anthropic_api_key'] ?? '');
     }
 
     public function test_api_key_save_rejects_when_constant_defined(): void {
         // Constants can't be undefined; if it's not already defined, define it.
         // Other tests don't set it, so this is the first define.
-        if (!defined('WPCHAT_ANTHROPIC_API_KEY')) {
-            define('WPCHAT_ANTHROPIC_API_KEY', 'sk-ant-from-constant');
+        if (!defined('CHATADMIN_ANTHROPIC_API_KEY')) {
+            define('CHATADMIN_ANTHROPIC_API_KEY', 'sk-ant-from-constant');
         }
-        $request = new \WP_REST_Request('POST', '/wpchat/v1/onboarding/api-key');
+        $request = new \WP_REST_Request('POST', '/chatadmin/v1/onboarding/api-key');
         $request->set_header('Content-Type', 'application/json');
         $request->set_body(json_encode(['key' => 'sk-ant-from-option']));
         $response = \rest_get_server()->dispatch($request);
@@ -74,18 +74,18 @@ class OnboardingPersistTest extends TestCase {
     }
 
     public function test_model_save_updates_option(): void {
-        $request = new \WP_REST_Request('POST', '/wpchat/v1/onboarding/model');
+        $request = new \WP_REST_Request('POST', '/chatadmin/v1/onboarding/model');
         $request->set_header('Content-Type', 'application/json');
         $request->set_body(json_encode(['model' => 'claude-opus-4-7']));
         $response = \rest_get_server()->dispatch($request);
 
         $this->assertSame(200, $response->get_status());
-        $options = \get_option('wpchat_settings');
+        $options = \get_option('chatadmin_settings');
         $this->assertSame('claude-opus-4-7', $options['model']);
     }
 
     public function test_model_save_rejects_unknown(): void {
-        $request = new \WP_REST_Request('POST', '/wpchat/v1/onboarding/model');
+        $request = new \WP_REST_Request('POST', '/chatadmin/v1/onboarding/model');
         $request->set_header('Content-Type', 'application/json');
         $request->set_body(json_encode(['model' => 'gpt-4']));
         $response = \rest_get_server()->dispatch($request);
@@ -93,7 +93,7 @@ class OnboardingPersistTest extends TestCase {
     }
 
     public function test_complete_sets_user_meta(): void {
-        $request  = new \WP_REST_Request('POST', '/wpchat/v1/onboarding/complete');
+        $request  = new \WP_REST_Request('POST', '/chatadmin/v1/onboarding/complete');
         $response = \rest_get_server()->dispatch($request);
 
         $this->assertSame(200, $response->get_status());

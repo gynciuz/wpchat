@@ -12,7 +12,7 @@ interface Props {
 
 /**
  * Card — one API key field. No provider picker: paste any supported key and
- * WPChat detects whether it's Anthropic, OpenAI, or Google Gemini from the
+ * ChatAdmin detects whether it's Anthropic, OpenAI, or Google Gemini from the
  * prefix, then validates + saves it. If the key is set via a wp-config
  * constant, show the locked state.
  */
@@ -133,7 +133,7 @@ function labelsFor(locale?: string) {
     case "lt":
       return {
         title: "Prijunkite DI",
-        subtitle: "Įklijuokite API raktą — WPChat atpažins, ar tai Anthropic, OpenAI, ar Google Gemini.",
+        subtitle: "Įklijuokite API raktą — ChatAdmin atpažins, ar tai Anthropic, OpenAI, ar Google Gemini.",
         save: "Išsaugoti",
         saving: "Saugoma…",
         saved: "Išsaugota",
@@ -144,7 +144,7 @@ function labelsFor(locale?: string) {
     case "ru":
       return {
         title: "Подключите ИИ",
-        subtitle: "Вставьте API-ключ — WPChat определит, Anthropic это, OpenAI или Google Gemini.",
+        subtitle: "Вставьте API-ключ — ChatAdmin определит, Anthropic это, OpenAI или Google Gemini.",
         save: "Сохранить",
         saving: "Сохраняем…",
         saved: "Сохранено",
@@ -155,7 +155,7 @@ function labelsFor(locale?: string) {
     case "pl":
       return {
         title: "Podłącz AI",
-        subtitle: "Wklej klucz API — WPChat rozpozna, czy to Anthropic, OpenAI czy Google Gemini.",
+        subtitle: "Wklej klucz API — ChatAdmin rozpozna, czy to Anthropic, OpenAI czy Google Gemini.",
         save: "Zapisz",
         saving: "Zapisuję…",
         saved: "Zapisano",
@@ -166,7 +166,7 @@ function labelsFor(locale?: string) {
     default:
       return {
         title: "Connect your AI",
-        subtitle: "Paste your API key — WPChat detects whether it's Anthropic, OpenAI, or Google Gemini.",
+        subtitle: "Paste your API key — ChatAdmin detects whether it's Anthropic, OpenAI, or Google Gemini.",
         save: "Save",
         saving: "Saving…",
         saved: "Saved",

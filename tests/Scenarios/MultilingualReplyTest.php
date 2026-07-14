@@ -7,12 +7,12 @@
  * Locks in the multilingual behavior so a future prompt edit can't
  * silently break the cross-language UX Vlad's wife relies on.
  *
- * @package WPChat\Tests
+ * @package ChatAdmin\Tests
  */
 
-namespace WPChat\Tests\Scenarios;
+namespace ChatAdmin\Tests\Scenarios;
 
-use WPChat\Tests\TestCase;
+use ChatAdmin\Tests\TestCase;
 
 class MultilingualReplyTest extends TestCase {
 

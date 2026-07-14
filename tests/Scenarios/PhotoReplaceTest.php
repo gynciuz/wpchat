@@ -9,15 +9,15 @@
  * on tmp fixture files instead of the real GE static HTML — so the test
  * is reproducible without GE installed.
  *
- * @package WPChat\Tests
+ * @package ChatAdmin\Tests
  */
 
-namespace WPChat\Tests\Scenarios;
+namespace ChatAdmin\Tests\Scenarios;
 
-use WPChat\ContentBackend;
-use WPChat\ContentConfirmation;
-use WPChat\Tools;
-use WPChat\Tests\TestCase;
+use ChatAdmin\ContentBackend;
+use ChatAdmin\ContentConfirmation;
+use ChatAdmin\Tools;
+use ChatAdmin\Tests\TestCase;
 
 class PhotoReplaceTest extends TestCase {
 
@@ -27,7 +27,7 @@ class PhotoReplaceTest extends TestCase {
 
     public function set_up() {
         parent::set_up();
-        $this->tmpDir = sys_get_temp_dir() . '/wpchat-photo-' . uniqid();
+        $this->tmpDir = sys_get_temp_dir() . '/chatadmin-photo-' . uniqid();
         mkdir($this->tmpDir);
         $this->page1 = $this->tmpDir . '/index.html';
         $this->page2 = $this->tmpDir . '/team.html';
@@ -131,7 +131,7 @@ class PhotoReplaceTest extends TestCase {
                 return ['ok' => $changed > 0, 'changes' => $changed];
             }
         };
-        add_filter('wpchat_content_backends', static function ($backends) use ($backend) {
+        add_filter('chatadmin_content_backends', static function ($backends) use ($backend) {
             $backends[] = $backend;
             return $backends;
         });

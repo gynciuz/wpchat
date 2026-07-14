@@ -43,12 +43,12 @@ function greetingFor(locale: string | undefined, name: string): string {
 function concreteFor(locale: string | undefined, site: string): string {
   switch (locale) {
     case "lt":
-      return `Pasiruoškime WPChat ${site} svetainei — 2 minutės, kad galėtumėte tvarkyti užsakymus pokalbiu.`;
+      return `Pasiruoškime ChatAdmin ${site} svetainei — 2 minutės, kad galėtumėte tvarkyti užsakymus pokalbiu.`;
     case "ru":
-      return `Настроим WPChat для ${site} — 2 минуты, чтобы вы могли управлять заказами через чат.`;
+      return `Настроим ChatAdmin для ${site} — 2 минуты, чтобы вы могли управлять заказами через чат.`;
     case "pl":
-      return `Skonfigurujmy WPChat dla ${site} — 2 minuty, by zarządzać zamówieniami przez czat.`;
+      return `Skonfigurujmy ChatAdmin dla ${site} — 2 minuty, by zarządzać zamówieniami przez czat.`;
     default:
-      return `Let's get WPChat ready for ${site} — 2 minutes to manage orders by chat.`;
+      return `Let's get ChatAdmin ready for ${site} — 2 minutes to manage orders by chat.`;
   }
 }

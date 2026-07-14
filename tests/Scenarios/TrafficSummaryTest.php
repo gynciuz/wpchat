@@ -1,6 +1,6 @@
 <?php
 /**
- * SCENARIO — WPChat can answer site-traffic questions ("how many visitors
+ * SCENARIO — ChatAdmin can answer site-traffic questions ("how many visitors
  * this week?") by routing to the auto-detected analytics plugin via the
  * `get_traffic_summary` tool, instead of dead-ending.
  *
@@ -9,13 +9,13 @@
  * enough to prove the tool + system-prompt wiring and the routing
  * contract without standing up Jetpack/WP Statistics/etc.
  *
- * @package WPChat\Tests
+ * @package ChatAdmin\Tests
  */
 
-namespace WPChat\Tests\Scenarios;
+namespace ChatAdmin\Tests\Scenarios;
 
-use WPChat\Tools;
-use WPChat\Tests\TestCase;
+use ChatAdmin\Tools;
+use ChatAdmin\Tests\TestCase;
 
 class TrafficSummaryTest extends TestCase {
 

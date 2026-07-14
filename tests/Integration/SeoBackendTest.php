@@ -5,15 +5,15 @@
  * seo_meta kinds, and the robots.txt / llms.txt infrastructure responds to
  * the stored options.
  *
- * @package WPChat\Tests
+ * @package ChatAdmin\Tests
  */
 
-namespace WPChat\Tests\Integration;
+namespace ChatAdmin\Tests\Integration;
 
-use WPChat\Tools;
-use WPChat\Seo;
-use WPChat\ContentRouter;
-use WPChat\Tests\TestCase;
+use ChatAdmin\Tools;
+use ChatAdmin\Seo;
+use ChatAdmin\ContentRouter;
+use ChatAdmin\Tests\TestCase;
 
 class SeoBackendTest extends TestCase {
 

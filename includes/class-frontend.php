@@ -2,10 +2,10 @@
 /**
  * Public-facing /wpchat route — full-screen chat (no wp-admin chrome).
  *
- * @package WPChat
+ * @package ChatAdmin
  */
 
-namespace WPChat;
+namespace ChatAdmin;
 
 if (!defined('ABSPATH')) {
     exit;
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
 
 class Frontend {
 
-    const URL_PATH = '/wpchat';
+    const URL_PATH = '/chat-admin';
 
     public function __construct() {
         add_action('template_redirect', [$this, 'maybe_render']);
@@ -21,7 +21,7 @@ class Frontend {
 
     public function maybe_render(): void {
         $path = trim((string) wp_parse_url(sanitize_text_field(wp_unslash($_SERVER['REQUEST_URI'] ?? '')), PHP_URL_PATH), '/');
-        if ($path !== 'wpchat') {
+        if ($path !== 'chat-admin') {
             return;
         }
 
@@ -33,8 +33,8 @@ class Frontend {
         if (!current_user_can('edit_posts')) {
             status_header(403);
             wp_die(
-                esc_html__('Reikalingos redaktoriaus arba administratoriaus teisės. (Editor or administrator role required.)', 'wpchat'),
-                esc_html__('WPChat — Access denied', 'wpchat'),
+                esc_html__('Reikalingos redaktoriaus arba administratoriaus teisės. (Editor or administrator role required.)', 'chat-admin'),
+                esc_html__('ChatAdmin — Access denied', 'chat-admin'),
                 ['response' => 403]
             );
         }
@@ -44,14 +44,14 @@ class Frontend {
     }
 
     private function render(): void {
-        $manifest_path = WPCHAT_DIR . 'build/manifest.json';
+        $manifest_path = CHATADMIN_DIR . 'build/manifest.json';
         if (!file_exists($manifest_path)) {
-            wp_die('WPChat build assets are missing. Run pnpm build in the plugin\'s app/ directory.', 'WPChat', ['response' => 500]);
+            wp_die('ChatAdmin build assets are missing. Run pnpm build in the plugin\'s app/ directory.', 'ChatAdmin', ['response' => 500]);
         }
 
         $manifest = json_decode(file_get_contents($manifest_path), true);
         $entry    = $manifest['src/main.tsx'] ?? null;
-        $build_url = WPCHAT_URL . 'build/';
+        $build_url = CHATADMIN_URL . 'build/';
 
         $css_tags = '';
         if (!empty($entry['css'])) {
@@ -71,7 +71,7 @@ class Frontend {
 
         $boot = [
             'mode'      => $mode,
-            'restUrl'   => rest_url('wpchat/v1/'),
+            'restUrl'   => rest_url('chatadmin/v1/'),
             'nonce'     => wp_create_nonce('wp_rest'),
             'userId'    => get_current_user_id(),
             'userName'  => html_entity_decode((string) wp_get_current_user()->display_name, ENT_QUOTES | ENT_HTML5, 'UTF-8'),
@@ -85,7 +85,7 @@ class Frontend {
         // break out of the inline <script> below.
         $boot_json = wp_json_encode($boot, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT);
 
-        $title = sprintf('%s — %s', esc_html__('WPChat', 'wpchat'), esc_html($site_name));
+        $title = sprintf('%s — %s', esc_html__('ChatAdmin', 'chat-admin'), esc_html($site_name));
 
         echo <<<HTML
 <!DOCTYPE html>
@@ -105,12 +105,12 @@ class Frontend {
      proportionally — more readable on phones between salon clients. */
   html { font-size: 18px; }
   body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
-  #wpchat-root { min-height: 100vh; }
+  #chatadmin-root { min-height: 100vh; }
 </style>
 </head>
 <body class="dark">
-<div id="wpchat-root" class="dark"></div>
-<script>window.WPCHAT_BOOT = {$boot_json};</script>
+<div id="chatadmin-root" class="dark"></div>
+<script>window.CHATADMIN_BOOT = {$boot_json};</script>
 <script type="module" src="{$js_src}"></script>
 </body>
 </html>

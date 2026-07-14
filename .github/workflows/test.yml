@@ -124,10 +124,10 @@ jobs:
 
       - name: Version must be consistent across files
         run: |
-          VERSION="$(grep -m1 -E '^\s*\*\s*Version:' wpchat.php | sed -E 's/.*Version:[[:space:]]*//; s/[[:space:]]*$//')"
+          VERSION="$(grep -m1 -E '^\s*\*\s*Version:' chat-admin.php | sed -E 's/.*Version:[[:space:]]*//; s/[[:space:]]*$//')"
           echo "Plugin header version: $VERSION"
           fail=0
-          grep -q "define('WPCHAT_VERSION', '$VERSION')" wpchat.php || { echo "::error::WPCHAT_VERSION != header"; fail=1; }
+          grep -q "define('CHATADMIN_VERSION', '$VERSION')" chat-admin.php || { echo "::error::CHATADMIN_VERSION != header"; fail=1; }
           grep -q "^Stable tag: $VERSION\$" readme.txt || { echo "::error::readme.txt Stable tag != $VERSION"; fail=1; }
           grep -q "^= $VERSION =\$" readme.txt || { echo "::error::readme.txt missing changelog heading '= $VERSION ='"; fail=1; }
           exit $fail

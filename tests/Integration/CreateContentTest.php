@@ -4,13 +4,13 @@
  * draft creation, taxonomy create-if-missing, featured + inline images,
  * SEO note, and the confirmed publish step.
  *
- * @package WPChat\Tests
+ * @package ChatAdmin\Tests
  */
 
-namespace WPChat\Tests\Integration;
+namespace ChatAdmin\Tests\Integration;
 
-use WPChat\Tools;
-use WPChat\Tests\TestCase;
+use ChatAdmin\Tools;
+use ChatAdmin\Tests\TestCase;
 
 class CreateContentTest extends TestCase {
 
@@ -24,7 +24,7 @@ class CreateContentTest extends TestCase {
 
     public function test_create_draft_post_with_taxonomy(): void {
         $res = Tools::create_content([
-            'title'      => 'Hello world from WPChat',
+            'title'      => 'Hello world from ChatAdmin',
             'content'    => "First paragraph.\n\nSecond paragraph.",
             'categories' => ['News'],
             'tags'       => ['welcome', 'intro'],
@@ -33,7 +33,7 @@ class CreateContentTest extends TestCase {
         $this->assertTrue($res['ok'] ?? false, json_encode($res));
         $post_id = $res['post_id'];
         $this->assertSame('draft', get_post_status($post_id));
-        $this->assertSame('Hello world from WPChat', get_the_title($post_id));
+        $this->assertSame('Hello world from ChatAdmin', get_the_title($post_id));
         $this->assertStringContainsString('wp:paragraph', get_post_field('post_content', $post_id));
 
         // Category created + assigned; tags created + assigned.
@@ -111,7 +111,7 @@ class CreateContentTest extends TestCase {
     /** A real 1×1 PNG attachment with generated metadata, so set_post_thumbnail() accepts it. */
     private static function make_attachment(): int {
         $upload = wp_upload_dir();
-        $file   = $upload['path'] . '/wpchat-fixture-' . uniqid() . '.png';
+        $file   = $upload['path'] . '/chatadmin-fixture-' . uniqid() . '.png';
         $png    = base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==');
         file_put_contents($file, $png);
 

@@ -9,12 +9,12 @@
  * he needed FTP access to edit a barber's role, even though the
  * team_member backend was registered and could write to the static files.
  *
- * @package WPChat\Tests
+ * @package ChatAdmin\Tests
  */
 
-namespace WPChat\Tests\Scenarios;
+namespace ChatAdmin\Tests\Scenarios;
 
-use WPChat\Tests\TestCase;
+use ChatAdmin\Tests\TestCase;
 
 class DiscoverBeforeRefusingTest extends TestCase {
 

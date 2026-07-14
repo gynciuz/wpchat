@@ -6,7 +6,7 @@ import "./index.css";
 
 declare global {
   interface Window {
-    WPCHAT_BOOT?: {
+    CHATADMIN_BOOT?: {
       mode?: "chat" | "onboarding";
       restUrl: string;
       nonce: string;
@@ -21,10 +21,10 @@ declare global {
   }
 }
 
-const container = document.getElementById("wpchat-root");
+const container = document.getElementById("chatadmin-root");
 if (container) {
   container.classList.add("dark");
-  const boot = window.WPCHAT_BOOT;
+  const boot = window.CHATADMIN_BOOT;
   const mode = boot?.mode ?? "chat";
   createRoot(container).render(
     <StrictMode>

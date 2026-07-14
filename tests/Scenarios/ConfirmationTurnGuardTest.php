@@ -7,12 +7,12 @@
  *
  * Uses the content path (wp_post edits) so no WooCommerce is required.
  *
- * @package WPChat\Tests
+ * @package ChatAdmin\Tests
  */
 
-namespace WPChat\Tests\Scenarios;
+namespace ChatAdmin\Tests\Scenarios;
 
-use WPChat\Tests\TestCase;
+use ChatAdmin\Tests\TestCase;
 
 class ConfirmationTurnGuardTest extends TestCase {
 

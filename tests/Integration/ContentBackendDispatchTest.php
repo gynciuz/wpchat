@@ -1,25 +1,25 @@
 <?php
 /**
- * Verifies the wpchat_content_backends filter actually dispatches to
+ * Verifies the chatadmin_content_backends filter actually dispatches to
  * site-registered backends, and that ContentRouter merges descriptions
  * from every backend so the LLM's system prompt sees both core and
  * site-specific kinds.
  *
- * @package WPChat\Tests
+ * @package ChatAdmin\Tests
  */
 
-namespace WPChat\Tests\Integration;
+namespace ChatAdmin\Tests\Integration;
 
-use WPChat\ContentBackend;
-use WPChat\ContentRouter;
-use WPChat\Tools;
-use WPChat\Tests\TestCase;
+use ChatAdmin\ContentBackend;
+use ChatAdmin\ContentRouter;
+use ChatAdmin\Tools;
+use ChatAdmin\Tests\TestCase;
 
 class ContentBackendDispatchTest extends TestCase {
 
     public function test_filter_appends_custom_backend(): void {
         $custom = new FakeContentBackend();
-        add_filter('wpchat_content_backends', static function ($backends) use ($custom) {
+        add_filter('chatadmin_content_backends', static function ($backends) use ($custom) {
             $backends[] = $custom;
             return $backends;
         });
@@ -34,7 +34,7 @@ class ContentBackendDispatchTest extends TestCase {
 
     public function test_apply_content_change_routes_to_registered_backend(): void {
         $custom = new FakeContentBackend();
-        add_filter('wpchat_content_backends', static function ($backends) use ($custom) {
+        add_filter('chatadmin_content_backends', static function ($backends) use ($custom) {
             $backends[] = $custom;
             return $backends;
         });
@@ -50,7 +50,7 @@ class ContentBackendDispatchTest extends TestCase {
     }
 
     public function test_describe_kinds_appears_in_router_descriptions(): void {
-        add_filter('wpchat_content_backends', static function ($backends) {
+        add_filter('chatadmin_content_backends', static function ($backends) {
             $backends[] = new FakeContentBackend();
             return $backends;
         });

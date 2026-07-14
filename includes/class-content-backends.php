@@ -1,17 +1,17 @@
 <?php
 /**
- * WPChat content-backend infrastructure.
+ * ChatAdmin content-backend infrastructure.
  *
  * The plugin ships with a default WPContentBackend that handles standard
  * WordPress content (posts, pages-by-slug, post meta, terms). Sites with
  * non-standard content (e.g. Gentleman's Empire's static-HTML team blocks)
- * register additional backends via the `wpchat_content_backends` filter,
+ * register additional backends via the `chatadmin_content_backends` filter,
  * each declaring which `kind` slugs they handle.
  *
- * @package WPChat
+ * @package ChatAdmin
  */
 
-namespace WPChat;
+namespace ChatAdmin;
 
 if (!defined('ABSPATH')) {
     exit;
@@ -170,7 +170,7 @@ class ContentConfirmation {
  */
 class PendingConfirmation {
 
-    private const PREFIX = 'wpchat_pending_';
+    private const PREFIX = 'chatadmin_pending_';
     private const TTL    = 900; // 15 minutes
 
     public static function record(string $conversation, string $target_key, int $turn): void {
@@ -210,7 +210,7 @@ class ContentRouter {
     /** @return ContentBackend[] */
     public static function backends(): array {
         $defaults = [new WPContentBackend()];
-        $backends = apply_filters('wpchat_content_backends', $defaults);
+        $backends = apply_filters('chatadmin_content_backends', $defaults);
         // Defensive: drop anything that doesn't implement the interface.
         return array_values(array_filter($backends, static fn($b) => $b instanceof ContentBackend));
     }

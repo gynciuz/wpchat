@@ -6,12 +6,12 @@
  *
  * This locks in the proactivity rule from 2026-05-26 feedback.
  *
- * @package WPChat\Tests
+ * @package ChatAdmin\Tests
  */
 
-namespace WPChat\Tests\Scenarios;
+namespace ChatAdmin\Tests\Scenarios;
 
-use WPChat\Tests\TestCase;
+use ChatAdmin\Tests\TestCase;
 
 class ProactiveHandoffTest extends TestCase {
 

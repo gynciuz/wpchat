@@ -9,18 +9,18 @@
  * itself and disallows bundled updaters). wpchat.php requires it only when the
  * file is present, so nothing here runs in that build.
  *
- * @package WPChat
+ * @package ChatAdmin
  */
 
 if (!defined('ABSPATH')) {
     exit;
 }
 
-require_once WPCHAT_DIR . 'vendor-puc/plugin-update-checker/plugin-update-checker.php';
+require_once CHATADMIN_DIR . 'vendor-puc/plugin-update-checker/plugin-update-checker.php';
 
-$wpchat_update_checker = YahnisElsts\PluginUpdateChecker\v5\PucFactory::buildUpdateChecker(
+$chatadmin_update_checker = YahnisElsts\PluginUpdateChecker\v5\PucFactory::buildUpdateChecker(
     'https://github.com/gynciuz/wpchat',
-    WPCHAT_FILE,
-    'wpchat'
+    CHATADMIN_FILE,
+    'chat-admin'
 );
-$wpchat_update_checker->getVcsApi()->enableReleaseAssets();
+$chatadmin_update_checker->getVcsApi()->enableReleaseAssets();

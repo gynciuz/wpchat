@@ -1,6 +1,6 @@
 <?php
 /**
- * Base test case for WPChat tests that need a booted WordPress.
+ * Base test case for ChatAdmin tests that need a booted WordPress.
  *
  * Provides:
  *  - a fresh admin user (matches the editor+ capability check in REST)
@@ -10,10 +10,10 @@
  * Extends WP_UnitTestCase so DB state is rolled back between tests via
  * WordPress's setUp/tearDown transactions.
  *
- * @package WPChat\Tests
+ * @package ChatAdmin\Tests
  */
 
-namespace WPChat\Tests;
+namespace ChatAdmin\Tests;
 
 abstract class TestCase extends \WP_UnitTestCase {
 
@@ -27,14 +27,14 @@ abstract class TestCase extends \WP_UnitTestCase {
 
         // Ensure an Anthropic key exists so the early-return in REST doesn't
         // short-circuit. The mock filter intercepts before the key is used.
-        \update_option('wpchat_settings', [
+        \update_option('chatadmin_settings', [
             'anthropic_api_key' => 'sk-ant-test-fixture',
             'model'             => 'mock-claude',
         ]);
 
         $this->adminUserId = $this->factory()->user->create([
             'role'       => 'administrator',
-            'user_login' => 'wpchat-test-admin-' . uniqid(),
+            'user_login' => 'chatadmin-test-admin-' . uniqid(),
         ]);
         // The REST permission check requires manage_woocommerce OR
         // edit_shop_orders. Both are WC-registered caps and don't exist
@@ -54,11 +54,11 @@ abstract class TestCase extends \WP_UnitTestCase {
     }
 
     /**
-     * Dispatch POST /wpchat/v1/chat with the given message text.
+     * Dispatch POST /chatadmin/v1/chat with the given message text.
      * Returns the decoded JSON response body.
      */
     protected function postChat(string $userMessage, ?string $conversationId = null): array {
-        $request = new \WP_REST_Request('POST', '/wpchat/v1/chat');
+        $request = new \WP_REST_Request('POST', '/chatadmin/v1/chat');
         $request->set_header('Content-Type', 'application/json');
         $body = [
             'messages' => [
@@ -77,13 +77,13 @@ abstract class TestCase extends \WP_UnitTestCase {
     }
 
     protected function getConversations(): array {
-        $request  = new \WP_REST_Request('GET', '/wpchat/v1/conversations');
+        $request  = new \WP_REST_Request('GET', '/chatadmin/v1/conversations');
         $response = \rest_get_server()->dispatch($request);
         return ['status' => $response->get_status(), 'data' => $response->get_data()];
     }
 
     protected function getConversation(string $id): array {
-        $request  = new \WP_REST_Request('GET', '/wpchat/v1/conversations/' . $id);
+        $request  = new \WP_REST_Request('GET', '/chatadmin/v1/conversations/' . $id);
         $response = \rest_get_server()->dispatch($request);
         return ['status' => $response->get_status(), 'data' => $response->get_data()];
     }

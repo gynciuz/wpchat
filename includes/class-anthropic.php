@@ -4,15 +4,15 @@
  *
  * The internal format IS Anthropic content blocks, so this adapter is
  * near-identity: build_request/parse_response barely transform. It deliberately
- * emits the exact same wire request as before so the `wpchat_anthropic_http_response`
+ * emits the exact same wire request as before so the `chatadmin_anthropic_http_response`
  * test seam (tests/MockAnthropic.php) and every scenario test stay green.
  *
  * `Anthropic` (the old static class) is kept as a thin back-compat facade.
  *
- * @package WPChat
+ * @package ChatAdmin
  */
 
-namespace WPChat;
+namespace ChatAdmin;
 
 if (!defined('ABSPATH')) {
     exit;
@@ -65,7 +65,7 @@ class AnthropicProvider extends BaseLLMProvider {
         ];
     }
 
-    protected function seam_filter(): string { return 'wpchat_anthropic_http_response'; }
+    protected function seam_filter(): string { return 'chatadmin_anthropic_http_response'; }
 
     protected function build_request(array $messages, array $tools, string $system, string $model): array {
         $request = [

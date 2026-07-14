@@ -2,14 +2,14 @@
 /**
  * Tools::check_kind_access — site-disabled gate + role gate.
  *
- * @package WPChat\Tests
+ * @package ChatAdmin\Tests
  */
 
-namespace WPChat\Tests\Integration;
+namespace ChatAdmin\Tests\Integration;
 
-use WPChat\Onboarding;
-use WPChat\Tools;
-use WPChat\Tests\TestCase;
+use ChatAdmin\Onboarding;
+use ChatAdmin\Tools;
+use ChatAdmin\Tests\TestCase;
 
 class ToolsRoleGateTest extends TestCase {
 

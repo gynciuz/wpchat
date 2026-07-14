@@ -3,11 +3,11 @@
  * SEO / AI-SEO (AEO/GEO) audit + fixes.
  *
  * Two parts:
- *  - WPChat\Seo: read-only audit + the WordPress-side infrastructure the
+ *  - ChatAdmin\Seo: read-only audit + the WordPress-side infrastructure the
  *    fixes rely on (a `robots_txt` filter that opens the site to AI answer-
  *    engine crawlers, and a virtual `/llms.txt` route served from an option).
- *  - WPChat\SeoBackend: a ContentBackend (registered via the
- *    `wpchat_content_backends` filter) exposing two editable kinds so SEO
+ *  - ChatAdmin\SeoBackend: a ContentBackend (registered via the
+ *    `chatadmin_content_backends` filter) exposing two editable kinds so SEO
  *    changes flow through the same preview → confirm tools, Confirm/Cancel UI,
  *    and capability gating as every other content edit:
  *      - `seo_setting` — site-level options (indexing, permalinks, AI crawler
@@ -20,10 +20,10 @@
  * keyword research, GSC/GA4, backlinks) is advisory — the assistant reports
  * it from the audit and hands the user a deep link, never a dead end.
  *
- * @package WPChat
+ * @package ChatAdmin
  */
 
-namespace WPChat;
+namespace ChatAdmin;
 
 if (!defined('ABSPATH')) {
     exit;
@@ -31,8 +31,8 @@ if (!defined('ABSPATH')) {
 
 class Seo {
 
-    const LLMS_OPTION        = 'wpchat_llms_txt';
-    const AI_CRAWLERS_OPTION = 'wpchat_seo_allow_ai_crawlers';
+    const LLMS_OPTION        = 'chatadmin_llms_txt';
+    const AI_CRAWLERS_OPTION = 'chatadmin_seo_allow_ai_crawlers';
 
     /** AI answer-engine crawlers we open the site to (per the AEO guide). */
     const AI_BOTS = ['GPTBot', 'ClaudeBot', 'PerplexityBot'];
@@ -40,7 +40,7 @@ class Seo {
     public function __construct() {
         add_filter('robots_txt', [__CLASS__, 'filter_robots_txt'], 20, 2);
         add_action('init', [__CLASS__, 'maybe_serve_llms_txt']);
-        add_filter('wpchat_content_backends', [__CLASS__, 'register_backend']);
+        add_filter('chatadmin_content_backends', [__CLASS__, 'register_backend']);
     }
 
     /** Add our SEO backend to the content-backend registry. */
@@ -67,7 +67,7 @@ class Seo {
         if (!self::ai_crawlers_enabled()) {
             return (string) $output;
         }
-        $block = "\n# WPChat: allow AI answer-engine crawlers (AEO/GEO)\n";
+        $block = "\n# ChatAdmin: allow AI answer-engine crawlers (AEO/GEO)\n";
         foreach (self::AI_BOTS as $bot) {
             $block .= "User-agent: {$bot}\nAllow: /\n\n";
         }
@@ -279,7 +279,7 @@ class Seo {
         $checks['ai_crawlers'] = [
             'status'         => $ai_on ? 'ok' : 'warn',
             'value'          => $ai_on
-                ? 'GPTBot/ClaudeBot/PerplexityBot allowed via WPChat'
+                ? 'GPTBot/ClaudeBot/PerplexityBot allowed via ChatAdmin'
                 : 'No explicit AI-crawler allow rules',
             'recommendation' => $physical_robots
                 ? 'A physical robots.txt exists at the site root and overrides WordPress\'s virtual one — edit that file to allow GPTBot/ClaudeBot/PerplexityBot.'

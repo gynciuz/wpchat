@@ -17,13 +17,13 @@
  * integration coming next release" instead of dead-ending.
  *
  * Sites can register additional providers via the
- * `wpchat_analytics_providers` filter — same shape as
- * `wpchat_content_backends`.
+ * `chatadmin_analytics_providers` filter — same shape as
+ * `chatadmin_content_backends`.
  *
- * @package WPChat
+ * @package ChatAdmin
  */
 
-namespace WPChat;
+namespace ChatAdmin;
 
 if (!defined('ABSPATH')) {
     exit;
@@ -71,7 +71,7 @@ class AnalyticsRouter {
             new KokoAnalyticsAnalyticsProvider(),
             new StatifyAnalyticsProvider(),
         ];
-        $providers = apply_filters('wpchat_analytics_providers', $defaults);
+        $providers = apply_filters('chatadmin_analytics_providers', $defaults);
         return array_values(array_filter($providers, static fn($p) => $p instanceof AnalyticsProvider));
     }
 
@@ -149,7 +149,7 @@ class SiteKitAnalyticsProvider implements AnalyticsProvider {
             'top_pages'           => [],
             'top_sources'         => [],
             'integration_pending' => true,
-            'note'                => 'Site Kit detected — full Analytics 4 Data API integration ships in the next WPChat release.',
+            'note'                => 'Site Kit detected — full Analytics 4 Data API integration ships in the next ChatAdmin release.',
         ];
     }
 }
@@ -279,7 +279,7 @@ class MonsterInsightsAnalyticsProvider implements AnalyticsProvider {
             'top_pages'           => [],
             'top_sources'         => [],
             'integration_pending' => true,
-            'note'                => 'MonsterInsights detected — full reports API integration ships in the next WPChat release.',
+            'note'                => 'MonsterInsights detected — full reports API integration ships in the next ChatAdmin release.',
         ];
     }
 }
@@ -437,7 +437,7 @@ class StatifyAnalyticsProvider implements AnalyticsProvider {
             'top_pages'           => [],
             'top_sources'         => [],
             'integration_pending' => true,
-            'note'                => 'Statify detected — aggregate query integration ships in the next WPChat release.',
+            'note'                => 'Statify detected — aggregate query integration ships in the next ChatAdmin release.',
         ];
     }
 }

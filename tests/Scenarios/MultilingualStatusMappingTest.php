@@ -6,12 +6,12 @@
  * tries to guess the slug and either fails silently or invents a
  * config-typo story (the 2026-05-26 "ancelled" hallucination).
  *
- * @package WPChat\Tests
+ * @package ChatAdmin\Tests
  */
 
-namespace WPChat\Tests\Scenarios;
+namespace ChatAdmin\Tests\Scenarios;
 
-use WPChat\Tests\TestCase;
+use ChatAdmin\Tests\TestCase;
 
 class MultilingualStatusMappingTest extends TestCase {
 

@@ -1,4 +1,4 @@
-# WPChat tests
+# ChatAdmin tests
 
 Three suites, run independently or together.
 
@@ -35,7 +35,7 @@ In CI everything runs on push/PR via `.github/workflows/test.yml` across PHP 8.1
 
 ## How the Anthropic mock works
 
-The production code in `WPChat\Anthropic::run_with_tools` calls `wp_remote_post` once per turn of the tool-use loop. Each call passes through the `wpchat_anthropic_http_response` filter — if a filter returns a response array, the real HTTP is skipped.
+The production code in `ChatAdmin\Anthropic::run_with_tools` calls `wp_remote_post` once per turn of the tool-use loop. Each call passes through the `wpchat_anthropic_http_response` filter — if a filter returns a response array, the real HTTP is skipped.
 
 `tests/MockAnthropic.php` registers that filter and pops scripted responses off a queue:
 
@@ -54,7 +54,7 @@ The real tool implementations still execute against real WP — only the LLM cal
 
 ## Adding a new scenario
 
-1. Drop a file in `tests/Scenarios/` named `<Behavior>Test.php`. Extend `WPChat\Tests\TestCase`.
+1. Drop a file in `tests/Scenarios/` named `<Behavior>Test.php`. Extend `ChatAdmin\Tests\TestCase`.
 2. Script the conversation with the mock:
    ```php
    $this->mockAnthropic

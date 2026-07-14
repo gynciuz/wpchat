@@ -9,23 +9,23 @@
  * endpoints work without an Anthropic key being configured, and never
  * invoke the Anthropic mock during a flow.
  *
- * @package WPChat\Tests
+ * @package ChatAdmin\Tests
  */
 
-namespace WPChat\Tests\Scenarios;
+namespace ChatAdmin\Tests\Scenarios;
 
-use WPChat\Tests\TestCase;
+use ChatAdmin\Tests\TestCase;
 
 class DirectActionsTest extends TestCase {
 
     public function test_order_statuses_endpoint_works_without_anthropic_key(): void {
         // Clear the API key — direct actions don't need it.
-        \update_option('wpchat_settings', [
+        \update_option('chatadmin_settings', [
             'anthropic_api_key' => '',
             'model'             => 'mock-claude',
         ]);
 
-        $request  = new \WP_REST_Request('GET', '/wpchat/v1/actions/order-statuses');
+        $request  = new \WP_REST_Request('GET', '/chatadmin/v1/actions/order-statuses');
         $response = \rest_get_server()->dispatch($request);
 
         $this->assertSame(200, $response->get_status());
@@ -41,7 +41,7 @@ class DirectActionsTest extends TestCase {
         // No real WC order in the test scaffold, so we expect a 400 from
         // update_order_status with "Order not found." — that's fine. The
         // point is the request didn't go through the LLM.
-        $request = new \WP_REST_Request('POST', '/wpchat/v1/actions/order/9999/status');
+        $request = new \WP_REST_Request('POST', '/chatadmin/v1/actions/order/9999/status');
         $request->set_header('Content-Type', 'application/json');
         $request->set_body(json_encode(['status' => 'completed']));
         \rest_get_server()->dispatch($request);
@@ -54,7 +54,7 @@ class DirectActionsTest extends TestCase {
     public function test_note_endpoint_does_not_invoke_anthropic(): void {
         $this->mockAnthropic->enqueueEndTurn('unused');
 
-        $request = new \WP_REST_Request('POST', '/wpchat/v1/actions/order/9999/note');
+        $request = new \WP_REST_Request('POST', '/chatadmin/v1/actions/order/9999/note');
         $request->set_header('Content-Type', 'application/json');
         $request->set_body(json_encode(['note' => 'a note', 'customer_visible' => false]));
         \rest_get_server()->dispatch($request);
@@ -67,7 +67,7 @@ class DirectActionsTest extends TestCase {
         $sub = $this->factory()->user->create(['role' => 'subscriber']);
         \wp_set_current_user($sub);
 
-        $request = new \WP_REST_Request('POST', '/wpchat/v1/actions/order/1/status');
+        $request = new \WP_REST_Request('POST', '/chatadmin/v1/actions/order/1/status');
         $request->set_header('Content-Type', 'application/json');
         $request->set_body(json_encode(['status' => 'completed']));
         $response = \rest_get_server()->dispatch($request);

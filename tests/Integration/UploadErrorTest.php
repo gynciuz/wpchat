@@ -7,18 +7,18 @@
  * Regression for the "No file provided" bug hit on a 3.5 MB image vs the
  * default 2 MB upload_max_filesize.
  *
- * @package WPChat\Tests
+ * @package ChatAdmin\Tests
  */
 
-namespace WPChat\Tests\Integration;
+namespace ChatAdmin\Tests\Integration;
 
-use WPChat\Upload;
-use WPChat\Tests\TestCase;
+use ChatAdmin\Upload;
+use ChatAdmin\Tests\TestCase;
 
 class UploadErrorTest extends TestCase {
 
     private function dispatch(array $fileParams): \WP_REST_Response {
-        $request = new \WP_REST_Request('POST', '/wpchat/v1/upload');
+        $request = new \WP_REST_Request('POST', '/chatadmin/v1/upload');
         $request->set_file_params($fileParams);
         return (new Upload())->handle_upload($request);
     }

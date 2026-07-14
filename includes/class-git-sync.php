@@ -2,15 +2,15 @@
 /**
  * Git commit-on-write helper.
  *
- * Site backends that mutate tracked files (e.g. GE's wpchat-gentleman-backend
+ * Site backends that mutate tracked files (e.g. GE's chatadmin-gentleman-backend
  * editing html/pages/*.html) can call this helper after a successful write
  * to commit + push the change automatically. Without it, edits sit
  * uncommitted on prod and disappear on the next disaster-recovery reset.
  *
  * **Off by default.** Activates only when wp-config.php defines:
  *
- *   define('WPCHAT_GIT_SYNC_ENABLED', true);
- *   define('WPCHAT_GIT_SYNC_PATH', '/absolute/path/to/repo/root');  // optional, defaults to ABSPATH
+ *   define('CHATADMIN_GIT_SYNC_ENABLED', true);
+ *   define('CHATADMIN_GIT_SYNC_PATH', '/absolute/path/to/repo/root');  // optional, defaults to ABSPATH
  *
  * Prod-side prerequisites for the push to succeed:
  *   - `git` binary in PATH
@@ -23,10 +23,10 @@
  * are missing — the calling write still succeeds, the operator sees
  * a "sync skipped" reason in the response note.
  *
- * @package WPChat
+ * @package ChatAdmin
  */
 
-namespace WPChat;
+namespace ChatAdmin;
 
 if (!defined('ABSPATH')) {
     exit;
@@ -34,7 +34,7 @@ if (!defined('ABSPATH')) {
 
 class GitSync {
 
-    const LOCK_FILE = 'wpchat-git-sync.lock';
+    const LOCK_FILE = 'chatadmin-git-sync.lock';
 
     /**
      * Commit + push the given files. Returns a status array.
@@ -46,7 +46,7 @@ class GitSync {
      */
     public static function commit_files(array $absolute_paths, string $message, array $author = []): array {
         if (!self::is_enabled()) {
-            return ['ok' => false, 'skipped_reason' => 'WPCHAT_GIT_SYNC_ENABLED not set to true in wp-config.php'];
+            return ['ok' => false, 'skipped_reason' => 'CHATADMIN_GIT_SYNC_ENABLED not set to true in wp-config.php'];
         }
 
         $repo_root = self::repo_root();
@@ -125,12 +125,12 @@ class GitSync {
     }
 
     public static function is_enabled(): bool {
-        return defined('WPCHAT_GIT_SYNC_ENABLED') && WPCHAT_GIT_SYNC_ENABLED === true;
+        return defined('CHATADMIN_GIT_SYNC_ENABLED') && CHATADMIN_GIT_SYNC_ENABLED === true;
     }
 
     public static function repo_root(): string {
-        if (defined('WPCHAT_GIT_SYNC_PATH') && is_string(WPCHAT_GIT_SYNC_PATH)) {
-            return rtrim(WPCHAT_GIT_SYNC_PATH, '/');
+        if (defined('CHATADMIN_GIT_SYNC_PATH') && is_string(CHATADMIN_GIT_SYNC_PATH)) {
+            return rtrim(CHATADMIN_GIT_SYNC_PATH, '/');
         }
         return rtrim(ABSPATH, '/');
     }
@@ -154,7 +154,7 @@ class GitSync {
         $clean = preg_replace('/[\x00-\x1F\x7F]/u', ' ', $message) ?? $message;
         $clean = trim($clean);
         if ($clean === '') {
-            $clean = 'WPChat: content edit';
+            $clean = 'ChatAdmin: content edit';
         }
         if (mb_strlen($clean, 'UTF-8') > 4000) {
             $clean = mb_substr($clean, 0, 3997, 'UTF-8') . '…';

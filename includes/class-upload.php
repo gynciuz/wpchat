@@ -1,6 +1,6 @@
 <?php
 /**
- * WPChat media upload endpoint.
+ * ChatAdmin media upload endpoint.
  *
  * Routes a multipart file upload through the WP-core stack:
  *   wp_handle_upload → wp_insert_attachment → wp_generate_attachment_metadata
@@ -11,10 +11,10 @@
  *
  * Same permission check as /chat (manage_woocommerce OR edit_shop_orders).
  *
- * @package WPChat
+ * @package ChatAdmin
  */
 
-namespace WPChat;
+namespace ChatAdmin;
 
 if (!defined('ABSPATH')) {
     exit;
@@ -98,13 +98,13 @@ class Upload {
         ];
 
         // Allow tests to inject overrides. Production never sets this filter.
-        $overrides = apply_filters('wpchat_upload_overrides', $overrides, $file);
+        $overrides = apply_filters('chatadmin_upload_overrides', $overrides, $file);
 
         // Production uses wp_handle_upload (strict: requires is_uploaded_file).
         // Tests can swap to wp_handle_sideload via this filter so synthetic
         // files pass the readability check instead. Both take $file by
         // reference, so call_user_func can't be used — branch directly.
-        $handler = apply_filters('wpchat_upload_handler', 'wp_handle_upload');
+        $handler = apply_filters('chatadmin_upload_handler', 'wp_handle_upload');
         if ($handler === 'wp_handle_sideload') {
             $moved = wp_handle_sideload($file, $overrides);
         } else {

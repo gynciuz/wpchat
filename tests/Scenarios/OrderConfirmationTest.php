@@ -11,13 +11,13 @@
  * SYSTEM-PROMPT wiring rather than executing a live mutation. The runtime gate
  * itself is Tools::needs_confirmation(), exercised end-to-end in manual/QA.
  *
- * @package WPChat\Tests
+ * @package ChatAdmin\Tests
  */
 
-namespace WPChat\Tests\Scenarios;
+namespace ChatAdmin\Tests\Scenarios;
 
-use WPChat\Tools;
-use WPChat\Tests\TestCase;
+use ChatAdmin\Tools;
+use ChatAdmin\Tests\TestCase;
 
 class OrderConfirmationTest extends TestCase {
 

@@ -13,7 +13,7 @@ interface Props {
 /**
  * Provider step — the choice that frames the rest of onboarding.
  * Design principle #6: reflect what the user is choosing FOR
- * themselves (pay Anthropic directly vs let WPChat handle it).
+ * themselves (pay Anthropic directly vs let ChatAdmin handle it).
  *
  * Two big tappable choices. Cloud is currently a waitlist —
  * picking it captures an optional email so we can ping when the
@@ -180,12 +180,12 @@ function labelsFor(locale?: string) {
       return {
         title: "Kaip mokėsite už pokalbį?",
         subtitle:
-          "Pasirinkite, kaip WPChat susisieks su DI. Galite pakeisti vėliau iš Nustatymų.",
+          "Pasirinkite, kaip ChatAdmin susisieks su DI. Galite pakeisti vėliau iš Nustatymų.",
         byoTitle: "Savo Anthropic API raktas",
         byoBody:
           "Įklijuokite savo raktą iš console.anthropic.com — sąskaitas tvarkote tiesiogiai su Anthropic.",
         byoPrice: "Nemokama (pagal jūsų Anthropic sąskaitą)",
-        cloudTitle: "WPChat Cloud",
+        cloudTitle: "ChatAdmin Cloud",
         cloudBody:
           "Be API nustatymų — DI tvarkysime už jus. Paprasta Stripe prenumerata, netrukus. Prisijunkite prie laukimo sąrašo ir pranešime, kai atidarysime.",
         cloudPrice: "€12/mėn — Stripe prenumerata (netrukus)",
@@ -198,12 +198,12 @@ function labelsFor(locale?: string) {
       return {
         title: "Как вы будете оплачивать чат?",
         subtitle:
-          "Выберите, как WPChat подключается к ИИ. Можно изменить позже в Настройках.",
+          "Выберите, как ChatAdmin подключается к ИИ. Можно изменить позже в Настройках.",
         byoTitle: "Свой ключ Anthropic API",
         byoBody:
           "Вставьте свой ключ с console.anthropic.com — счета напрямую от Anthropic.",
         byoPrice: "Бесплатно (по вашему счёту Anthropic)",
-        cloudTitle: "WPChat Cloud",
+        cloudTitle: "ChatAdmin Cloud",
         cloudBody:
           "Без настройки API — ИИ берём на себя. Простая подписка через Stripe, скоро. Присоединяйтесь к листу ожидания, и мы напишем, когда откроется.",
         cloudPrice: "€12/мес — подписка Stripe (скоро)",
@@ -216,12 +216,12 @@ function labelsFor(locale?: string) {
       return {
         title: "Jak chcesz płacić za czat?",
         subtitle:
-          "Wybierz, jak WPChat łączy się z AI. Można zmienić później w Ustawieniach.",
+          "Wybierz, jak ChatAdmin łączy się z AI. Można zmienić później w Ustawieniach.",
         byoTitle: "Własny klucz Anthropic",
         byoBody:
           "Wklej swój klucz z console.anthropic.com — rozliczenie bezpośrednio z Anthropic.",
         byoPrice: "Bezpłatnie (rozliczenie Anthropic)",
-        cloudTitle: "WPChat Cloud",
+        cloudTitle: "ChatAdmin Cloud",
         cloudBody:
           "Bez konfiguracji API — AI obsługujemy my. Prosta subskrypcja Stripe, wkrótce. Dołącz do listy oczekujących, powiadomimy, gdy będzie gotowe.",
         cloudPrice: "€12/m-c — subskrypcja Stripe (wkrótce)",
@@ -234,12 +234,12 @@ function labelsFor(locale?: string) {
       return {
         title: "How will you pay for the chat?",
         subtitle:
-          "Pick how WPChat reaches the AI. You can switch later from Settings.",
+          "Pick how ChatAdmin reaches the AI. You can switch later from Settings.",
         byoTitle: "Bring your own Anthropic key",
         byoBody:
           "Paste a key from console.anthropic.com — billing goes directly through your Anthropic account.",
         byoPrice: "Free (charged on your Anthropic bill)",
-        cloudTitle: "WPChat Cloud",
+        cloudTitle: "ChatAdmin Cloud",
         cloudBody:
           "No API setup — we run the AI for you. A simple Stripe subscription, coming soon. Join the waitlist and we'll email when it opens.",
         cloudPrice: "€12/mo — Stripe subscription (coming soon)",

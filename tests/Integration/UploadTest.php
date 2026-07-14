@@ -2,16 +2,16 @@
 /**
  * REST upload endpoint tests.
  *
- * Exercises POST /wpchat/v1/upload with synthetic file fixtures and
+ * Exercises POST /chatadmin/v1/upload with synthetic file fixtures and
  * asserts: shape on success, 413 for too-large, 415 for unsupported
  * mime, 401/403 for users without caps.
  *
- * @package WPChat\Tests
+ * @package ChatAdmin\Tests
  */
 
-namespace WPChat\Tests\Integration;
+namespace ChatAdmin\Tests\Integration;
 
-use WPChat\Tests\TestCase;
+use ChatAdmin\Tests\TestCase;
 
 class UploadTest extends TestCase {
 
@@ -76,7 +76,7 @@ class UploadTest extends TestCase {
     }
 
     public function test_missing_file_returns_400(): void {
-        $request = new \WP_REST_Request('POST', '/wpchat/v1/upload');
+        $request = new \WP_REST_Request('POST', '/chatadmin/v1/upload');
         $response = \rest_get_server()->dispatch($request);
         $this->assertSame(400, $response->get_status());
     }
@@ -94,15 +94,15 @@ class UploadTest extends TestCase {
     }
 
     private function dispatchUploadRaw(array $file): array {
-        $request = new \WP_REST_Request('POST', '/wpchat/v1/upload');
+        $request = new \WP_REST_Request('POST', '/chatadmin/v1/upload');
         $request->set_file_params(['file' => $file]);
 
         // Swap to wp_handle_sideload — it uses is_readable() instead of
         // is_uploaded_file(), so synthetic test files pass.
         $swap_handler = static fn() => 'wp_handle_sideload';
-        add_filter('wpchat_upload_handler', $swap_handler);
+        add_filter('chatadmin_upload_handler', $swap_handler);
         $response = \rest_get_server()->dispatch($request);
-        remove_filter('wpchat_upload_handler', $swap_handler);
+        remove_filter('chatadmin_upload_handler', $swap_handler);
 
         return [
             'status' => $response->get_status(),
@@ -115,7 +115,7 @@ class UploadTest extends TestCase {
             $this->markTestSkipped('GD imagejpeg() not available on this runner.');
         }
         $im = imagecreatetruecolor($w, $h);
-        $tmp = tempnam(sys_get_temp_dir(), 'wpchat_jpg');
+        $tmp = tempnam(sys_get_temp_dir(), 'chatadmin_jpg');
         imagejpeg($im, $tmp, 80);
         imagedestroy($im);
         return $tmp;
@@ -126,7 +126,7 @@ class UploadTest extends TestCase {
             $this->markTestSkipped('GD imagepng() not available on this runner.');
         }
         $im = imagecreatetruecolor($w, $h);
-        $tmp = tempnam(sys_get_temp_dir(), 'wpchat_png');
+        $tmp = tempnam(sys_get_temp_dir(), 'chatadmin_png');
         imagepng($im, $tmp);
         imagedestroy($im);
         return $tmp;

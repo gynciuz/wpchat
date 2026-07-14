@@ -2,14 +2,14 @@
 /**
  * Scriptable Gemini generateContent transport for tests.
  *
- * Mirrors MockAnthropic on the `wpchat_gemini_http_response` seam, emitting
+ * Mirrors MockAnthropic on the `chatadmin_gemini_http_response` seam, emitting
  * Gemini-shaped responses so the GeminiProvider adapter can be exercised
  * end-to-end without a network call.
  *
- * @package WPChat\Tests
+ * @package ChatAdmin\Tests
  */
 
-namespace WPChat\Tests;
+namespace ChatAdmin\Tests;
 
 class MockGemini {
 
@@ -17,12 +17,12 @@ class MockGemini {
     private array $recorded = [];
 
     public function register(): self {
-        \add_filter('wpchat_gemini_http_response', [$this, 'handle'], 10, 2);
+        \add_filter('chatadmin_gemini_http_response', [$this, 'handle'], 10, 2);
         return $this;
     }
 
     public function unregister(): void {
-        \remove_filter('wpchat_gemini_http_response', [$this, 'handle'], 10);
+        \remove_filter('chatadmin_gemini_http_response', [$this, 'handle'], 10);
         $this->queue    = [];
         $this->recorded = [];
     }

@@ -1,14 +1,14 @@
 <?php
 /**
- * WPChat order tools.
+ * ChatAdmin order tools.
  *
  * Each tool returns plain arrays that get JSON-encoded for the model.
  * Implementations call WC PHP functions directly — no REST roundtrips.
  *
- * @package WPChat
+ * @package ChatAdmin
  */
 
-namespace WPChat;
+namespace ChatAdmin;
 
 if (!defined('ABSPATH')) {
     exit;
@@ -264,7 +264,7 @@ class Tools {
             'seo_audit'             => [__CLASS__, 'seo_audit'],
             // Generic content-backend dispatch (v0.4).
             // Routes to whichever registered backend claims target.kind.
-            // Backends are pulled via apply_filters('wpchat_content_backends').
+            // Backends are pulled via apply_filters('chatadmin_content_backends').
             'list_content_blocks'   => [__CLASS__, 'list_content_blocks'],
             'preview_content_change' => [__CLASS__, 'preview_content_change'],
             'apply_content_change'  => [__CLASS__, 'apply_content_change'],
@@ -448,7 +448,7 @@ class Tools {
     /**
      * Two-layer access check, run before the backend dispatch on every
      * preview / apply:
-     *   1. Site policy — the kind must NOT be in the wpchat_disabled_kinds
+     *   1. Site policy — the kind must NOT be in the chatadmin_disabled_kinds
      *      site option (set by admins via the onboarding BackendsCard).
      *   2. WP role — the current user must hold the WP capability the
      *      kind requires (resolved via kind_required_cap()).
@@ -460,7 +460,7 @@ class Tools {
         $disabled = Onboarding::get_site_disabled_kinds();
         if (in_array($kind, $disabled, true)) {
             return [
-                'error' => 'This content kind is disabled site-wide. Site admin can re-enable it from WPChat onboarding / Settings.',
+                'error' => 'This content kind is disabled site-wide. Site admin can re-enable it from ChatAdmin onboarding / Settings.',
                 'code'  => 'kind_disabled_site',
                 'kind'  => $kind,
             ];
@@ -737,7 +737,7 @@ class Tools {
     // (WC_Meta_Box_Order_Actions): the same `woocommerce_order_actions`
     // filter feeds the list, and triggering replicates core's save()
     // switch so built-in emails AND plugin actions (e.g. PW Gift Cards
-    // "Resend gift cards") fire identically — without WPChat needing to
+    // "Resend gift cards") fire identically — without ChatAdmin needing to
     // know about any specific plugin.
     // ============================================================
 
@@ -748,9 +748,9 @@ class Tools {
      */
     public static function order_actions_for(\WC_Order $order): array {
         $defaults = [
-            'send_order_details'              => __('Email invoice / order details to customer', 'wpchat'),
-            'send_order_details_admin'        => __('Resend new order notification (to admin)', 'wpchat'),
-            'regenerate_download_permissions' => __('Regenerate download permissions', 'wpchat'),
+            'send_order_details'              => __('Email invoice / order details to customer', 'chat-admin'),
+            'send_order_details_admin'        => __('Resend new order notification (to admin)', 'chat-admin'),
+            'regenerate_download_permissions' => __('Regenerate download permissions', 'chat-admin'),
         ];
         $actions = apply_filters('woocommerce_order_actions', $defaults, $order);
         $out = [];
@@ -828,7 +828,7 @@ class Tools {
                 WC()->payment_gateways();
                 WC()->shipping();
                 WC()->mailer()->customer_invoice($order);
-                $order->add_order_note(__('Order details manually re-sent to customer via WPChat.', 'wpchat'), false, true);
+                $order->add_order_note(__('Order details manually re-sent to customer via ChatAdmin.', 'chat-admin'), false, true);
                 do_action('woocommerce_after_resend_order_email', $order, 'customer');
                 break;
 
@@ -865,9 +865,9 @@ class Tools {
     /**
      * Site traffic summary. Dispatches to whichever analytics plugin is
      * detected (AnalyticsRouter::pick()). Mirrors the content-backend
-     * dispatch pattern: WPChat doesn't know about any specific analytics
+     * dispatch pattern: ChatAdmin doesn't know about any specific analytics
      * plugin — the router walks the registered providers (plus any added
-     * via the `wpchat_analytics_providers` filter) and returns the first
+     * via the `chatadmin_analytics_providers` filter) and returns the first
      * available one. Returns a no-provider error (not a fatal) when none
      * is detected so the assistant can tell the user instead of dead-ending.
      */
@@ -889,7 +889,7 @@ class Tools {
     }
 
     /**
-     * Read-only SEO / AI-SEO audit. Delegates to WPChat\Seo, which also owns
+     * Read-only SEO / AI-SEO audit. Delegates to ChatAdmin\Seo, which also owns
      * the robots.txt filter + /llms.txt route that the fixes rely on. The
      * fixes themselves run through the seo_setting / seo_meta content kinds
      * (preview_content_change / apply_content_change), not a tool here.
