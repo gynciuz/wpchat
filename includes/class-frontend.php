@@ -76,6 +76,7 @@ class Frontend {
 
         $boot = [
             'mode'      => $mode,
+            'version'   => CHATADMIN_VERSION,
             'restUrl'   => rest_url('chatadmin/v1/'),
             'nonce'     => wp_create_nonce('wp_rest'),
             'userId'    => get_current_user_id(),

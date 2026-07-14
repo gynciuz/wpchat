@@ -8,6 +8,7 @@ import type { Page } from "@playwright/test";
 
 export const BOOT = {
   mode: "chat" as const,
+  version: "0.7.2",
   restUrl: "/chatadmin/v1/",
   nonce: "test-nonce",
   userId: 1,

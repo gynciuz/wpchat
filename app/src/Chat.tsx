@@ -20,6 +20,7 @@ interface Boot {
   siteName?: string;
   siteUrl?: string;
   logoutUrl?: string;
+  version?: string;
 }
 
 interface ToolCall {
@@ -243,9 +244,11 @@ export function Chat({ boot }: { boot?: Boot }) {
             <HistoryIcon className="size-4" />
           </Button>
           <h1 className="text-2xl font-semibold tracking-tight">ChatAdmin</h1>
-          <Badge variant="secondary" className="hidden sm:inline-flex">
-            v0.4
-          </Badge>
+          {boot?.version && (
+            <Badge variant="secondary" className="hidden sm:inline-flex">
+              v{boot.version}
+            </Badge>
+          )}
           {boot?.siteName && (
             <span className="hidden text-sm text-muted-foreground sm:inline">
               · {boot.siteName}

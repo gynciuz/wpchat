@@ -17,6 +17,7 @@ declare global {
       siteName?: string;
       siteUrl?: string;
       logoutUrl?: string;
+      version?: string;
     };
   }
 }

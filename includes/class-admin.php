@@ -115,6 +115,7 @@ class Admin {
             'window.CHATADMIN_BOOT = ' . wp_json_encode([
                 // First-run admins see the onboarding wizard in the tab too.
                 'mode'      => Onboarding::should_show_for_user(get_current_user_id()) ? 'onboarding' : 'chat',
+                'version'   => CHATADMIN_VERSION,
                 'restUrl'   => rest_url('chatadmin/v1/'),
                 'nonce'     => wp_create_nonce('wp_rest'),
                 'userId'    => get_current_user_id(),
