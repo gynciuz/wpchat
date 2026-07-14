@@ -558,7 +558,7 @@ class Tools {
      *     the pending entry and refuse. This binds consent to a real, separate
      *     user turn that prompt-injected content cannot fabricate.
      */
-    private static function order_confirm_gate(array $args, string $target_key): bool {
+    private static function mutation_confirm_gate(array $args, string $target_key): bool {
         if (!empty($args['_confirmed'])) {
             return true;
         }
@@ -589,7 +589,7 @@ class Tools {
         }
         $note = isset($args['note']) ? (string) $args['note'] : '';
         // Confirm before mutating — a status change can email the customer.
-        if (!self::order_confirm_gate($args, 'order:' . $order->get_id() . ':status')) {
+        if (!self::mutation_confirm_gate($args, 'order:' . $order->get_id() . ':status')) {
             return [
                 'needs_confirmation' => true,
                 'order_id'    => $order->get_id(),
@@ -621,7 +621,7 @@ class Tools {
         $customer_visible = !empty($args['customer_visible']);
         // A private note is internal and low-risk, so it runs straight away.
         // A customer-visible note is emailed to the customer — confirm first.
-        if ($customer_visible && !self::order_confirm_gate($args, 'order:' . $order->get_id() . ':note')) {
+        if ($customer_visible && !self::mutation_confirm_gate($args, 'order:' . $order->get_id() . ':note')) {
             return [
                 'needs_confirmation' => true,
                 'order_id'         => $order->get_id(),
@@ -810,7 +810,7 @@ class Tools {
         }
 
         // Order actions send emails / fire plugin side-effects — confirm first.
-        if (!self::order_confirm_gate($args, 'order:' . $order->get_id() . ':action:' . $action)) {
+        if (!self::mutation_confirm_gate($args, 'order:' . $order->get_id() . ':action:' . $action)) {
             return [
                 'needs_confirmation' => true,
                 'order_id' => $order->get_id(),
@@ -1035,8 +1035,14 @@ class Tools {
         if (!$post) {
             return ['error' => 'Post not found.'];
         }
-        if (!ContentConfirmation::is_confirmed((string) ($args['confirmation'] ?? ''))) {
-            return ['error' => 'Not confirmed — ask the user to confirm before publishing, then pass their phrase.'];
+        // Publishing makes a draft public — gate it like other mutations. On the
+        // LLM path this also requires the confirmation to arrive in a turn AFTER
+        // the draft was surfaced (finding #2); direct callers keep phrase-only.
+        if (!self::mutation_confirm_gate($args, 'publish:' . $post_id)) {
+            return [
+                'error'              => 'Not confirmed — ask the user to confirm publishing in their next message, then call publish_content again with their phrase.',
+                'needs_confirmation' => true,
+            ];
         }
         $type_obj = get_post_type_object($post->post_type);
         $cap      = $type_obj->cap->publish_posts ?? 'publish_posts';

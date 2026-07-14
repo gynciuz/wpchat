@@ -73,4 +73,40 @@ class ConfirmationTurnGuardTest extends TestCase {
             'Apply after a preview in an earlier turn, with confirmation, must write.'
         );
     }
+
+    /** Injection: publish + confirmation in ONE turn, no earlier turn → refused. */
+    public function test_llm_publish_without_earlier_turn_is_blocked(): void {
+        $post_id = $this->factory()->post->create(['post_status' => 'draft', 'post_title' => 'Draft']);
+
+        $this->mockAnthropic
+            ->enqueueToolUse('publish_content', ['post_id' => $post_id, 'confirmation' => 'taip'])
+            ->enqueueEndTurn('done');
+
+        $this->postChat('what drafts do I have?');
+
+        $this->assertSame(
+            'draft',
+            get_post_status($post_id),
+            'A publish confirmed in the same turn, with no earlier confirmation turn, must not publish.'
+        );
+    }
+
+    /** Normal: model surfaces the draft (needs_confirmation), user confirms next turn → published. */
+    public function test_publish_after_confirm_in_a_later_turn_publishes(): void {
+        $post_id = $this->factory()->post->create(['post_status' => 'draft', 'post_title' => 'Draft']);
+
+        $this->mockAnthropic
+            ->enqueueToolUse('publish_content', ['post_id' => $post_id])
+            ->enqueueEndTurn('Publish this draft? Please confirm.');
+        $r1   = $this->postChat('publish my draft');
+        $conv = $r1['data']['conversation_id'] ?? '';
+        $this->assertSame('draft', get_post_status($post_id), 'First call must not publish.');
+
+        $this->mockAnthropic
+            ->enqueueToolUse('publish_content', ['post_id' => $post_id, 'confirmation' => 'taip'])
+            ->enqueueEndTurn('Published.');
+        $this->postChat('taip', $conv);
+
+        $this->assertSame('publish', get_post_status($post_id), 'Confirm in a later turn must publish.');
+    }
 }

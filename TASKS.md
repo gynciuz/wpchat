@@ -109,9 +109,9 @@ architecture notes; this section is the short, checkable version.
     message that prompt-injected content can't fabricate. `PendingConfirmation` +
     `Tools` gating (`order_confirm_gate`, content preview/apply) + `Rest` request
     context + `History::user_message_count`. Tests: PendingConfirmationTest (5) +
-    ConfirmationTurnGuardTest (2). Full suite 243 green. Spec:
-    docs/superpowers/specs/2026-07-14-confirmation-token-design.md.
-    Follow-up (optional): extend the same gate to `publish_content`.
+    ConfirmationTurnGuardTest (4, incl. publish). `publish_content` now uses the
+    same gate (`mutation_confirm_gate`, target `publish:{id}`). Full suite 245 green.
+    Spec: docs/superpowers/specs/2026-07-14-confirmation-token-design.md.
     Security-audit finding #2 (medium): the two-step preview→apply / order-confirm
     gate currently trusts the model to (a) actually run a `preview_*` before
     `apply_*` and (b) supply a genuine `confirmation` phrase — both are only
