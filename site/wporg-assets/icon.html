@@ -3,28 +3,43 @@
 <head>
 <meta charset="utf-8" />
 <style>
+  /* Matches the landing site: near-black + technical grid + one orange tick, ❡ mark. */
+  :root {
+    --ink: #08090a; --fg: #f6f6f4; --accent: #e88a3e; --line: rgba(255,255,255,0.09);
+    --stroke: rgba(255,255,255,0.20);
+  }
+  * { box-sizing: border-box; }
   html, body { margin: 0; padding: 0; width: 256px; height: 256px; }
-  .tile {
-    width: 256px; height: 256px; display: grid; place-items: center; position: relative; overflow: hidden;
-    background: radial-gradient(125% 125% at 28% 18%, #191a2e 0%, #0a0a0b 68%);
-  }
-  .tile::before {
-    content: ""; position: absolute; inset: 0;
-    background: radial-gradient(58% 52% at 74% 10%, rgba(139,147,255,0.55), transparent 70%);
-  }
-  .circle {
-    position: relative; width: 190px; height: 190px; border-radius: 50%;
-    background: linear-gradient(150deg, #edeef4, #c5c5cf);
+  .tile { width: 256px; height: 256px; position: relative; overflow: hidden; background: var(--ink);
+    display: grid; place-items: center; }
+  /* signature grid, glowing at center, fading to edges */
+  .tile::before { content: ""; position: absolute; inset: 0;
+    background-image:
+      linear-gradient(to right, var(--line) 1px, transparent 1px),
+      linear-gradient(to bottom, var(--line) 1px, transparent 1px);
+    background-size: 32px 32px;
+    -webkit-mask-image: radial-gradient(115% 90% at 50% 34%, #000 0%, rgba(0,0,0,0.5) 46%, transparent 82%);
+    mask-image: radial-gradient(115% 90% at 50% 34%, #000 0%, rgba(0,0,0,0.5) 46%, transparent 82%); }
+  /* warm orange glow, top-center */
+  .tile::after { content: ""; position: absolute; inset: 0;
+    background: radial-gradient(58% 46% at 50% 30%, rgba(232,138,62,0.20), transparent 72%); }
+  .mark { position: relative; z-index: 2; display: flex; flex-direction: column; align-items: center; gap: 18px; }
+  .frame { width: 168px; height: 168px; border-radius: 40px; border: 1px solid var(--stroke);
+    background: linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0.012));
     display: grid; place-items: center;
-    box-shadow: 0 22px 55px -14px rgba(0,0,0,0.75), 0 0 0 1px rgba(255,255,255,0.14);
-  }
-  .glyph {
-    font-family: system-ui, "Segoe UI Symbol", "Apple Symbols", sans-serif;
-    font-size: 150px; line-height: 1; color: #0a0a0b; margin-top: -4px;
-  }
+    box-shadow: 0 26px 60px -18px rgba(0,0,0,0.8), inset 0 1px 0 rgba(255,255,255,0.06); }
+  .glyph { font-family: system-ui, "Segoe UI Symbol", "Apple Symbols", sans-serif;
+    font-size: 118px; line-height: 1; color: var(--fg); margin-top: -6px; }
+  .tick { width: 62px; height: 6px; border-radius: 4px; background: var(--accent);
+    box-shadow: 0 0 22px -1px rgba(232,138,62,0.85); }
 </style>
 </head>
 <body>
-  <div class="tile"><div class="circle"><span class="glyph">❡</span></div></div>
+  <div class="tile">
+    <div class="mark">
+      <div class="frame"><span class="glyph">&#10081;</span></div>
+      <div class="tick"></div>
+    </div>
+  </div>
 </body>
 </html>

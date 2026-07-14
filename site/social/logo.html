@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<style>
+  /* Social avatar (LinkedIn / YouTube): full dark field, just the ❡ mark. No circle, no frame. */
+  :root { --ink: #08090a; --fg: #f6f6f4; --line: rgba(255,255,255,0.09); }
+  html, body { margin: 0; padding: 0; width: 400px; height: 400px; }
+  .tile { width: 400px; height: 400px; position: relative; overflow: hidden; background: var(--ink);
+    display: grid; place-items: center; }
+  .tile::before { content: ""; position: absolute; inset: 0;
+    background-image:
+      linear-gradient(to right, var(--line) 1px, transparent 1px),
+      linear-gradient(to bottom, var(--line) 1px, transparent 1px);
+    background-size: 50px 50px;
+    -webkit-mask-image: radial-gradient(110% 90% at 50% 40%, #000 0%, rgba(0,0,0,0.45) 48%, transparent 82%);
+    mask-image: radial-gradient(110% 90% at 50% 40%, #000 0%, rgba(0,0,0,0.45) 48%, transparent 82%); }
+  .tile::after { content: ""; position: absolute; inset: 0;
+    background: radial-gradient(56% 46% at 50% 34%, rgba(232,138,62,0.16), transparent 72%); }
+  .glyph { position: relative; z-index: 2; font-family: system-ui, "Segoe UI Symbol", "Apple Symbols", sans-serif;
+    font-size: 250px; line-height: 1; color: var(--fg); margin-top: -10px;
+    text-shadow: 0 20px 55px rgba(0,0,0,0.6); }
+</style>
+</head>
+<body>
+  <div class="tile"><span class="glyph">&#10081;</span></div>
+</body>
+</html>

@@ -4,57 +4,98 @@
 <meta charset="utf-8" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&family=Nunito:wght@500;600&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800&family=Figtree:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
 <style>
-  :root { --ink:#0a0a0b; --fg:#f4f4f5; --muted:#a1a1aa; --accent:#8b93ff; --ok:#34d399; --warn:#f0a35e; }
+  /* Matches the landing site identity: #08090a + technical grid + orange tick, Poppins/Figtree/JetBrains Mono. */
+  :root {
+    --ink:#08090a; --fg:#f6f6f4; --muted:#9a9a95; --dim:#66665f;
+    --line:rgba(255,255,255,0.09); --stroke:rgba(255,255,255,0.20); --stroke-dim:rgba(255,255,255,0.10);
+    --accent:#e88a3e; --accent-bright:#ff9d52;
+    --display:"Poppins",ui-sans-serif,system-ui,sans-serif;
+    --body:"Figtree",ui-sans-serif,system-ui,sans-serif;
+    --mono:"JetBrains Mono",ui-monospace,monospace;
+  }
   * { box-sizing: border-box; }
   html, body { margin: 0; padding: 0; width: 1544px; height: 500px; }
-  .banner {
-    width: 1544px; height: 500px; position: relative; overflow: hidden; background: var(--ink);
-    font-family: "Nunito", system-ui, sans-serif; color: var(--fg);
-  }
-  .banner::before {
-    content: ""; position: absolute; inset: 0;
-    background:
-      radial-gradient(48% 90% at 88% 12%, rgba(139,147,255,0.34), transparent 70%),
-      radial-gradient(40% 70% at 4% 96%, rgba(52,211,153,0.08), transparent 70%);
-  }
-  .left { position: absolute; left: 96px; top: 92px; width: 900px; z-index: 2; }
-  .logo { display: flex; align-items: center; gap: 14px; margin-bottom: 30px; }
-  .circle { width: 46px; height: 46px; border-radius: 50%; background: linear-gradient(150deg,#edeef4,#c5c5cf);
-    display: grid; place-items: center; box-shadow: 0 8px 22px -8px rgba(0,0,0,0.7); }
-  .circle span { font-family: system-ui, "Segoe UI Symbol", sans-serif; font-size: 30px; color: #0a0a0b; }
-  .wordmark { font-family: "Bricolage Grotesque", sans-serif; font-weight: 700; font-size: 30px; letter-spacing: -0.02em; }
-  h1 { font-family: "Bricolage Grotesque", sans-serif; font-weight: 800; font-size: 62px; line-height: 1.04;
-    letter-spacing: -0.035em; margin: 0 0 22px; }
+  .banner { width: 1544px; height: 500px; position: relative; overflow: hidden; background: var(--ink);
+    font-family: var(--body); color: var(--fg); -webkit-font-smoothing: antialiased; }
+  /* grid signature, glowing centre-left, fading out */
+  .banner::before { content:""; position:absolute; inset:0;
+    background-image:
+      linear-gradient(to right, var(--line) 1px, transparent 1px),
+      linear-gradient(to bottom, var(--line) 1px, transparent 1px);
+    background-size: 62px 62px;
+    -webkit-mask-image: radial-gradient(90% 130% at 30% 40%, #000 0%, rgba(0,0,0,0.5) 46%, transparent 80%);
+    mask-image: radial-gradient(90% 130% at 30% 40%, #000 0%, rgba(0,0,0,0.5) 46%, transparent 80%); }
+  .banner::after { content:""; position:absolute; inset:0;
+    background: radial-gradient(42% 80% at 78% 20%, rgba(232,138,62,0.14), transparent 70%); }
+
+  .left { position: absolute; left: 100px; top: 96px; width: 820px; z-index: 2; }
+  .logo { display: flex; align-items: center; gap: 13px; margin-bottom: 30px; }
+  .glyphbox { width: 42px; height: 42px; border-radius: 12px; border: 1px solid var(--stroke);
+    background: linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0.012));
+    display: grid; place-items: center; }
+  .glyphbox span { font-family: system-ui,"Segoe UI Symbol",sans-serif; font-size: 24px; color: var(--fg); margin-top:-2px; }
+  .wordmark { font-family: var(--display); font-weight: 700; font-size: 29px; letter-spacing: -0.02em; }
+
+  h1 { font-family: var(--display); font-weight: 800; font-size: 66px; line-height: 1.0;
+    letter-spacing: -0.04em; margin: 0 0 26px; }
   h1 .strike { position: relative; white-space: nowrap; color: var(--muted); }
-  h1 .strike::after { content: ""; position: absolute; left: -1%; right: -1%; top: 55%; height: 5px; border-radius: 3px;
-    background: var(--warn); transform: rotate(-2deg); box-shadow: 0 0 16px -2px var(--warn); }
-  .sub { font-size: 23px; line-height: 1.5; color: var(--muted); max-width: 660px; }
+  h1 .strike::after { content:""; position:absolute; left:-2%; right:-2%; top:56%; height:5px; border-radius:3px;
+    background: var(--accent); transform: rotate(-2deg); box-shadow: 0 0 14px -1px var(--accent); }
+  .tick { width: 62px; height: 6px; border-radius: 4px; background: var(--accent);
+    box-shadow: 0 0 22px -1px rgba(232,138,62,0.85); margin: 0 0 26px; }
+  .sub { font-size: 23px; line-height: 1.5; color: var(--muted); max-width: 640px; }
   .sub b { color: var(--fg); font-weight: 600; }
 
-  /* faded chat motif, right */
-  .motif { position: absolute; right: 70px; top: 96px; width: 470px; z-index: 1; opacity: 0.9;
-    transform: rotate(2.5deg); }
-  .bubble { margin-left: auto; width: fit-content; max-width: 100%; background: var(--accent); color: #0a0a0b;
-    font-family: "JetBrains Mono", ui-monospace, monospace; font-size: 19px; padding: 15px 19px;
-    border-radius: 18px 18px 5px 18px; box-shadow: 0 30px 60px -24px rgba(0,0,0,0.8); }
-  .chip-row { display: flex; gap: 12px; margin-top: 22px; }
-  .chip { flex: 1; text-align: center; padding: 14px; border-radius: 12px; font-weight: 700; font-size: 18px; font-family: "Nunito",sans-serif; }
-  .chip.yes { background: var(--ok); color: #06231a; }
-  .chip.no { background: rgba(244,244,245,0.08); color: var(--muted); }
+  /* right: a live-feeling ChatAdmin preview card, matching the site's phone */
+  .card { position: absolute; right: 96px; top: 104px; width: 452px; z-index: 2;
+    border: 1px solid var(--stroke); border-radius: 26px; padding: 24px 22px 22px;
+    background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.006));
+    box-shadow: 0 50px 110px -50px rgba(0,0,0,0.95); }
+  .chead { display:flex; align-items:center; gap:9px; font-family: var(--mono); font-size: 13px; color: var(--dim);
+    padding-bottom: 14px; border-bottom: 1px solid var(--line); margin-bottom: 18px; }
+  .chead .g { width: 22px; height: 22px; border:1px solid var(--stroke); border-radius: 7px; display:grid; place-items:center; font-size:12px; color:var(--fg); font-family: system-ui,"Segoe UI Symbol",sans-serif; }
+  .chead .site { margin-left:auto; }
+  .user { width: fit-content; max-width: 92%; margin-left: auto; margin-bottom: 16px;
+    border: 1px solid var(--accent); background: rgba(232,138,62,0.12); color: var(--fg);
+    font-family: var(--mono); font-size: 15px; line-height: 1.5; padding: 10px 13px; border-radius: 14px 14px 5px 14px; }
+  .role { font-family: var(--mono); font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--dim); margin: 0 2px 9px; }
+  .pcard { border: 1px solid var(--line); border-radius: 13px; padding: 13px 14px; margin-bottom: 14px; }
+  .prow { display:flex; justify-content:space-between; align-items:center; }
+  .oid { font-family: var(--mono); font-size: 15px; color: var(--fg); }
+  .pills { display:inline-flex; align-items:center; gap:7px; font-family: var(--mono); font-size:13px; color:var(--dim); }
+  .pill { font-family: var(--mono); font-size: 12.5px; padding: 3px 9px; border-radius: 999px; border:1px solid var(--line); color: var(--muted); }
+  .pill.to { color: var(--accent); border-color: rgba(232,138,62,0.5); background: rgba(232,138,62,0.12); }
+  .confirm { display:flex; gap:9px; }
+  .btn { flex:1; text-align:center; padding: 11px; border-radius: 10px; font-family: var(--body); font-weight: 600; font-size: 15px; }
+  .btn.yes { background: var(--accent); color: #1a0f04; box-shadow: 0 12px 30px -12px rgba(232,138,62,0.8); }
+  .btn.no { border: 1px solid var(--line); color: var(--muted); }
 </style>
 </head>
 <body>
   <div class="banner">
-    <div class="motif">
-      <div class="bubble">mark order 2833 as used</div>
-      <div class="chip-row"><div class="chip yes">Confirm</div><div class="chip no">Cancel</div></div>
-    </div>
     <div class="left">
-      <div class="logo"><span class="circle"><span>❡</span></span><span class="wordmark">ChatAdmin</span></div>
+      <div class="logo"><span class="glyphbox"><span>&#10081;</span></span><span class="wordmark">ChatAdmin</span></div>
       <h1>Stop being your clients'<br />WordPress <span class="strike">helpdesk</span>.</h1>
-      <p class="sub">Your clients manage their own WooCommerce store &amp; content <b>by chat</b> — in any language, with a confirm step so nothing breaks. <b>Free &amp; open source.</b></p>
+      <div class="tick"></div>
+      <p class="sub">Your clients run their own WooCommerce store &amp; content <b>by chat</b> — in any language, with a confirm step so nothing breaks. <b>Free &amp; open source.</b></p>
+    </div>
+
+    <div class="card">
+      <div class="chead"><span class="g">&#10081;</span><span>ChatAdmin</span><span class="site">shop.example.com</span></div>
+      <div class="user">mark order 2833 used — spent &euro;30 of &euro;100</div>
+      <div class="role">Preview</div>
+      <div class="pcard">
+        <div class="prow" style="margin-bottom:9px;">
+          <span class="oid">Order #2833</span>
+          <span class="pills"><span class="pill">Processing</span>&rarr;<span class="pill to">Used</span></span>
+        </div>
+        <div class="prow" style="font-size:14px;color:var(--muted);">
+          <span>Note added</span><span style="font-family:var(--mono);font-size:13px;color:var(--fg);">spent 30&euro; / 100&euro;</span>
+        </div>
+      </div>
+      <div class="confirm"><span class="btn yes">Confirm</span><span class="btn no">Cancel</span></div>
     </div>
   </div>
 </body>
