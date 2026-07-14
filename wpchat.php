@@ -32,7 +32,11 @@ require_once WPCHAT_DIR . 'includes/class-anthropic.php';
 require_once WPCHAT_DIR . 'includes/class-content-backends.php';
 require_once WPCHAT_DIR . 'includes/class-seo.php';
 require_once WPCHAT_DIR . 'includes/class-analytics-providers.php';
-require_once WPCHAT_DIR . 'includes/class-git-sync.php';
+// GitSync (optional git-commit-on-write API for file-writing backends) is
+// omitted from the WordPress.org build — load it only when the file is present.
+if (file_exists(WPCHAT_DIR . 'includes/class-git-sync.php')) {
+    require_once WPCHAT_DIR . 'includes/class-git-sync.php';
+}
 require_once WPCHAT_DIR . 'includes/class-history.php';
 require_once WPCHAT_DIR . 'includes/class-telemetry.php';
 require_once WPCHAT_DIR . 'includes/class-tools.php';
@@ -57,10 +61,14 @@ register_deactivation_hook(__FILE__, ['\WPChat\Plugin', 'deactivate']);
  * pins WordPress's update lookups to this repository so a future WP.org
  * plugin with the same slug can't silently hijack our update channel.
  */
-require_once WPCHAT_DIR . 'vendor-puc/plugin-update-checker/plugin-update-checker.php';
-$wpchat_update_checker = YahnisElsts\PluginUpdateChecker\v5\PucFactory::buildUpdateChecker(
-    'https://github.com/gynciuz/wpchat',
-    __FILE__,
-    'wpchat'
-);
-$wpchat_update_checker->getVcsApi()->enableReleaseAssets();
+// Omitted from the WordPress.org build (wp.org serves updates and bans bundled
+// updaters + the Update URI header). Present only in the GitHub-Releases build.
+if (file_exists(WPCHAT_DIR . 'vendor-puc/plugin-update-checker/plugin-update-checker.php')) {
+    require_once WPCHAT_DIR . 'vendor-puc/plugin-update-checker/plugin-update-checker.php';
+    $wpchat_update_checker = YahnisElsts\PluginUpdateChecker\v5\PucFactory::buildUpdateChecker(
+        'https://github.com/gynciuz/wpchat',
+        __FILE__,
+        'wpchat'
+    );
+    $wpchat_update_checker->getVcsApi()->enableReleaseAssets();
+}
