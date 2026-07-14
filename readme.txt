@@ -1,4 +1,4 @@
-=== WPChat ===
+=== ChatAdmin ===
 Contributors: gynciuz
 Tags: woocommerce, chat, ai, claude, orders
 Requires at least: 6.5
@@ -13,7 +13,7 @@ Chat-based admin for WooCommerce orders, powered by Anthropic Claude.
 == Description ==
 
 Type "mark order 2833 used, customer spent 30€ of 100€" in the WP admin
-sidebar — the WPChat assistant calls the right WC functions and renders
+sidebar — the ChatAdmin assistant calls the right WC functions and renders
 rich UI inline.
 
 Phase 1 (MVP):
@@ -28,7 +28,7 @@ Bring your own Anthropic API key.
 
 == Privacy ==
 
-WPChat sends the content of your chat requests to Anthropic
+ChatAdmin sends the content of your chat requests to Anthropic
 (api.anthropic.com) to generate replies. This can include order and
 customer data (names, emails) when you ask about orders. Your
 conversation history is stored only in your own site's database, and your
@@ -43,20 +43,20 @@ details.
 
 1. Upload the plugin ZIP via Plugins → Add New → Upload.
 2. Activate.
-3. WPChat → Settings → paste your Anthropic API key.
-4. WPChat → Chat → type.
+3. ChatAdmin → Settings → paste your Anthropic API key.
+4. ChatAdmin → Chat → type.
 
 == Frequently Asked Questions ==
 
 = Do I need an account or subscription? =
-No. WPChat is free and open-source. You bring your own Anthropic API key
-and pay Anthropic directly for usage. There is no WPChat subscription
-today (a hosted "WPChat Cloud" tier is on a waitlist).
+No. ChatAdmin is free and open-source. You bring your own Anthropic API key
+and pay Anthropic directly for usage. There is no ChatAdmin subscription
+today (a hosted "ChatAdmin Cloud" tier is on a waitlist).
 
 = How do I get an Anthropic API key? =
 Go to console.anthropic.com → sign in → Settings → API Keys → Create Key,
-then paste it into WPChat's first-run setup or WPChat → Settings. Keys
-start with "sk-ant-". WPChat validates the key when you save it.
+then paste it into ChatAdmin's first-run setup or ChatAdmin → Settings. Keys
+start with "sk-ant-". ChatAdmin validates the key when you save it.
 
 = How much does it cost to run? =
 You pay Anthropic for the tokens each chat uses — typically a few cents
@@ -78,7 +78,7 @@ and "Report a problem" sends the details to the developer.
 
 == Screenshots ==
 
-1. Ask in plain language — WPChat runs the real WooCommerce/WordPress action and shows the result inline.
+1. Ask in plain language — ChatAdmin runs the real WooCommerce/WordPress action and shows the result inline.
 2. Rich order cards: list, filter, change status, add notes — with a confirmation step before anything reaches a customer.
 3. A two-minute first-run wizard gets the plugin ready for your site.
 
@@ -86,49 +86,49 @@ and "Report a problem" sends the details to the developer.
 
 = 0.7.2 =
 Simpler provider setup + wp-admin chat fixes.
-* **One API key field — no provider picker.** Onboarding and Settings now have a single key input; WPChat detects the provider from the key prefix (`sk-ant-…` → Anthropic, `sk-…` → OpenAI, `AIza…` → Google Gemini), validates it, and sets it active. Saving a key resets the model to that provider's default. (`LLM::detect()` + per-provider `matches_key()`.)
+* **One API key field — no provider picker.** Onboarding and Settings now have a single key input; ChatAdmin detects the provider from the key prefix (`sk-ant-…` → Anthropic, `sk-…` → OpenAI, `AIza…` → Google Gemini), validates it, and sets it active. Saving a key resets the model to that provider's default. (`LLM::detect()` + per-provider `matches_key()`.)
 * **wp-admin Chat tab fixed.** The embedded chat rendered inside wp-admin's light `.wrap`, so wp-admin's `input[type=text]` / heading styles overrode the dark theme (white-bordered input, low-contrast quick-links). It now renders on its own dark panel with wp-admin's form-control bleed neutralized.
-* **First-run onboarding in the admin tab** (was hardcoded to chat), and a new **"Open full screen ↗"** menu link to the dedicated /wpchat page.
+* **First-run onboarding in the admin tab** (was hardcoded to chat), and a new **"Open full screen ↗"** menu link to the dedicated /chat-admin page.
 
 = 0.7.1 =
 Support-endpoint hardening + diagnostics.
-* **Reliable support delivery.** Error reports / telemetry can now be signed (HMAC `X-WPChat-Signature`) and POSTed to a collector you control (`WPCHAT_SUPPORT_ENDPOINT` + `WPCHAT_SUPPORT_SECRET`, or the `wpchat_support_endpoint` / `wpchat_support_email` / `wpchat_support_secret` filters). "Report a problem" retries the collector before falling back to `wp_mail`. A ready-to-deploy Cloudflare Worker collector ships in `cloud/`.
-* **WPChat → Diagnostics admin page.** Shows the recent error log, a "Copy diagnostics" button, and a "Send to developer" button — so help works even when no collector is configured. Support reports now include the recent error log + active provider.
+* **Reliable support delivery.** Error reports / telemetry can now be signed (HMAC `X-ChatAdmin-Signature`) and POSTed to a collector you control (`WPCHAT_SUPPORT_ENDPOINT` + `WPCHAT_SUPPORT_SECRET`, or the `wpchat_support_endpoint` / `wpchat_support_email` / `wpchat_support_secret` filters). "Report a problem" retries the collector before falling back to `wp_mail`. A ready-to-deploy Cloudflare Worker collector ships in `cloud/`.
+* **ChatAdmin → Diagnostics admin page.** Shows the recent error log, a "Copy diagnostics" button, and a "Send to developer" button — so help works even when no collector is configured. Support reports now include the recent error log + active provider.
 
 = 0.7.0 =
 Multiple AI providers — bring your own OpenAI or Google Gemini key, not just Anthropic.
 * **Provider abstraction.** The chat engine now runs on **Anthropic, OpenAI, or Google Gemini**. Internally everything still speaks one canonical (Anthropic content-block) format; each provider adapter translates only at the HTTP boundary, so tools, the system prompt, and the React UI are unchanged. New `wpchat_llm_providers` filter to register custom providers.
-* **Onboarding gains a provider step.** Pick Anthropic / OpenAI / Gemini, then paste that provider's key — the key card's link, placeholder, and validation adapt to the choice; the model list shows that provider's models. New `POST /wpchat/v1/onboarding/llm-provider` route; status payload gains `llmProvider`.
-* **Provider-aware settings.** `WPCHAT_LLM_PROVIDER` + per-provider `WPCHAT_{PROVIDER}_API_KEY` constants; per-provider write-only key fields and a provider/model selector in WPChat → Settings. You are billed by your chosen provider directly.
+* **Onboarding gains a provider step.** Pick Anthropic / OpenAI / Gemini, then paste that provider's key — the key card's link, placeholder, and validation adapt to the choice; the model list shows that provider's models. New `POST /chat-admin/v1/onboarding/llm-provider` route; status payload gains `llmProvider`.
+* **Provider-aware settings.** `WPCHAT_LLM_PROVIDER` + per-provider `WPCHAT_{PROVIDER}_API_KEY` constants; per-provider write-only key fields and a provider/model selector in ChatAdmin → Settings. You are billed by your chosen provider directly.
 * New tests: MultiProviderTest (OpenAI + Gemini chat runs yield identical {name,input,output} captures; Gemini schema sanitize) + ProviderConfigTest (provider/key resolution, provider switch, per-provider key validation). 204 PHP + 5 E2E green.
 
 = 0.6.0 =
 Public-launch readiness release.
 * **Order mutations now confirm before acting.** Changing an order's status, running an order action (resend email), or adding a customer-visible note asks you to confirm first — same Confirm/Cancel flow as content edits. The order-table 3-dot menus stay one-click (the click is the confirmation). Private notes are unchanged.
-* **In-product Help + "Report a problem".** A new Help panel answers "how do I…/why isn't X working" from a built-in FAQ (free, no tools), and a Report-a-problem button sends your recent chat + the error straight to the developer. New `POST /wpchat/v1/support` route; `/chat` gains an ephemeral `mode: 'support'`.
-* **Error telemetry so failures aren't invisible.** Production errors are logged to a capped local buffer and, if you leave the default-on toggle enabled (WPChat → Settings → Privacy & diagnostics), a PII-free report is sent to the developer. No order or customer data.
+* **In-product Help + "Report a problem".** A new Help panel answers "how do I…/why isn't X working" from a built-in FAQ (free, no tools), and a Report-a-problem button sends your recent chat + the error straight to the developer. New `POST /chat-admin/v1/support` route; `/chat` gains an ephemeral `mode: 'support'`.
+* **Error telemetry so failures aren't invisible.** Production errors are logged to a capped local buffer and, if you leave the default-on toggle enabled (ChatAdmin → Settings → Privacy & diagnostics), a PII-free report is sent to the developer. No order or customer data.
 * **API key is validated at setup.** Onboarding now does a live auth check, so a typo'd or revoked key is caught immediately instead of failing at first chat. Fails open on transient network errors.
-* **Honest billing copy.** Removed the unverified "€10/mo" claim from the WPChat Cloud tile; it's framed as a Stripe subscription coming later with a waitlist. Cloud-waitlist no longer skips key setup (you still need a key today). Waitlist signups now reach the developer.
-* **Privacy disclosure.** New PRIVACY.md + an onboarding data-handling note: WPChat sends request content (which can include order/customer data) to Anthropic. README/readme.txt updated.
+* **Honest billing copy.** Removed the unverified "€10/mo" claim from the ChatAdmin Cloud tile; it's framed as a Stripe subscription coming later with a waitlist. Cloud-waitlist no longer skips key setup (you still need a key today). Waitlist signups now reach the developer.
+* **Privacy disclosure.** New PRIVACY.md + an onboarding data-handling note: ChatAdmin sends request content (which can include order/customer data) to Anthropic. README/readme.txt updated.
 * **Packaging + CI guards.** New `bin/release.sh` builds a clean ZIP and asserts the version matches across files; CI verifies the committed `build/` is current and versions agree.
-* New components: Support panel (help chat + report). New class: `WPChat\Telemetry`. New tests: Telemetry, Support, order-confirmation, key-rejection.
+* New components: Support panel (help chat + report). New class: `ChatAdmin\Telemetry`. New tests: Telemetry, Support, order-confirmation, key-rejection.
 
 = 0.5.13 =
-* **Provider step in onboarding.** A new card right after Welcome lets you choose how WPChat reaches the AI: **Bring your own Anthropic API key** (free; you're billed by Anthropic) or **WPChat Cloud — Coming later** (a hosted tier, currently a waitlist; pricing announced at launch). Picking BYO continues to the existing API-key + Model picker steps. Joining the Cloud waitlist captures an optional email so we can ping you when the tier opens — you still set up a key to use WPChat today.
-* New REST routes: `POST /wpchat/v1/onboarding/provider` (body `{provider: 'byo'|'cloud-waitlist', email?: string}`); status payload gains a `provider` block with `current`, `cloudAvailable`, `cloudWaitlistOpen` flags.
-* Summary card adapts to the choice — BYO sees "Provider: Anthropic (your key)"; Cloud-waitlist sees "Provider: WPChat Cloud (waitlisted)" and the API-key row is omitted from the matrix.
+* **Provider step in onboarding.** A new card right after Welcome lets you choose how ChatAdmin reaches the AI: **Bring your own Anthropic API key** (free; you're billed by Anthropic) or **ChatAdmin Cloud — Coming later** (a hosted tier, currently a waitlist; pricing announced at launch). Picking BYO continues to the existing API-key + Model picker steps. Joining the Cloud waitlist captures an optional email so we can ping you when the tier opens — you still set up a key to use ChatAdmin today.
+* New REST routes: `POST /chat-admin/v1/onboarding/provider` (body `{provider: 'byo'|'cloud-waitlist', email?: string}`); status payload gains a `provider` block with `current`, `cloudAvailable`, `cloudWaitlistOpen` flags.
+* Summary card adapts to the choice — BYO sees "Provider: Anthropic (your key)"; Cloud-waitlist sees "Provider: ChatAdmin Cloud (waitlisted)" and the API-key row is omitted from the matrix.
 * New site options: `wpchat_provider_choice` + `wpchat_cloud_waitlist`.
 * Locale-aware for LT / RU / PL / EN.
 * New tests: OnboardingProviderTest covering default, persistence, validation, waitlist email capture, and confirmation that BYO doesn't touch the waitlist.
 
-This ships the choice UI now. The actual Cloud service (hosted proxy + billing + account mgmt) is a separate project still ahead; the cloud-waitlist path is forward-compatible with the eventual live service. No payment is collected today — WPChat is free and you bring your own Anthropic key.
+This ships the choice UI now. The actual Cloud service (hosted proxy + billing + account mgmt) is a separate project still ahead; the cloud-waitlist path is forward-compatible with the eventual live service. No payment is collected today — ChatAdmin is free and you bring your own Anthropic key.
 
 = 0.5.12 =
-* **Onboarding's "What chat can edit" card now shows every kind.** Previously only custom site-specific kinds appeared (the four core wp_* types were summarised by count only). Now the full list renders, so admins see exactly what scope WPChat will touch on this site.
+* **Onboarding's "What chat can edit" card now shows every kind.** Previously only custom site-specific kinds appeared (the four core wp_* types were summarised by count only). Now the full list renders, so admins see exactly what scope ChatAdmin will touch on this site.
 * **Site admins can disable individual kinds.** Each kind row in the BackendsCard has a checkbox when viewed by an admin (`manage_options`). Unticking a kind adds it to a new site-level `wpchat_disabled_kinds` option that gates every preview / apply dispatch — the LLM is also blocked at the prompt layer so it never sees disabled kinds as options. Optimistic UI with rollback on failure.
 * **WordPress role enforcement.** Even for kinds NOT disabled at the site level, individual editors can only act on content their WP role permits. Editors lacking `manage_categories` no longer see `wp_term` in the chat's capability list (or in the system prompt). The dispatch returns distinct errors for site-disabled vs role-restricted so the LLM can explain which gate blocked the request.
 * **Non-admins see a read-only view.** No checkboxes; each kind row shows one of three status badges: Available, Disabled (admin), or Role restricted. Clear about which lever to pull (ask admin to re-enable / ask admin for role upgrade).
-* New REST: `POST /wpchat/v1/onboarding/disabled-kinds` (`manage_options` gated, returns 401/403 for editors).
+* New REST: `POST /chat-admin/v1/onboarding/disabled-kinds` (`manage_options` gated, returns 401/403 for editors).
 * New tests: OnboardingDisabledKindsTest (option persistence, admin gate, status surfacing) + ToolsRoleGateTest (cap mapping, dispatch refusals, system-prompt filter).
 
 = 0.5.11 =
@@ -137,11 +137,11 @@ This ships the choice UI now. The actual Cloud service (hosted proxy + billing +
 * **Removed Cloudflare auto-purge + Git auto-commit cards from the public onboarding.** Both are site-specific (CachePurge lives in the GE child theme, GitSync needs a writable git repo at ABSPATH) and don't apply to a fresh WordPress install. They stay documented in the plugin README + remain available via wp-config constants for power users — they just don't clutter the first-run wizard anymore. Per design principles #2 (one sharp thing) + #5 (state of mind, not state of app).
 
 = 0.5.10 =
-* **First-run onboarding wizard.** On first /wpchat visit (or via `?onboarding=1`), the chat is replaced by a guided stepper that reflects the user back at themselves (their name, their site), then walks through the capabilities WPChat needs: Anthropic API key (interactive paste-and-save), model picker (interactive), required WP capabilities (diagnostic + deep link), WooCommerce active status, detected analytics provider (Site Kit / Jetpack / WP Statistics / MonsterInsights), content backends available on this site, and optional CF / Git integrations. Ends with a capability matrix summary and one tap to enter the chat.
+* **First-run onboarding wizard.** On first /chat-admin visit (or via `?onboarding=1`), the chat is replaced by a guided stepper that reflects the user back at themselves (their name, their site), then walks through the capabilities ChatAdmin needs: Anthropic API key (interactive paste-and-save), model picker (interactive), required WP capabilities (diagnostic + deep link), WooCommerce active status, detected analytics provider (Site Kit / Jetpack / WP Statistics / MonsterInsights), content backends available on this site, and optional CF / Git integrations. Ends with a capability matrix summary and one tap to enter the chat.
 * Dynamic step composition — sites already fully configured see a short happy-path (Welcome → Model → Backends → Summary); first-runners see the full sequence. Designed to follow "one sharp thing at a time" (no dense screens) and "reflect the user, not the product" (no feature tour).
-* New REST routes: `GET /wpchat/v1/onboarding/status` (capability matrix), `POST /onboarding/api-key`, `POST /onboarding/model`, `POST /onboarding/complete`, `POST /onboarding/reset`. Same permission gate as `/chat`.
+* New REST routes: `GET /chat-admin/v1/onboarding/status` (capability matrix), `POST /onboarding/api-key`, `POST /onboarding/model`, `POST /onboarding/complete`, `POST /onboarding/reset`. Same permission gate as `/chat`.
 * New plugin metadata field: `mode` injected into `WPCHAT_BOOT` so the React entry chooses Wizard or Chat. Tracked per-user via `wpchat_onboarding_done` user meta.
-* WPChat → Settings now has a "Re-run onboarding wizard" link.
+* ChatAdmin → Settings now has a "Re-run onboarding wizard" link.
 * Tests: `OnboardingStatusTest` (matrix shape, API-key reporting, user first-name in payload, subscriber 403), `OnboardingPersistTest` (api-key + model persist, constant-locked 409, completion flips user meta, `should_show_for_user` logic).
 
 = 0.5.9 =
@@ -180,7 +180,7 @@ This ships the choice UI now. The actual Cloud service (hosted proxy + billing +
 
 = 0.5.0 =
 * **First slice of v0.5-media — image upload + team_member photo replacement.** Tap the 📎 button in the chat input → native picker → pick a JPG / PNG / WebP. The file uploads to the WP media library before the message is sent; a `[Uploaded foo.jpg → attachment 1234]` marker is silently prepended to the message text so the LLM knows the attachment id, while the user sees a thumbnail next to their bubble. Subsequent preview / apply uses the same confirmation buttons as text edits.
-* New `POST /wpchat/v1/upload` REST endpoint (same permission check as /chat). Uses WP core's `wp_handle_upload` + `wp_insert_attachment` + `wp_generate_attachment_metadata` — no custom file handling. Validates: JPG / PNG / WebP only (415 otherwise), max 10 MB (413 otherwise).
+* New `POST /chat-admin/v1/upload` REST endpoint (same permission check as /chat). Uses WP core's `wp_handle_upload` + `wp_insert_attachment` + `wp_generate_attachment_metadata` — no custom file handling. Validates: JPG / PNG / WebP only (415 otherwise), max 10 MB (413 otherwise).
 * GE-side team_member backend gains a `photo` field. Preview returns old + new image URLs; apply rewrites the `<img src>` attribute in both index.html and musu-meistrai.html. Inherits existing cache-purge + git auto-commit tail for free.
 * New components: `AttachButton.tsx`, plus pending-attachment chip + thumbnail rendering in `Chat.tsx`.
 * New tests: `UploadTest` (jpeg/png happy path, 415 pdf, 413 oversized, 401/403 subscriber, 400 missing) + `PhotoReplaceTest` (preview returns urls without writing, apply rewrites src, no-confirmation rejected).
@@ -190,22 +190,22 @@ This ships the choice UI now. The actual Cloud service (hosted proxy + billing +
 * Redundant order-table markdown removed from assistant replies. When `list_orders` or `find_customer_orders` runs, the chat UI already renders a structured React `<OrdersTable>` above the assistant's prose. System prompt now explicitly instructs the LLM to write a short prose summary only (not a markdown reproduction). Defensive: the frontend also strips any GFM markdown table the model still emits in that context, so the user never sees the same data twice.
 
 = 0.4.9 =
-* Fix double-HTML-encoding in the `/wpchat` page title and chat header. Sites where `blogname` is stored already entity-encoded (e.g. "Gentleman&#039;s Empire") were rendering "Gentleman&#039;s Empire" literally in the browser tab title and the chat header subtitle. Decode entities first, then escape once.
+* Fix double-HTML-encoding in the `/chat-admin` page title and chat header. Sites where `blogname` is stored already entity-encoded (e.g. "Gentleman&#039;s Empire") were rendering "Gentleman&#039;s Empire" literally in the browser tab title and the chat header subtitle. Decode entities first, then escape once.
 
 = 0.4.8 =
-* New `\WPChat\GitSync` helper. Site backends that mutate tracked files (e.g. the GE team_member backend writing to static HTML) can call `GitSync::commit_files($paths, $message, $author)` after a successful write to commit + push automatically. Without this, WPChat-originated edits would sit uncommitted on prod and silently disappear on the next disaster-recovery reset (which is what happened during the 2026-05-26 reconcile incident).
+* New `\ChatAdmin\GitSync` helper. Site backends that mutate tracked files (e.g. the GE team_member backend writing to static HTML) can call `GitSync::commit_files($paths, $message, $author)` after a successful write to commit + push automatically. Without this, ChatAdmin-originated edits would sit uncommitted on prod and silently disappear on the next disaster-recovery reset (which is what happened during the 2026-05-26 reconcile incident).
 * Opt-in by design — gracefully no-ops with a clear `skipped_reason` when `WPCHAT_GIT_SYNC_ENABLED` is not set to true in wp-config.php. Operator sees "(Git auto-sync skipped: …)" in the chat assistant's success message, never silent.
 * `proc_open` with argv arrays (no shell invocation, no escaping bugs). Concurrent writes serialise via `flock` against a lockfile so two rapid edits don't race. Push failure is surfaced as a distinct error from commit failure — the commit lands locally even if push can't reach origin, and the response reflects that.
 * GE backend wired in: a successful team_member apply now commits + pushes the changed HTML files with the WP user's display name + email as commit author. Defaults to bot identity if the WP user has no email.
 * GitSyncTest covers: opt-in default-off behaviour, commit + push happy path, idempotent no-op when file is unchanged, rejection of files outside repo root, and the commit-succeeded-push-failed split error.
 
 = 0.4.7 =
-* Microphone UX overhaul (B5). The persistent red "Microphone access denied" banner that used to eat ~25% of mobile screen real estate is gone. Replaced with a dismissible muted toast that auto-clears after 6 seconds. The toast has its own X button. When the browser reports microphone permission is permanently denied (or the browser doesn't support voice at all), the mic icon disappears entirely instead of taunting you on every send — a small "balsas išjungtas" hint surfaces in the footer instead. iOS Safari users get an iOS-specific message pointing at Settings → Safari → Microphone (or Settings → WPChat → Microphone if installed as PWA), not the generic browser-address-bar copy that doesn't apply on iOS.
+* Microphone UX overhaul (B5). The persistent red "Microphone access denied" banner that used to eat ~25% of mobile screen real estate is gone. Replaced with a dismissible muted toast that auto-clears after 6 seconds. The toast has its own X button. When the browser reports microphone permission is permanently denied (or the browser doesn't support voice at all), the mic icon disappears entirely instead of taunting you on every send — a small "balsas išjungtas" hint surfaces in the footer instead. iOS Safari users get an iOS-specific message pointing at Settings → Safari → Microphone (or Settings → ChatAdmin → Microphone if installed as PWA), not the generic browser-address-bar copy that doesn't apply on iOS.
 * Quick-action chips (B7). New tappable preset chips above the input bar: "Paskutiniai užsakymai", "Šios savaitės pardavimai", "Lankytojai", "Nepanaudoti kuponai", "Atviros klaidos". One tap pre-fills and auto-sends the matching query — no typing Lithuanian on iOS between clients. Always visible (not gated by empty state). Localized labels + queries for LT / RU / PL / EN. Future polish: swap statics for dev-telemetry-derived top-5 queries per user.
 
 = 0.4.6 =
 * Inline 3-dot actions on order tables (no AI involved). When the assistant lists orders (via `list_orders` or `find_customer_orders`), the chat now renders the orders as a structured React table ABOVE the LLM's text reply, with a 3-dot menu per row offering: (a) "Atidaryti WP admin" — deep link to the order in a new tab, (b) "Keisti statusą →" — submenu with every available WC status (including the custom `panaudotas`). One tap changes the status with zero Anthropic API spend and zero hallucination risk.
-* Status changes happen via new direct-action REST endpoints (`POST /wpchat/v1/actions/order/{id}/status`, `POST /wpchat/v1/actions/order/{id}/note`, `GET /wpchat/v1/actions/order-statuses`) that share the chat permission check (manage_woocommerce / edit_shop_orders) but bypass the LLM entirely. The row re-renders in place with the new status badge after a successful change.
+* Status changes happen via new direct-action REST endpoints (`POST /chat-admin/v1/actions/order/{id}/status`, `POST /chat-admin/v1/actions/order/{id}/note`, `GET /chat-admin/v1/actions/order-statuses`) that share the chat permission check (manage_woocommerce / edit_shop_orders) but bypass the LLM entirely. The row re-renders in place with the new status badge after a successful change.
 * New `boot.siteUrl` exposed in the frontend bootstrap payload so the table can construct correct HPOS-aware admin URLs without round-tripping through the LLM.
 * Scenario test DirectActionsTest locks the architecture: direct-action endpoints work even when no Anthropic key is configured, never invoke the LLM, and require the same caps as the chat route.
 
@@ -221,7 +221,7 @@ This ships the choice UI now. The actual Cloud service (hosted proxy + billing +
 * System prompt updated — assistant is told to describe the change in the user's language but NOT to demand a specific confirmation word; the buttons handle that.
 
 = 0.4.3 =
-* Bump base font on the `/wpchat` route from 16px → 18px (rem reference). Every Tailwind `text-*` utility scales proportionally, so message text, table cells, footers, and chips all become noticeably more readable on phones. wp-admin embed unchanged.
+* Bump base font on the `/chat-admin` route from 16px → 18px (rem reference). Every Tailwind `text-*` utility scales proportionally, so message text, table cells, footers, and chips all become noticeably more readable on phones. wp-admin embed unchanged.
 
 = 0.4.2 =
 * New tool `get_admin_url(resource, id)` — returns the WordPress admin deep link for an order (HPOS-aware via `WC_Order::get_edit_order_url`), post, user, or list view. Lets the assistant hand off via a clickable link instead of dead-ending on "I can't do that".
@@ -239,9 +239,9 @@ This ships the choice UI now. The actual Cloud service (hosted proxy + billing +
 
 = 0.4.0 =
 * Generic content-backend dispatch — `list_content_blocks`, `preview_content_change`, `apply_content_change` route to whichever backend claims a given `kind`. Replaces the previous Gentleman's Empire-specific `list_team_members` / `preview_team_member_role_change` / `apply_team_member_role_change` tools (those lived in the plugin and only worked on GE's static-HTML pages).
-* New `\WPChat\ContentBackend` interface + default `WPContentBackend` handling `wp_post`, `wp_page_slug`, `wp_post_meta`, `wp_term` via core WP functions (`wp_update_post`, `update_post_meta`, `wp_update_term`).
-* Site-specific backends register via the new `wpchat_content_backends` filter. Site code (theme / MU-plugin) implements `\WPChat\ContentBackend` and appends an instance to the filter; the plugin no longer carries any per-site paths or selectors.
-* System prompt enumerates available content kinds + editable fields at runtime by walking the registered backends. The two-step preview-then-apply pattern with confirmation-phrase whitelist (yes/taip/да/tak/patvirtinu/...) is centralised in `\WPChat\ContentConfirmation::is_confirmed()` so every backend gates writes identically.
+* New `\ChatAdmin\ContentBackend` interface + default `WPContentBackend` handling `wp_post`, `wp_page_slug`, `wp_post_meta`, `wp_term` via core WP functions (`wp_update_post`, `update_post_meta`, `wp_update_term`).
+* Site-specific backends register via the new `wpchat_content_backends` filter. Site code (theme / MU-plugin) implements `\ChatAdmin\ContentBackend` and appends an instance to the filter; the plugin no longer carries any per-site paths or selectors.
+* System prompt enumerates available content kinds + editable fields at runtime by walking the registered backends. The two-step preview-then-apply pattern with confirmation-phrase whitelist (yes/taip/да/tak/patvirtinu/...) is centralised in `\ChatAdmin\ContentConfirmation::is_confirmed()` so every backend gates writes identically.
 
 = 0.3.4 =
 * Transparent chat container — drop the surrounding card bg/border so the dark page background shows through; keep the structure and message bubbles.
@@ -253,14 +253,14 @@ This ships the choice UI now. The actual Cloud service (hosted proxy + billing +
 
 = 0.3.2 =
 * Fix Anthropic API error "tool_use.input: Input should be an object" when calling tools with no arguments (list_team_members). Empty PHP arrays now correctly re-serialize as JSON `{}` instead of `[]`.
-* Fix light-mode gutter around the /wpchat page — dark class now on `<html>` + `<body>`, dark background matches the chat card.
+* Fix light-mode gutter around the /chat-admin page — dark class now on `<html>` + `<body>`, dark background matches the chat card.
 
 = 0.3.1 =
 * Team-page edit tools live: list_team_members, preview_team_member_role_change, apply_team_member_role_change. Two-step pattern: preview returns diff for both homepage and team page; apply requires confirmation phrase (yes/taip/да/ok/patvirtinu/...).
 * Edits ALL occurrences across both pages in one apply call.
 
 = 0.3.0 =
-* Public /wpchat URL — full-screen chat for editors + admins (no wp-admin chrome).
+* Public /chat-admin URL — full-screen chat for editors + admins (no wp-admin chrome).
 * Dark theme by default (shadcn/ui radix-nova).
 * Browser voice input (Web Speech API) — Russian / Lithuanian / English picked from user locale.
 * Multilingual system prompt — Vlad can write in Russian; replies in Russian; stored content in Lithuanian.
@@ -268,7 +268,7 @@ This ships the choice UI now. The actual Cloud service (hosted proxy + billing +
 * Two-step team-page-edit tool definitions ready (preview + apply with confirmation gate). Tool implementations still pending — see plan.
 
 = 0.2.0 =
-* Live chat backend: /wp-json/wpchat/v1/chat wired to Claude with tool-use loop.
+* Live chat backend: /wp-json/chat-admin/v1/chat wired to Claude with tool-use loop.
 * 5 order tools: list_orders, get_order, update_order_status, add_order_note, find_customer_orders.
 * Tool results visible in collapsible detail under each assistant reply.
 * System prompt auto-discovers WC order statuses (custom statuses just work).
