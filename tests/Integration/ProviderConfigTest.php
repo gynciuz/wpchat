@@ -158,7 +158,13 @@ class ProviderConfigTest extends TestCase {
         $response = \rest_get_server()->dispatch($request);
 
         $this->assertContains($response->get_status(), [401, 403]);
+        // The base fixture seeds an anthropic_api_key; assert the blocked
+        // request did not overwrite it with the caller-supplied value.
         $options = \get_option('wpchat_settings') ?: [];
-        $this->assertArrayNotHasKey('anthropic_api_key', $options, 'A non-admin must not persist an API key.');
+        $this->assertNotSame(
+            'sk-ant-should-be-blocked',
+            $options['anthropic_api_key'] ?? null,
+            'A non-admin must not be able to set/replace the API key.'
+        );
     }
 }
