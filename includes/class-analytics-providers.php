@@ -336,7 +336,7 @@ class WPStatisticsAnalyticsProvider implements AnalyticsProvider {
         $top_sources = [];
         if (is_array($ref_rows)) {
             foreach ($ref_rows as $r) {
-                $host = parse_url((string) $r['referred'], PHP_URL_HOST) ?: (string) $r['referred'];
+                $host = wp_parse_url((string) $r['referred'], PHP_URL_HOST) ?: (string) $r['referred'];
                 $top_sources[] = ['source' => (string) $host, 'sessions' => (int) $r['visits']];
             }
         }

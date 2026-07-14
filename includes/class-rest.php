@@ -377,7 +377,7 @@ PROMPT;
         $site     = get_bloginfo('name');
         $locale   = get_locale();
         $statuses = function_exists('wc_get_order_statuses') ? wc_get_order_statuses() : [];
-        $today    = date('Y-m-d');
+        $today    = gmdate('Y-m-d');
 
         $status_lines = [];
         foreach ($statuses as $slug => $label) {

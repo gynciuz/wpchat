@@ -20,13 +20,13 @@ class Frontend {
     }
 
     public function maybe_render(): void {
-        $path = trim((string) parse_url(sanitize_text_field(wp_unslash($_SERVER['REQUEST_URI'] ?? '')), PHP_URL_PATH), '/');
+        $path = trim((string) wp_parse_url(sanitize_text_field(wp_unslash($_SERVER['REQUEST_URI'] ?? '')), PHP_URL_PATH), '/');
         if ($path !== 'wpchat') {
             return;
         }
 
         if (!is_user_logged_in()) {
-            wp_redirect(wp_login_url(home_url(self::URL_PATH)));
+            wp_safe_redirect(wp_login_url(home_url(self::URL_PATH)));
             exit;
         }
 

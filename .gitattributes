@@ -17,3 +17,10 @@
 # The whole React source/tooling tree — built assets ship from /build, so
 # nothing under /app is needed in the plugin package.
 /app                 export-ignore
+# Internal dev docs + the Cloudflare Worker + editor/OS cruft — not runtime.
+/CLAUDE.md           export-ignore
+/TASKS.md            export-ignore
+/README.md           export-ignore
+/cloud               export-ignore
+/.claude             export-ignore
+/.DS_Store           export-ignore

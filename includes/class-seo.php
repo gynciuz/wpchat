@@ -79,7 +79,7 @@ class Seo {
     // ====================================================================
 
     public static function maybe_serve_llms_txt(): void {
-        $path = trim((string) parse_url(sanitize_text_field(wp_unslash($_SERVER['REQUEST_URI'] ?? '')), PHP_URL_PATH), '/');
+        $path = trim((string) wp_parse_url(sanitize_text_field(wp_unslash($_SERVER['REQUEST_URI'] ?? '')), PHP_URL_PATH), '/');
         if ($path !== 'llms.txt') {
             return;
         }
