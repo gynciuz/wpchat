@@ -2,7 +2,7 @@
 Contributors: gynciuz
 Tags: woocommerce, chat, ai, claude, orders
 Requires at least: 6.5
-Tested up to: 6.8
+Tested up to: 7.0
 Requires PHP: 8.1
 Stable tag: 0.7.2
 License: MIT

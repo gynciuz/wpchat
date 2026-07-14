@@ -109,10 +109,11 @@ architecture notes; this section is the short, checkable version.
     enforced in the system prompt. A prompt-injection payload in tool-returned
     content (an order note, page HTML) could make the model call `apply_*` /
     `update_order_status` with `confirmation: "yes"` and skip the preview.
-    Fix direction: `preview_content_change` mints a single-use token (stored in a
-    short-TTL transient, bound to the conversation + target); `apply_content_change`
-    only proceeds if given a matching, unconsumed token. Same shape for order
-    mutations. React passes the token through the Confirm button. Add scenario tests.
+    Design (with two approaches + recommendation): **docs/superpowers/specs/2026-07-14-confirmation-token-design.md**.
+    Recommended approach B — a conversation-scoped pending-confirmation record
+    that binds apply to a real *later* user turn (defeats same-turn injection and
+    needs no model-echoed token). Requires threading request context
+    (conversation_id + turn index) into tool implementations. Add scenario tests.
     NOTE: capability gating (audit finding: holds) already caps blast radius to the
     acting user's own privileges, and the `_confirmed`-flag bypass (finding #1) is
     already fixed — this closes the residual "model asserts consent" gap.

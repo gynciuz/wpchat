@@ -20,7 +20,7 @@ class Frontend {
     }
 
     public function maybe_render(): void {
-        $path = trim(parse_url($_SERVER['REQUEST_URI'] ?? '', PHP_URL_PATH), '/');
+        $path = trim((string) parse_url(sanitize_text_field(wp_unslash($_SERVER['REQUEST_URI'] ?? '')), PHP_URL_PATH), '/');
         if ($path !== 'wpchat') {
             return;
         }

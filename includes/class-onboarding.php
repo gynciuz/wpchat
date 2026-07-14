@@ -441,7 +441,10 @@ class Onboarding {
     // ------------------------------------------------------------------
 
     public static function should_show_for_user(int $user_id): bool {
-        if (isset($_GET['onboarding']) && $_GET['onboarding'] === '1') {
+        // Read-only view toggle (show the onboarding wizard); no state change,
+        // so no nonce is required.
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+        if (isset($_GET['onboarding']) && '1' === sanitize_text_field(wp_unslash($_GET['onboarding']))) {
             return true;
         }
         if ($user_id <= 0) {

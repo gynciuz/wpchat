@@ -79,7 +79,7 @@ class Seo {
     // ====================================================================
 
     public static function maybe_serve_llms_txt(): void {
-        $path = trim((string) parse_url($_SERVER['REQUEST_URI'] ?? '', PHP_URL_PATH), '/');
+        $path = trim((string) parse_url(sanitize_text_field(wp_unslash($_SERVER['REQUEST_URI'] ?? '')), PHP_URL_PATH), '/');
         if ($path !== 'llms.txt') {
             return;
         }
@@ -89,7 +89,9 @@ class Seo {
         }
         header('Content-Type: text/plain; charset=utf-8');
         header('X-Robots-Tag: noindex');
-        echo $content;
+        // Admin-authored plain-text body served as text/plain — HTML-escaping
+        // would corrupt it (turn & < > into entities). Not an HTML context.
+        echo $content; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
         exit;
     }
 
