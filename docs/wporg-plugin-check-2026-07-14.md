@@ -4,7 +4,29 @@ Ran the **official Plugin Check plugin** (`wp plugin check`) against the actual
 release artifact (`git archive HEAD`, i.e. what the ZIP ships), excluding the
 vendored update-checker library. This is the same gate wp.org runs on submission.
 
-## Blockers — ERRORS (wp.org will reject until resolved)
+## STATUS (2026-07-14, later)
+
+Decisions taken: **build a wp.org variant** (keep the GitHub build), **exclude
+GitSync**, **rename the slug (keep the WPChat brand)**. A build pipeline exists:
+`bin/build-wporg.sh` (slug via `WPORG_SLUG`, default `chat-admin-for-woocommerce`).
+It strips `vendor-puc/`, `includes/updater.php` (the PUC bootstrap, moved out of
+`wpchat.php`), `includes/class-git-sync.php`, and the `Update URI` header.
+
+**Verified on the built ZIP:** blockers 1 & 2 resolved — `plugin_updater_detected`
+and `proc_open`/`ForbiddenFunctions` ERRORS are **0**. GitHub build unchanged
+(PUC + GitSync load behind `file_exists`).
+
+**Remaining before a clean Plugin Check pass:**
+- **Text-domain rename → slug** (~57 `TextDomainMismatch` errors): the text
+  domain is still `wpchat` but the slug is the new one. Match them (mechanical
+  rename of the `'wpchat'` domain in every i18n call). **Gated on the final slug.**
+- **Blocker 3** (inline `<script>`/`<link>` on the `/wpchat` page) — still open.
+- ~15 `EscapeOutput` (Exception/Output/Heredoc) — justify or `esc_*`.
+- History custom-table SQL — `phpcs:ignore` justifications.
+
+---
+
+## Blockers — ERRORS (original findings; 1 & 2 now resolved)
 
 These are **product decisions**, not one-line fixes — the wp.org build differs
 structurally from the GitHub-Releases build.

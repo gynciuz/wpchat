@@ -27,3 +27,4 @@ composer.lock
 
 # pnpm
 pnpm-debug.log*
+/dist/
