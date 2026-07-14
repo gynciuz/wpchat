@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800&family=Figtree:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  /* LinkedIn Company Page cover — 1128x191. Site identity. Bottom-left kept clear (page logo overlaps there). */
+  :root {
+    --ink:#08090a; --fg:#f6f6f4; --muted:#9a9a95; --dim:#66665f;
+    --line:rgba(255,255,255,0.09); --stroke:rgba(255,255,255,0.20);
+    --accent:#e88a3e; --accent-bright:#ff9d52;
+    --display:"Poppins",ui-sans-serif,system-ui,sans-serif;
+    --body:"Figtree",ui-sans-serif,system-ui,sans-serif;
+    --mono:"JetBrains Mono",ui-monospace,monospace;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; width: 1128px; height: 191px; }
+  .cover { width: 1128px; height: 191px; position: relative; overflow: hidden; background: var(--ink);
+    font-family: var(--body); color: var(--fg); -webkit-font-smoothing: antialiased; }
+  .cover::before { content:""; position:absolute; inset:0;
+    background-image:
+      linear-gradient(to right, var(--line) 1px, transparent 1px),
+      linear-gradient(to bottom, var(--line) 1px, transparent 1px);
+    background-size: 40px 40px;
+    -webkit-mask-image: radial-gradient(80% 150% at 34% 50%, #000 0%, rgba(0,0,0,0.5) 48%, transparent 82%);
+    mask-image: radial-gradient(80% 150% at 34% 50%, #000 0%, rgba(0,0,0,0.5) 48%, transparent 82%); }
+  .cover::after { content:""; position:absolute; inset:0;
+    background: radial-gradient(46% 130% at 80% 46%, rgba(232,138,62,0.16), transparent 68%); }
+
+  .brand { position: absolute; left: 210px; top: 40px; z-index: 2; }
+  .row { display: flex; align-items: center; gap: 11px; margin-bottom: 12px; }
+  .glyphbox { width: 34px; height: 34px; border-radius: 10px; border: 1px solid var(--stroke);
+    background: linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0.012));
+    display: grid; place-items: center; }
+  .glyphbox span { font-family: system-ui,"Segoe UI Symbol",sans-serif; font-size: 19px; color: var(--fg); margin-top:-2px; }
+  .wordmark { font-family: var(--display); font-weight: 700; font-size: 27px; letter-spacing: -0.02em; }
+  .tag { font-size: 18px; color: var(--muted); letter-spacing: -0.005em; }
+  .tag b { color: var(--fg); font-weight: 600; }
+  .tick { width: 48px; height: 5px; border-radius: 3px; background: var(--accent);
+    box-shadow: 0 0 18px -1px rgba(232,138,62,0.85); margin-top: 14px; }
+
+  /* right: compact chat chip */
+  .chip { position: absolute; right: 60px; top: 46px; width: 300px; z-index: 2;
+    border: 1px solid var(--stroke); border-radius: 16px; padding: 14px 15px;
+    background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.006));
+    box-shadow: 0 30px 70px -40px rgba(0,0,0,0.95); }
+  .user { width: fit-content; max-width: 100%; margin-left: auto; margin-bottom: 11px;
+    border: 1px solid var(--accent); background: rgba(232,138,62,0.12); color: var(--fg);
+    font-family: var(--mono); font-size: 12.5px; line-height: 1.4; padding: 7px 10px; border-radius: 11px 11px 4px 11px; }
+  .confirm { display:flex; gap:8px; }
+  .btn { flex:1; text-align:center; padding: 9px; border-radius: 9px; font-family: var(--body); font-weight: 600; font-size: 13px; }
+  .btn.yes { background: var(--accent); color: #1a0f04; box-shadow: 0 10px 24px -12px rgba(232,138,62,0.8); }
+  .btn.no { border: 1px solid var(--line); color: var(--muted); }
+</style>
+</head>
+<body>
+  <div class="cover">
+    <div class="brand">
+      <div class="row"><span class="glyphbox"><span>&#10081;</span></span><span class="wordmark">ChatAdmin</span></div>
+      <div class="tag">Your clients run their own store &amp; content <b>by chat</b> — free &amp; open source.</div>
+      <div class="tick"></div>
+    </div>
+    <div class="chip">
+      <div class="user">mark order 2833 as used</div>
+      <div class="confirm"><span class="btn yes">Confirm</span><span class="btn no">Cancel</span></div>
+    </div>
+  </div>
+</body>
+</html>
