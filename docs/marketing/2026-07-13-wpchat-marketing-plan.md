@@ -80,7 +80,7 @@ Not "an audience." One person you're writing to:
 
 ```
 Awareness            Consideration           Activation                 Expansion (later)
-LinkedIn/YT/Reddit → wpchat.ai + WP.org  →  Install + first real chat → Cloud (€12/mo)
+LinkedIn/YT/Reddit → gynciuz.github.io/wpchat/ + WP.org  →  Install + first real chat → Cloud (€12/mo)
 demo video + post    listing + demo          on a live client site       when BYO-key friction bites
 ```
 
@@ -109,7 +109,7 @@ The README already flags WP.org submission as planned "once the plugin has more 
 - Keep the GitHub auto-update channel for existing/pre-release users; the `Update URI` header already prevents a same-slug hijack.
 - Submit; review can take days-to-weeks. **Start this now** so the listing is live when content drives traffic.
 
-**If WP.org review slips:** wpchat.ai landing page + GitHub release is the fallback install path — the content still works, conversion is just lower. Don't let the listing block the content calendar; run them in parallel.
+**If WP.org review slips:** the landing page (gynciuz.github.io/wpchat/) + GitHub release is the fallback install path — the content still works, conversion is just lower. Don't let the listing block the content calendar; run them in parallel.
 
 ---
 
@@ -144,7 +144,7 @@ Show, don't tell. The product's magic is visual — a sentence in, a real WooCom
 2. **3–20s:** type the plain-language request into `/wpchat`. Show the rich order card render.
 3. **20–30s:** the **preview → Confirm** step. Land the guardrail: _"Nothing changes until they tap confirm."_
 4. **30–40s:** done. Cut to the reframe: _"You didn't train them. You didn't get the email. Retainer's intact."_
-5. **End card:** wpchat.ai · free · open source.
+5. **End card:** gynciuz.github.io/wpchat/ · free · open source.
 
 Batch-shoot 6–8 of these against the real dev site (`localhost:8080` rig already exists) covering: mark order used, change a price, swap a product photo, edit opening hours (content), add a customer note, "in Lithuanian/Polish" multilingual flavor, the **guardrail close-up** (preview/confirm), the **handoff** (deep link instead of dead-ending).
 
@@ -208,10 +208,10 @@ _(Only post this where it genuinely answers the question. Lead with the insight;
 **I can't create the accounts** — signup, email/phone verification, and ToS need you. Here's the kit; you create, I'll wire to Buffer + load content.
 
 **Handles to claim (check availability; keep consistent):**
-- Domain: **wpchat.ai** (or getwpchat.com if taken) — landing + link-in-bio
+- Domain: **gynciuz.github.io/wpchat/** for now (custom domain TBD) — landing + link-in-bio
 - LinkedIn company page: `/company/wpchat`
 - YouTube: `@wpchat`
-- X: `@wpchat` / Bluesky: `@wpchat.ai`
+- X: `@wpchat` / Bluesky: `@wpchat` (handles TBD)
 - TikTok: `@wpchat` · Instagram: `@wpchat.app`
 - GitHub: already `gynciuz/wpchat` ✓
 
@@ -235,7 +235,7 @@ Testimonials from real agencies are worth more than any ad. Don't wait for them 
 - **Goal:** 5–10 developers running WPChat on a real client site within 30 days.
 - **Where:** DM warm contacts, the Reddit/LinkedIn people who engage, WP agency Slacks.
 - **The ask:** "Install it on one client site, tell me where it breaks, and if it saves you tickets let me quote you." White-glove them personally.
-- **Extract:** one hard number each ("trivial tickets down ~X/week"), one quote, ideally a screen recording. These become case-study posts and the "wall of proof" on wpchat.ai.
+- **Extract:** one hard number each ("trivial tickets down ~X/week"), one quote, ideally a screen recording. These become case-study posts and the "wall of proof" on the landing page.
 - **Case-study template:** client type → the recurring ticket that vanished → hours saved/month → the quote. Keep it one screen.
 
 ---
@@ -258,7 +258,7 @@ Organic is the engine; cash only amplifies what's already working. Don't spend o
 ## 10. 90-day timeline
 
 **Phase 1 — Foundation (Weeks 1–3)**
-- Ship: wpchat.ai landing page (hero = the one-liner + a demo video + "install free"), WP.org submission prepared & sent (§4).
+- Ship: the landing page — gynciuz.github.io/wpchat/ (hero = the one-liner + a demo video + "install free"), WP.org submission prepared & sent (§4).
 - Claim all handles; create WPChat social accounts; connect to Buffer.
 - Batch-shoot 6–8 hero demo videos on the dev rig.
 - Recruit first 3 design partners.
@@ -293,11 +293,11 @@ Organic is the engine; cash only amplifies what's already working. Don't spend o
 
 **Needs you (I can't do these):**
 1. Create WPChat accounts: LinkedIn page, YouTube, X/Bluesky, TikTok, Instagram (bios/handles in §7). Connect them to Buffer.
-2. Register **wpchat.ai** (or confirm the domain).
+2. Confirm the domain (using **gynciuz.github.io/wpchat/** for now).
 3. Approve/adjust this plan.
 
 **I'll do on your go:**
-1. Draft the wpchat.ai landing-page copy + structure (angle from §1).
+1. Draft the landing-page copy + structure (angle from §1).
 2. Write the full first-2-weeks content calendar (posts + video scripts + captions) and **load it into Buffer as Ideas**.
 3. Write the WP.org listing copy (title, descriptions, screenshot captions) and a submission checklist.
 4. Write the design-partner outreach DM + case-study template.
