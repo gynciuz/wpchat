@@ -1,6 +1,6 @@
 # Local testing rigs
 
-Two ways to run WPChat locally.
+Two ways to run ChatAdmin locally.
 
 ## 1. UI-only preview (fast, no backend)
 
@@ -27,14 +27,14 @@ onboarding, orders, and tools actually work. **Requires Docker Desktop running.*
 npx @wordpress/env start      # first run downloads images (a few minutes)
 ```
 
-- Site:  http://localhost:8888/wpchat   (the chat)
+- Site:  http://localhost:8888/chat-admin   (the chat)
 - Admin: http://localhost:8888/wp-admin (login: `admin` / `password`)
-- WPChat settings / Diagnostics live under the **WPChat** menu in wp-admin.
+- ChatAdmin settings / Diagnostics live under the **ChatAdmin** menu in wp-admin.
 
 First-run setup inside the rig:
 
 ```sh
-# Activate WooCommerce + WPChat (wp-env activates listed plugins automatically,
+# Activate WooCommerce + ChatAdmin (wp-env activates listed plugins automatically,
 # but if needed):
 npx @wordpress/env run cli wp plugin activate woocommerce wpchat
 
@@ -43,7 +43,7 @@ npx @wordpress/env run cli wp wc product create --name="Test Product" --regular_
 npx @wordpress/env run cli wp wc shop_order create --status=processing --user=admin
 ```
 
-Then visit `/wpchat`, paste an Anthropic/OpenAI/Gemini key in onboarding, and run
+Then visit `/chat-admin`, paste an Anthropic/OpenAI/Gemini key in onboarding, and run
 the scenarios in `test-plan.md`.
 
 Useful commands:
@@ -52,8 +52,8 @@ Useful commands:
 npx @wordpress/env stop                       # stop containers
 npx @wordpress/env start                       # restart
 npx @wordpress/env clean all                   # wipe + reset the rig
-npx @wordpress/env run cli wp option get wpchat_settings   # inspect saved settings
-npx @wordpress/env run cli wp eval 'var_dump(get_option("wpchat_error_log"));'  # recent errors
+npx @wordpress/env run cli wp option get chatadmin_settings   # inspect saved settings
+npx @wordpress/env run cli wp eval 'var_dump(get_option("chatadmin_error_log"));'  # recent errors
 ```
 
 After changing `app/src/`, run `pnpm build` (outputs to `build/`, which the rig

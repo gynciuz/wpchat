@@ -1,6 +1,6 @@
-# WPChat Cloud — pricing calculation (refresh 2026-06-22)
+# ChatAdmin Cloud — pricing calculation (refresh 2026-06-22)
 
-Internal note. WPChat Cloud is the future hosted tier (Stripe subscription;
+Internal note. ChatAdmin Cloud is the future hosted tier (Stripe subscription;
 the backend runs on our own Anthropic key — **not** user-facing). This refreshes
 the earlier "€10/mo — €5 of tokens" estimate against **current** Anthropic
 pricing.

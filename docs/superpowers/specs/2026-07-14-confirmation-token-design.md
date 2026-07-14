@@ -43,7 +43,7 @@ consumed on use.
 
 ### B. Conversation-scoped pending-confirmation (server state, recommended)
 On a `needs_confirmation` / `preview_*` result, store a server record
-`transient wpchat_pending_{conversation_id}` = `{target, minted_at_turn}`. The
+`transient chatadmin_pending_{conversation_id}` = `{target, minted_at_turn}`. The
 mutating call is allowed only if a matching pending record exists **and was
 created in an earlier user turn** than the current request; then it's consumed.
 
@@ -73,7 +73,7 @@ approach touches the fewest signatures.
 
 ### Pending store
 ```
-key   = 'wpchat_pending_' . $conversation_id
+key   = 'chatadmin_pending_' . $conversation_id
 value = ['target' => $target_key, 'turn' => $turn, 'ts' => time()]   // TTL 900s
 ```
 `$target_key`: `content:md5(json([$kind,$target,$field]))`,
@@ -85,15 +85,15 @@ value = ['target' => $target_key, 'turn' => $turn, 'ts' => time()]   // TTL 900s
 private static function confirm_gate(array $args, string $target_key, array $ctx): ?array {
     if (!empty($args['_confirmed'])) return null;                    // direct-action click
     $phrase_ok = ContentConfirmation::is_confirmed((string)($args['confirmation'] ?? ''));
-    $pending   = get_transient('wpchat_pending_' . $ctx['conversation_id']);
+    $pending   = get_transient('chatadmin_pending_' . $ctx['conversation_id']);
     $matches   = is_array($pending)
         && $pending['target'] === $target_key
         && $pending['turn']   <  $ctx['turn'];                       // minted in an EARLIER turn
     if ($phrase_ok && $matches) {
-        delete_transient('wpchat_pending_' . $ctx['conversation_id']);
+        delete_transient('chatadmin_pending_' . $ctx['conversation_id']);
         return null;                                                 // consent proven → proceed
     }
-    set_transient('wpchat_pending_' . $ctx['conversation_id'],
+    set_transient('chatadmin_pending_' . $ctx['conversation_id'],
         ['target' => $target_key, 'turn' => $ctx['turn'], 'ts' => time()], 900);
     return ['needs_confirmation' => true];                           // caller merges details
 }

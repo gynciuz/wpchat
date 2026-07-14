@@ -7,10 +7,10 @@ vendored update-checker library. This is the same gate wp.org runs on submission
 ## STATUS (2026-07-14, later)
 
 Decisions taken: **build a wp.org variant** (keep the GitHub build), **exclude
-GitSync**, **rename the slug (keep the WPChat brand)**. A build pipeline exists:
+GitSync**, **rename the slug (keep the ChatAdmin brand)**. A build pipeline exists:
 `bin/build-wporg.sh` (slug via `WPORG_SLUG`, default `chat-admin-for-woocommerce`).
 It strips `vendor-puc/`, `includes/updater.php` (the PUC bootstrap, moved out of
-`wpchat.php`), `includes/class-git-sync.php`, and the `Update URI` header.
+`chat-admin.php`), `includes/class-git-sync.php`, and the `Update URI` header.
 
 **Verified on the built ZIP:** blockers 1 & 2 resolved — `plugin_updater_detected`
 and `proc_open`/`ForbiddenFunctions` ERRORS are **0**. GitHub build unchanged
@@ -18,9 +18,9 @@ and `proc_open`/`ForbiddenFunctions` ERRORS are **0**. GitHub build unchanged
 
 **Remaining before a clean Plugin Check pass:**
 - **Text-domain rename → slug** (~57 `TextDomainMismatch` errors): the text
-  domain is still `wpchat` but the slug is the new one. Match them (mechanical
+  domain is still `chat-admin` but the slug is the new one. Match them (mechanical
   rename of the `'wpchat'` domain in every i18n call). **Gated on the final slug.**
-- **Blocker 3** (inline `<script>`/`<link>` on the `/wpchat` page) — still open.
+- **Blocker 3** (inline `<script>`/`<link>` on the `/chat-admin` page) — still open.
 - ~15 `EscapeOutput` (Exception/Output/Heredoc) — justify or `esc_*`.
 - History custom-table SQL — `phpcs:ignore` justifications.
 
@@ -41,12 +41,12 @@ structurally from the GitHub-Releases build.
 2. **`proc_open()` is forbidden** — `Generic.PHP.ForbiddenFunctions.Found` in
    `includes/class-git-sync.php:191`. GitSync shells out to `git` via `proc_open`,
    which wp.org bans. GitSync is an **optional, off-by-default** power-user feature
-   (gated behind `WPCHAT_GIT_SYNC_ENABLED`). Cleanest resolution: **exclude
+   (gated behind `CHATADMIN_GIT_SYNC_ENABLED`). Cleanest resolution: **exclude
    `class-git-sync.php` from the wp.org build** (it also drops the associated
    `unlink()`/`fopen()`/`fwrite()` file-op warnings).
 
 3. **Inline `<script>` / `<link>`** — `NonEnqueuedScript` / `NonEnqueuedStylesheet`
-   in `includes/class-frontend.php` (the bare `/wpchat` app page). The SPA page
+   in `includes/class-frontend.php` (the bare `/chat-admin` app page). The SPA page
    emits the Google-fonts `<link>` and the boot `<script>` inline. Fix: enqueue
    the built assets via `wp_enqueue_script/style` (+ `wp_add_inline_script` for
    the boot payload, which is already used in the admin path), or justify. Real
@@ -54,7 +54,7 @@ structurally from the GitHub-Releases build.
 
 ## Naming — WARNING that reviewers commonly enforce
 
-- **`trademarked_term` "wp"** (×3): "the plugin name 'WPChat' … and slug …
+- **`trademarked_term` "wp"** (×3): "the plugin name 'ChatAdmin' … and slug …
   contains the restricted term 'wp' which cannot be used at all." wp.org restricts
   "WP"/"WordPress" in names/slugs. May require a **different slug** (e.g.
   `chat-admin-for-woocommerce`, `shopchat`, `chatwoo`) and possibly a tweaked
@@ -83,7 +83,7 @@ structurally from the GitHub-Releases build.
 - **i18n**: `MissingTranslatorsComment` (×5), `MissingArgDomain` (×2) — add
   `/* translators: */` comments and the `'wpchat'` domain where flagged.
 - **`NonPrefixedHooknameFound`**: verify — WP core hooks we *hook into* are fine;
-  only our own `do_action`/`apply_filters` need the `wpchat_` prefix (they have it).
+  only our own `do_action`/`apply_filters` need the `chatadmin_` prefix (they have it).
 
 ## Submission runbook (human steps)
 

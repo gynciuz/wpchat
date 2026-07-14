@@ -64,8 +64,8 @@ architecture notes; this section is the short, checkable version.
 - React change (`app/src/**`) → run `cd app && pnpm build` AND commit the
   regenerated `build/` output. The released ZIP ships prebuilt assets, so a
   source change without a rebuilt `build/` is incomplete. Also run `pnpm lint`.
-- Releasing → bump the version in **both** places in `wpchat.php`: the
-  `Version:` header and the `WPCHAT_VERSION` constant.
+- Releasing → bump the version in **both** places in `chat-admin.php`: the
+  `Version:` header and the `CHATADMIN_VERSION` constant.
 
 **Adding/changing a tool (`includes/class-tools.php`):**
 - Register it in **both** `Tools::definitions()` (JSON schema) and
@@ -79,17 +79,17 @@ architecture notes; this section is the short, checkable version.
 - Most product behavior lives in the dynamic system prompt
   (`Rest::system_prompt`), not in code. Prefer editing the prompt.
 - Lock in behavioral rules with a scenario test in `tests/Scenarios/`,
-  using the `wpchat_anthropic_http_response` mock (`tests/MockAnthropic.php`)
+  using the `chatadmin_anthropic_http_response` mock (`tests/MockAnthropic.php`)
   so the LLM call is deterministic and free.
 
 **Extensibility — prefer filters over core edits:**
-- Content kinds → `wpchat_content_backends` (`ContentBackend` impls).
-- Analytics → `wpchat_analytics_providers` (`AnalyticsProvider` impls).
+- Content kinds → `chatadmin_content_backends` (`ContentBackend` impls).
+- Analytics → `chatadmin_analytics_providers` (`AnalyticsProvider` impls).
 - Content edits are gated by capability; keep the three gate layers in sync
   (prompt visibility, `Tools::user_can_edit_kind`, dispatch `check_kind_access`).
 
 **General:**
-- PHP 8.1+, namespace `WPChat\`, every file opens with the
+- PHP 8.1+, namespace `ChatAdmin\`, every file opens with the
   `if (!defined('ABSPATH')) exit;` guard.
 - Status slugs: stored WC-prefixed (`wc-completed`), used unprefixed
   (`completed`) via `Tools::unprefixed_status`.
@@ -138,7 +138,7 @@ architecture notes; this section is the short, checkable version.
       (recommend: drop PUC, remove the `Update URI` pin, use WP.org as the update
       source; keep `bin/release.sh` GitHub ZIP as a pre-release/secondary channel).
     - Guideline compliance: GPL-compat (MIT ✓), Anthropic external-service disclosure
-      + privacy policy (✓), no remote code loading, slug `wpchat` (no trademarked
+      + privacy policy (✓), no remote code loading, slug `chat-admin` (no trademarked
       terms). Submit at wordpress.org/plugins/developers/add/.
     - Address findings from the security audit (see the separate `(priority)` fix task) first.
 
@@ -162,10 +162,10 @@ architecture notes; this section is the short, checkable version.
     de-emphasized in marketing. Add locale tests mirroring the existing confirmation
     tests. Priority order: EN, ES, FR, PT, HI, ZH, DE, then the rest.
 
-[ ] (scope and discuss) (priority) **Stand up the paid WPChat Cloud tier (Stripe subscription billing).**
-    Goal: let a site owner subscribe to hosted WPChat with **no BYO API key** —
+[ ] (scope and discuss) (priority) **Stand up the paid ChatAdmin Cloud tier (Stripe subscription billing).**
+    Goal: let a site owner subscribe to hosted ChatAdmin with **no BYO API key** —
     the backend runs on *our* Anthropic key behind a proxy. Revenue track;
-    requested "asap". Pricing already scoped in `docs/wpchat-cloud-pricing.md`
+    requested "asap". Pricing already scoped in `docs/chat-admin-cloud-pricing.md`
     (**€12/mo**, Sonnet default, fair-use soft cap ~150 chats/mo, overage =
     throttle-to-Haiku or top-up). Stripe account is live (display name "Loupe",
     `acct_1Ts8WKHRn8ZbPNdX`).
@@ -190,7 +190,7 @@ architecture notes; this section is the short, checkable version.
     UploadErrorTest, Playwright multi-image (178 PHP + 5 E2E green). Smoke-tested
     on dev site: consultancy flow + create_content + publish prompt all work.
 
-[x](done 2026-06-22) **Add SEO audit + fix skills to the chat.** New `WPChat\Seo`
+[x](done 2026-06-22) **Add SEO audit + fix skills to the chat.** New `ChatAdmin\Seo`
     + `SeoBackend` (`includes/class-seo.php`): read-only `seo_audit` tool; fixes
     via the content-backend pattern — kinds `seo_setting` (search_engine_visibility,
     permalink_structure, ai_crawlers, llms_txt, site_title, tagline) and `seo_meta`
@@ -211,17 +211,17 @@ architecture notes; this section is the short, checkable version.
     display_errors=0 so stray warnings can't corrupt REST responses.
 
 [x](done 2026-06-19) **Run a local WordPress dev server to manually test the plugin.**
-    Live at http://localhost:8080 (admin/admin). WP 7.0 + WooCommerce + WPChat
-    (symlinked from the repo) at ~/wpchat-dev, served by WP-CLI's built-in server
+    Live at http://localhost:8080 (admin/admin). WP 7.0 + WooCommerce + ChatAdmin
+    (symlinked from the repo) at ~/chat-admin-dev, served by WP-CLI's built-in server
     on PHP 8.3 (WP-CLI's phar fatals on the system's PHP 8.5, so it's invoked
-    directly with the 8.3 binary). `/wpchat` redirects to login then renders the
+    directly with the 8.3 binary). `/chat-admin` redirects to login then renders the
     app. Anthropic key still needs to be set in-app (Settings / onboarding) for
     chat to work.
 
 [x](done 2026-06-19) **Add Playwright visual/E2E testing for the React app.**
     Added `@playwright/test` + Chromium, `app/playwright.config.ts` (Vite
     webServer + snapshot config), `app/e2e/harness.html` (mounts the real app
-    with injected `WPCHAT_BOOT`), `app/e2e/fixtures.ts` (mock REST), and specs
+    with injected `CHATADMIN_BOOT`), `app/e2e/fixtures.ts` (mock REST), and specs
     `chat.spec.ts` (empty-state, orders table, error banner) + `onboarding.spec.ts`
     (welcome step). Visual baselines under `app/e2e/__screenshots__/`. Scripts
     `pnpm test:e2e` / `test:e2e:update`; CI `e2e` job added to test.yml.
@@ -231,7 +231,7 @@ architecture notes; this section is the short, checkable version.
 
 [x](done 2026-06-19) **Stand up the local PHP test environment and run the suite.**
     Installed PHP 8.5 / Composer / MySQL 9.6 / svn via Homebrew, `composer install`,
-    `bin/install-wp-tests.sh wpchat_tests root '' 127.0.0.1 latest` + WooCommerce.
+    `bin/install-wp-tests.sh chatadmin_tests root '' 127.0.0.1 latest` + WooCommerce.
     `composer test` → **157 tests, 332 assertions, 0 failures** (5 pre-existing
     skips). PHP 8.5-only deprecation notices (imagedestroy/finfo_close) are
     non-fatal and absent on CI's 8.1–8.3.

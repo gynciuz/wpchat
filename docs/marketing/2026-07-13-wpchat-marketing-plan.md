@@ -1,4 +1,4 @@
-# WPChat — 90-Day Marketing Plan
+# ChatAdmin — 90-Day Marketing Plan
 
 _Drafted 2026-07-13. Owner: Gintaras. Status: draft for review._
 
@@ -8,13 +8,13 @@ _Drafted 2026-07-13. Owner: Gintaras. Status: draft for review._
 
 | Lever | Decision |
 |---|---|
-| **North-star metric** | Active installs (sites with WPChat installed **and used** in the last 30 days) |
+| **North-star metric** | Active installs (sites with ChatAdmin installed **and used** in the last 30 days) |
 | **Money framing** | Free tool. Install it, your clients self-serve, your support tickets drop. BYO Anthropic key = €0 to the developer. Monetize later via Cloud. |
 | **Geo / language** | Global, English-first |
 | **Budget** | Time + a small paid budget (~€200–400/mo) |
-| **Brand** | **Standalone WPChat** — its own handles and identity. "Loupe" stays separate. |
+| **Brand** | **Standalone ChatAdmin** — its own handles and identity. "Loupe" stays separate. |
 | **Primary channels** | LinkedIn + YouTube. Reddit + X/Bluesky organic. TikTok/IG = **repurpose only** (same vertical demo videos). |
-| **Revenue track (parallel)** | WPChat Cloud / Stripe billing — separate engineering workstream (see `TASKS.md`), does **not** gate the installs push. |
+| **Revenue track (parallel)** | ChatAdmin Cloud / Stripe billing — separate engineering workstream (see `TASKS.md`), does **not** gate the installs push. |
 
 ---
 
@@ -33,22 +33,22 @@ Walk it out, because the whole message hierarchy falls out of it:
 - **Therefore** the fix is a different interface — one that speaks the client's language ("mark order 2833 used, they spent 30€ of 100€") instead of WordPress's.
 - **And the part nobody prices in:** the helpdesk hours you resent are the hours you're *not* selling the next build. The support work isn't just annoying — it's the ceiling on your agency. You built a business that punishes you for shipping.
 
-**WPChat doesn't replace you. It fires you from the helpdesk job you hate, and lets you keep the retainer you like.**
+**ChatAdmin doesn't replace you. It fires you from the helpdesk job you hate, and lets you keep the retainer you like.**
 
 ### The one-liner (use everywhere)
 
 > **Stop being your clients' WordPress helpdesk.**
-> Install WPChat once — your clients manage their own store and content by chat, in plain language, in any language. You keep the retainer. You lose the 5-minute tickets.
+> Install ChatAdmin once — your clients manage their own store and content by chat, in plain language, in any language. You keep the retainer. You lose the 5-minute tickets.
 
 ### The objection that kills 80% of deals — and the built-in answer
 
 Every developer's first thought: _"I don't give clients admin access because they break things."_
 
-WPChat's product design **is** the answer, and we lead with it, not bury it:
+ChatAdmin's product design **is** the answer, and we lead with it, not bury it:
 
 - **Every change is preview → confirm.** The client sees exactly what will happen and taps Confirm. Nothing mutates silently.
 - **One item at a time. No bulk-destructive anything.** There is literally no "delete all orders" button for a panicked client to find — it's an enforced design constraint, not a setting.
-- **It hands off instead of dead-ending.** When a request is out of scope, WPChat returns a deep link to the right admin page — it never invents a destructive workaround.
+- **It hands off instead of dead-ending.** When a request is out of scope, ChatAdmin returns a deep link to the right admin page — it never invents a destructive workaround.
 - **It's not "access." It's guardrailed access.** That's the phrase.
 
 ### Message pillars (every piece of content ladders to one)
@@ -80,7 +80,7 @@ Not "an audience." One person you're writing to:
 
 ```
 Awareness            Consideration           Activation                 Expansion (later)
-LinkedIn/YT/Reddit → gynciuz.github.io/wpchat/ + WP.org  →  Install + first real chat → Cloud (€12/mo)
+LinkedIn/YT/Reddit → gynciuz.github.io/chat-admin/ + WP.org  →  Install + first real chat → Cloud (€12/mo)
 demo video + post    listing + demo          on a live client site       when BYO-key friction bites
 ```
 
@@ -99,7 +99,7 @@ demo video + post    listing + demo          on a live client site       when BY
 
 ## 4. The gating prerequisite: ship the WordPress.org listing
 
-**Blunt truth: with an installs north-star, no WP.org listing is the single biggest hole in the strategy.** Today WPChat installs via a GitHub ZIP + auto-update — fine for developers who already trust you, useless for organic discovery. The WP.org directory is where WordPress users search "AI" / "WooCommerce assistant" and one-click install.
+**Blunt truth: with an installs north-star, no WP.org listing is the single biggest hole in the strategy.** Today ChatAdmin installs via a GitHub ZIP + auto-update — fine for developers who already trust you, useless for organic discovery. The WP.org directory is where WordPress users search "AI" / "WooCommerce assistant" and one-click install.
 
 The README already flags WP.org submission as planned "once the plugin has more public users." That's backwards for this goal — the listing is *how* you get public users.
 
@@ -109,7 +109,7 @@ The README already flags WP.org submission as planned "once the plugin has more 
 - Keep the GitHub auto-update channel for existing/pre-release users; the `Update URI` header already prevents a same-slug hijack.
 - Submit; review can take days-to-weeks. **Start this now** so the listing is live when content drives traffic.
 
-**If WP.org review slips:** the landing page (gynciuz.github.io/wpchat/) + GitHub release is the fallback install path — the content still works, conversion is just lower. Don't let the listing block the content calendar; run them in parallel.
+**If WP.org review slips:** the landing page (gynciuz.github.io/chat-admin/) + GitHub release is the fallback install path — the content still works, conversion is just lower. Don't let the listing block the content calendar; run them in parallel.
 
 ---
 
@@ -117,7 +117,7 @@ The README already flags WP.org submission as planned "once the plugin has more 
 
 Each channel has one job. No channel gets content just to have a presence.
 
-**LinkedIn — the engine.** Founder-led (Gintaras's personal profile out-performs any company page for reach) + a WPChat company page for legitimacy/retargeting. Job: reach agency owners with the helpdesk-trap narrative + demo videos. 3–4 posts/week. Personal voice, not brand voice.
+**LinkedIn — the engine.** Founder-led (Gintaras's personal profile out-performs any company page for reach) + a ChatAdmin company page for legitimacy/retargeting. Job: reach agency owners with the helpdesk-trap narrative + demo videos. 3–4 posts/week. Personal voice, not brand voice.
 
 **YouTube — the compounding asset.** 60–90s Shorts (the vertical demos) + occasional 3–6 min "watch me hand a client the keys safely" walkthroughs. Job: rank for intent searches, be the thing you link in every Reddit/forum reply. Evergreen; keeps paying out.
 
@@ -141,10 +141,10 @@ Show, don't tell. The product's magic is visual — a sentence in, a real WooCom
 
 **Template (each video):**
 1. **0–3s hook (text on screen):** the ticket. _"'Can you just mark order 2833 as used?' — the email you've gotten 400 times."_
-2. **3–20s:** type the plain-language request into `/wpchat`. Show the rich order card render.
+2. **3–20s:** type the plain-language request into `/chat-admin`. Show the rich order card render.
 3. **20–30s:** the **preview → Confirm** step. Land the guardrail: _"Nothing changes until they tap confirm."_
 4. **30–40s:** done. Cut to the reframe: _"You didn't train them. You didn't get the email. Retainer's intact."_
-5. **End card:** gynciuz.github.io/wpchat/ · free · open source.
+5. **End card:** gynciuz.github.io/chat-admin/ · free · open source.
 
 Batch-shoot 6–8 of these against the real dev site (`localhost:8080` rig already exists) covering: mark order used, change a price, swap a product photo, edit opening hours (content), add a customer note, "in Lithuanian/Polish" multilingual flavor, the **guardrail close-up** (preview/confirm), the **handoff** (deep link instead of dead-ending).
 
@@ -170,7 +170,7 @@ Batch-shoot 6–8 of these against the real dev site (`localhost:8080` rig alrea
 >
 > The fix is a different interface. Let her *type what she wants* — "change the sneakers to €59" — and have it happen, with a confirm step so she can't nuke anything.
 >
-> That's the whole reason I built WPChat. Not to replace the developer. To fire the developer from the helpdesk job.
+> That's the whole reason I built ChatAdmin. Not to replace the developer. To fire the developer from the helpdesk job.
 >
 > Free, open source, install once → [link]. First comment: 30-second demo.
 
@@ -180,7 +180,7 @@ Batch-shoot 6–8 of these against the real dev site (`localhost:8080` rig alrea
 >
 > Same. That fear is correct, and it's exactly what I designed around.
 >
-> In WPChat, a client can't break the site because:
+> In ChatAdmin, a client can't break the site because:
 > → every change previews first, and nothing happens until they tap Confirm
 > → it works one order/page at a time — there's no bulk-delete button to find by accident
 > → when something's out of scope, it hands them a link to the right admin page instead of improvising
@@ -189,7 +189,7 @@ Batch-shoot 6–8 of these against the real dev site (`localhost:8080` rig alrea
 
 **Post C — build-in-public (trust):**
 
-> WPChat just went from "install our GitHub zip" to submitting on the WordPress.org directory.
+> ChatAdmin just went from "install our GitHub zip" to submitting on the WordPress.org directory.
 >
 > Scary, honestly — public reviews, the guideline gauntlet, a rating anyone can tank.
 >
@@ -197,7 +197,7 @@ Batch-shoot 6–8 of these against the real dev site (`localhost:8080` rig alrea
 
 ### Sample Reddit reply (r/WordPress, in a "clients keep asking me to do trivial edits" thread)
 
-> The thing that finally moved the needle for me wasn't another tutorial — clients don't watch them. It was giving them an interface that matches how they think. They type "mark order 2833 used" instead of navigating the orders screen. I ended up building an open-source plugin for exactly this (WPChat) — every change is preview-then-confirm so they can't break anything. Happy to share a link if useful, not trying to spam the thread.
+> The thing that finally moved the needle for me wasn't another tutorial — clients don't watch them. It was giving them an interface that matches how they think. They type "mark order 2833 used" instead of navigating the orders screen. I ended up building an open-source plugin for exactly this (ChatAdmin) — every change is preview-then-confirm so they can't break anything. Happy to share a link if useful, not trying to spam the thread.
 
 _(Only post this where it genuinely answers the question. Lead with the insight; the tool is a footnote.)_
 
@@ -208,21 +208,21 @@ _(Only post this where it genuinely answers the question. Lead with the insight;
 **I can't create the accounts** — signup, email/phone verification, and ToS need you. Here's the kit; you create, I'll wire to Buffer + load content.
 
 **Handles to claim (check availability; keep consistent):**
-- Domain: **gynciuz.github.io/wpchat/** for now (custom domain TBD) — landing + link-in-bio
-- LinkedIn company page: `/company/wpchat`
+- Domain: **gynciuz.github.io/chat-admin/** for now (custom domain TBD) — landing + link-in-bio
+- LinkedIn company page: `/company/chat-admin`
 - YouTube: `@wpchat`
 - X: `@wpchat` / Bluesky: `@wpchat` (handles TBD)
 - TikTok: `@wpchat` · Instagram: `@wpchat.app`
 - GitHub: already `gynciuz/wpchat` ✓
 
 **Bio (short, one voice) — reuse across platforms:**
-> Stop being your clients' WordPress helpdesk. WPChat lets your clients run their own WooCommerce store & content by chat — in plain language, any language, with a confirm step so nothing breaks. Free & open source.
+> Stop being your clients' WordPress helpdesk. ChatAdmin lets your clients run their own WooCommerce store & content by chat — in plain language, any language, with a confirm step so nothing breaks. Free & open source.
 
 **Avatar/banner spec:** logo mark on dark (the app is dark-mode); banner = the one-liner + a phone-frame screenshot of a chat turn. (Can be produced with the design tooling if you want.)
 
 **Buffer:**
-- Current org is on the **free plan: 3 channels / 10 scheduled posts**, and its 2 connected channels are the *Loupe* LinkedIn profile + page — **wrong brand** for WPChat content.
-- **You:** create the WPChat channels above, connect them to Buffer. Since brand = standalone WPChat, don't post WPChat content to the Loupe channels. Your **personal** LinkedIn is fair game (founder posting his own product is the strongest B2B reach).
+- Current org is on the **free plan: 3 channels / 10 scheduled posts**, and its 2 connected channels are the *Loupe* LinkedIn profile + page — **wrong brand** for ChatAdmin content.
+- **You:** create the ChatAdmin channels above, connect them to Buffer. Since brand = standalone ChatAdmin, don't post ChatAdmin content to the Loupe channels. Your **personal** LinkedIn is fair game (founder posting his own product is the strongest B2B reach).
 - Free Buffer caps you at 3 channels / 10 scheduled posts — too tight for LinkedIn + YouTube + X + TikTok + IG. A **Buffer paid plan** (or just staging posts as Buffer _Ideas_, which are channel-agnostic and unlimited-ish) unblocks it. Given Cloud/Stripe is the priority paid account, I'd stage the calendar as Buffer **Ideas** now (free) and only upgrade Buffer when the channels actually exist.
 - **On approval, I'll load the first ~10 posts + video captions into Buffer as Ideas** so they're queued and ready the moment channels connect.
 
@@ -232,7 +232,7 @@ _(Only post this where it genuinely answers the question. Lead with the insight;
 
 Testimonials from real agencies are worth more than any ad. Don't wait for them to appear — recruit.
 
-- **Goal:** 5–10 developers running WPChat on a real client site within 30 days.
+- **Goal:** 5–10 developers running ChatAdmin on a real client site within 30 days.
 - **Where:** DM warm contacts, the Reddit/LinkedIn people who engage, WP agency Slacks.
 - **The ask:** "Install it on one client site, tell me where it breaks, and if it saves you tickets let me quote you." White-glove them personally.
 - **Extract:** one hard number each ("trivial tickets down ~X/week"), one quote, ideally a screen recording. These become case-study posts and the "wall of proof" on the landing page.
@@ -258,8 +258,8 @@ Organic is the engine; cash only amplifies what's already working. Don't spend o
 ## 10. 90-day timeline
 
 **Phase 1 — Foundation (Weeks 1–3)**
-- Ship: the landing page — gynciuz.github.io/wpchat/ (hero = the one-liner + a demo video + "install free"), WP.org submission prepared & sent (§4).
-- Claim all handles; create WPChat social accounts; connect to Buffer.
+- Ship: the landing page — gynciuz.github.io/chat-admin/ (hero = the one-liner + a demo video + "install free"), WP.org submission prepared & sent (§4).
+- Claim all handles; create ChatAdmin social accounts; connect to Buffer.
 - Batch-shoot 6–8 hero demo videos on the dev rig.
 - Recruit first 3 design partners.
 - Load first 2 weeks of content into Buffer Ideas.
@@ -292,8 +292,8 @@ Organic is the engine; cash only amplifies what's already working. Don't spend o
 ## 12. Immediate next actions
 
 **Needs you (I can't do these):**
-1. Create WPChat accounts: LinkedIn page, YouTube, X/Bluesky, TikTok, Instagram (bios/handles in §7). Connect them to Buffer.
-2. Confirm the domain (using **gynciuz.github.io/wpchat/** for now).
+1. Create ChatAdmin accounts: LinkedIn page, YouTube, X/Bluesky, TikTok, Instagram (bios/handles in §7). Connect them to Buffer.
+2. Confirm the domain (using **gynciuz.github.io/chat-admin/** for now).
 3. Approve/adjust this plan.
 
 **I'll do on your go:**
@@ -305,4 +305,4 @@ Organic is the engine; cash only amplifies what's already working. Don't spend o
 
 ---
 
-_Cross-references: pricing model in `docs/wpchat-cloud-pricing.md`; Cloud billing engineering in `TASKS.md` (top task) + `docs/superpowers/specs/2026-07-13-wpchat-cloud-billing-design.md` (being drafted)._
+_Cross-references: pricing model in `docs/chat-admin-cloud-pricing.md`; Cloud billing engineering in `TASKS.md` (top task) + `docs/superpowers/specs/2026-07-13-wpchat-cloud-billing-design.md` (being drafted)._
