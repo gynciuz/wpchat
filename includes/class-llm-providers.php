@@ -68,11 +68,11 @@ abstract class BaseLLMProvider implements LLMProvider {
     public function run_with_tools(array $messages, array $tools, array $tool_impls, array $opts = []): array {
         $key = Settings::get_api_key();
         if (!$key) {
-            throw new \RuntimeException(sprintf(
+            throw new \RuntimeException(esc_html(sprintf(
                 /* translators: %s = provider label */
                 __('%s API key not configured. Set it in ChatAdmin → Settings.', 'chat-admin'),
                 $this->label()
-            ));
+            )));
         }
 
         $model      = $opts['model'] ?? Settings::get_model();
@@ -85,7 +85,7 @@ abstract class BaseLLMProvider implements LLMProvider {
             $request = $this->build_request($messages, $tools, $system, $model);
 
             // Test seam: a registered filter short-circuits the real HTTP call.
-            $response = apply_filters($this->seam_filter(), null, $request);
+            $response = apply_filters($this->seam_filter(), null, $request); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.DynamicHooknameFound -- chatadmin_{provider}_http_response, prefixed and built per provider
             if ($response === null) {
                 $response = wp_remote_post($this->endpoint($model), [
                     'timeout' => 60,
@@ -95,7 +95,7 @@ abstract class BaseLLMProvider implements LLMProvider {
             }
 
             if (is_wp_error($response)) {
-                throw new \RuntimeException('HTTP error: ' . $response->get_error_message());
+                throw new \RuntimeException(esc_html('HTTP error: ' . $response->get_error_message()));
             }
 
             $code = (int) wp_remote_retrieve_response_code($response);
@@ -104,7 +104,7 @@ abstract class BaseLLMProvider implements LLMProvider {
                 $data = [];
             }
             if ($code !== 200) {
-                throw new \RuntimeException($this->label() . ' API error: ' . $this->error_message($data, $code));
+                throw new \RuntimeException(esc_html($this->label() . ' API error: ' . $this->error_message($data, $code)));
             }
 
             $parsed      = $this->parse_response($data);
@@ -194,7 +194,7 @@ abstract class BaseLLMProvider implements LLMProvider {
 
     /** Run a tiny request through the seam + HTTP and classify the auth result. */
     protected function check_key(array $request, string $key): array {
-        $response = apply_filters($this->seam_filter(), null, $request);
+        $response = apply_filters($this->seam_filter(), null, $request); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.DynamicHooknameFound -- chatadmin_{provider}_http_response, prefixed and built per provider
         if ($response === null) {
             $response = wp_remote_post($this->endpoint($request['model'] ?? $this->default_model()), [
                 'timeout' => 15,

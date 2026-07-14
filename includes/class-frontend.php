@@ -53,6 +53,11 @@ class Frontend {
         $entry    = $manifest['src/main.tsx'] ?? null;
         $build_url = CHATADMIN_URL . 'build/';
 
+        // This method renders a bespoke, full-page SPA document on
+        // template_redirect — there is no wp_head/wp_enqueue context, so the
+        // built assets are emitted directly. Every interpolated value below is
+        // escaped (esc_url / esc_html / wp_json_encode with JSON_HEX_*).
+        // phpcs:disable WordPress.WP.EnqueuedResources.NonEnqueuedStylesheet, WordPress.WP.EnqueuedResources.NonEnqueuedScript, PluginCheck.CodeAnalysis.Heredoc.NotAllowed, WordPress.Security.EscapeOutput.HeredocOutputNotEscaped
         $css_tags = '';
         if (!empty($entry['css'])) {
             foreach ($entry['css'] as $css) {
@@ -115,5 +120,6 @@ class Frontend {
 </body>
 </html>
 HTML;
+        // phpcs:enable WordPress.WP.EnqueuedResources.NonEnqueuedStylesheet, WordPress.WP.EnqueuedResources.NonEnqueuedScript, PluginCheck.CodeAnalysis.Heredoc.NotAllowed, WordPress.Security.EscapeOutput.HeredocOutputNotEscaped
     }
 }

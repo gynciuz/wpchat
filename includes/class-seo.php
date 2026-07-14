@@ -178,7 +178,8 @@ class Seo {
         if ($plugin === 'aioseo') {
             global $wpdb;
             $table = $wpdb->prefix . 'aioseo_posts';
-            $row   = $wpdb->get_row($wpdb->prepare("SELECT title, description FROM `{$table}` WHERE post_id = %d", $post_id), ARRAY_A);
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- reads AIOSEO's own table for a single post; live data.
+            $row   = $wpdb->get_row($wpdb->prepare('SELECT title, description FROM %i WHERE post_id = %d', $table, $post_id), ARRAY_A);
             return [
                 'plugin'           => 'aioseo',
                 'seo_title'        => (string) ($row['title'] ?? ''),

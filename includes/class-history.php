@@ -56,9 +56,11 @@ class History {
         global $wpdb;
         $table = self::table_name();
         $cutoff = gmdate('Y-m-d H:i:s', time() - self::IDLE_GAP_SECS);
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- custom conversation table; live data, no cache layer.
         $row = $wpdb->get_row(
             $wpdb->prepare(
-                "SELECT conversation, created_at FROM $table WHERE user_id = %d AND created_at >= %s ORDER BY id DESC LIMIT 1",
+                "SELECT conversation, created_at FROM %i WHERE user_id = %d AND created_at >= %s ORDER BY id DESC LIMIT 1",
+                $table,
                 $user_id,
                 $cutoff
             )
@@ -77,8 +79,10 @@ class History {
     public static function user_message_count(int $user_id, string $conversation): int {
         global $wpdb;
         $table = self::table_name();
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- custom conversation table; live data, no cache layer.
         return (int) $wpdb->get_var($wpdb->prepare(
-            "SELECT COUNT(*) FROM $table WHERE user_id = %d AND conversation = %s AND role = %s",
+            "SELECT COUNT(*) FROM %i WHERE user_id = %d AND conversation = %s AND role = %s",
+            $table,
             $user_id,
             $conversation,
             'user'
@@ -92,6 +96,7 @@ class History {
             return 0;
         }
         $tool_json = empty($tool_calls) ? null : wp_json_encode($tool_calls);
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- custom conversation table; single insert of live data.
         $ok = $wpdb->insert(
             self::table_name(),
             [
@@ -120,14 +125,16 @@ class History {
 
         // Two-step query: (1) get the most recent N conversations and their last activity;
         // (2) fetch the first user message of each as a label. Plain SQL is portable.
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- custom conversation table; live data, no cache layer.
         $convs = $wpdb->get_results(
             $wpdb->prepare(
                 "SELECT conversation, MAX(created_at) AS last_activity, COUNT(*) AS message_count
-                 FROM $table
+                 FROM %i
                  WHERE user_id = %d
                  GROUP BY conversation
                  ORDER BY last_activity DESC
                  LIMIT %d",
+                $table,
                 $user_id,
                 $limit
             )
@@ -139,17 +146,18 @@ class History {
         $ids = array_map(static fn($r) => $r->conversation, $convs);
         $placeholders = implode(',', array_fill(0, count($ids), '%s'));
 
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- custom table; $placeholders is a generated %s list and every value is passed as a prepare arg.
         $first_msgs = $wpdb->get_results(
             $wpdb->prepare(
                 "SELECT m.conversation, m.content
-                 FROM $table m
+                 FROM %i m
                  INNER JOIN (
                    SELECT conversation, MIN(id) AS first_id
-                   FROM $table
+                   FROM %i
                    WHERE user_id = %d AND role = 'user' AND conversation IN ($placeholders)
                    GROUP BY conversation
                  ) f ON f.first_id = m.id",
-                array_merge([$user_id], $ids)
+                array_merge([$table, $table, $user_id], $ids)
             )
         );
         $label_by_conv = [];
@@ -179,9 +187,11 @@ class History {
     public static function get_conversation(int $user_id, string $conversation): array {
         global $wpdb;
         $table = self::table_name();
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- custom conversation table; live data, no cache layer.
         $rows = $wpdb->get_results(
             $wpdb->prepare(
-                "SELECT role, content, tool_calls, created_at FROM $table WHERE user_id = %d AND conversation = %s ORDER BY id ASC",
+                "SELECT role, content, tool_calls, created_at FROM %i WHERE user_id = %d AND conversation = %s ORDER BY id ASC",
+                $table,
                 $user_id,
                 $conversation
             )

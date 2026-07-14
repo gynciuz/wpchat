@@ -752,7 +752,7 @@ class Tools {
             'send_order_details_admin'        => __('Resend new order notification (to admin)', 'chat-admin'),
             'regenerate_download_permissions' => __('Regenerate download permissions', 'chat-admin'),
         ];
-        $actions = apply_filters('woocommerce_order_actions', $defaults, $order);
+        $actions = apply_filters('woocommerce_order_actions', $defaults, $order); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- invoking a WooCommerce core hook, not defining ours
         $out = [];
         foreach ((array) $actions as $slug => $label) {
             $out[] = [
@@ -824,20 +824,20 @@ class Tools {
         // sent directly; everything else dispatches the plugin hook.
         switch ($action) {
             case 'send_order_details':
-                do_action('woocommerce_before_resend_order_emails', $order, 'customer');
+                do_action('woocommerce_before_resend_order_emails', $order, 'customer'); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- invoking a WooCommerce core hook, not defining ours
                 WC()->payment_gateways();
                 WC()->shipping();
                 WC()->mailer()->customer_invoice($order);
                 $order->add_order_note(__('Order details manually re-sent to customer via ChatAdmin.', 'chat-admin'), false, true);
-                do_action('woocommerce_after_resend_order_email', $order, 'customer');
+                do_action('woocommerce_after_resend_order_email', $order, 'customer'); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- invoking a WooCommerce core hook, not defining ours
                 break;
 
             case 'send_order_details_admin':
-                do_action('woocommerce_before_resend_order_emails', $order, 'new_order');
+                do_action('woocommerce_before_resend_order_emails', $order, 'new_order'); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- invoking a WooCommerce core hook, not defining ours
                 WC()->payment_gateways();
                 WC()->shipping();
                 WC()->mailer()->emails['WC_Email_New_Order']->trigger($order->get_id(), $order);
-                do_action('woocommerce_after_resend_order_email', $order, 'new_order');
+                do_action('woocommerce_after_resend_order_email', $order, 'new_order'); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- invoking a WooCommerce core hook, not defining ours
                 break;
 
             case 'regenerate_download_permissions':
@@ -850,7 +850,7 @@ class Tools {
                 // Custom plugin action (e.g. PW Gift Cards resend). The plugin
                 // hooked on this is responsible for sending its own email and
                 // adding its own order note.
-                do_action('woocommerce_order_action_' . $action, $order);
+                do_action('woocommerce_order_action_' . $action, $order); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- invoking a WooCommerce core hook, not defining ours
                 break;
         }
 

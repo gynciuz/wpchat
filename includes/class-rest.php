@@ -336,6 +336,7 @@ class Rest {
         $wc      = function_exists('wc_get_order_statuses') ? 'active' : 'not active';
         $has_key = Settings::get_api_key() ? 'configured' : 'NOT configured';
 
+        // phpcs:ignore PluginCheck.CodeAnalysis.Heredoc.NotAllowed -- internal prompt template string, not output.
         return <<<PROMPT
 You are ChatAdmin Help — a friendly support assistant for the ChatAdmin WordPress plugin, embedded on the site "{$site}" (locale: {$locale}). You ONLY answer questions about using ChatAdmin. You have NO tools and cannot change anything on the site — you explain, guide, and troubleshoot in plain language.
 
@@ -407,6 +408,7 @@ PROMPT;
             ? "\n" . implode("\n", $kind_lines)
             : "\n  (no content kinds registered)";
 
+        // phpcs:ignore PluginCheck.CodeAnalysis.Heredoc.NotAllowed -- internal prompt template string, not output.
         return <<<PROMPT
 You are ChatAdmin, a concise admin assistant embedded in the WordPress site "{$site}" (locale: {$locale}). You manage WooCommerce orders and (carefully) edit site content via tool calls.
 
