@@ -134,20 +134,27 @@ class Rest {
         // Persist the latest user message before calling the LLM so we have
         // a record even if the LLM call errors mid-flight. (Skipped in support
         // mode so help chatter never pollutes the conversation history.)
+        $latest_user_message = '';
         if (!$is_support) {
             $latest = end($messages);
             if (is_array($latest) && ($latest['role'] ?? '') === 'user') {
-                History::append($user_id, $conversation_id, 'user', (string) $latest['content'], []);
+                $latest_user_message = (string) $latest['content'];
+                History::append($user_id, $conversation_id, 'user', $latest_user_message, []);
             }
         }
 
         // Bind mutation confirmations to a real user turn (audit finding #2):
         // the turn index is the count of user messages in this conversation, so
-        // an apply can require a preview from a strictly earlier turn.
+        // an apply can require a preview from a strictly earlier turn. The
+        // user's actual latest message is also carried so a mutating apply can
+        // require genuine consent (a whitelisted confirmation the *user* typed),
+        // not a `confirmation` argument the model authored — which prompt
+        // injection could otherwise supply.
         if (!$is_support) {
             Tools::set_request_context([
                 'conversation_id' => $conversation_id,
                 'turn'            => History::user_message_count($user_id, $conversation_id),
+                'user_message'    => $latest_user_message,
             ]);
         }
 

@@ -72,6 +72,22 @@ class WPContentBackendTest extends TestCase {
         $this->assertSame('fresh-value', get_post_meta($post_id, 'chatadmin_test_key', true));
     }
 
+    public function test_wp_post_meta_refuses_protected_key(): void {
+        $post_id = $this->factory()->post->create();
+        $backend = new WPContentBackend();
+
+        $target = ['kind' => 'wp_post_meta', 'post_id' => $post_id, 'key' => '_wp_page_template'];
+
+        // Preview must refuse a protected (_-prefixed) meta key.
+        $preview = $backend->preview($target, 'value', 'evil-template.php');
+        $this->assertArrayHasKey('error', $preview);
+
+        // Apply, even with a valid confirmation, must not write it.
+        $apply = $backend->apply($target, 'value', 'evil-template.php', 'taip');
+        $this->assertArrayHasKey('error', $apply);
+        $this->assertSame('', (string) get_post_meta($post_id, '_wp_page_template', true), 'Protected meta must not be written.');
+    }
+
     public function test_unknown_kind_returns_error(): void {
         $backend = new WPContentBackend();
         $result  = $backend->preview(['kind' => 'wp_unknown_kind'], 'title', 'x');

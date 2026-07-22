@@ -89,7 +89,7 @@ class ContentConfirmation {
         // in the input, treat as not-confirmed even if an affirmative is
         // also present — fail safe for "ne, taip" / "no, ok" / etc.
         $rejections = [
-            'no', 'nope', 'cancel',             // English
+            'no', 'nope', 'cancel', 'not', "don't", 'dont',  // English
             'ne', 'negerai', 'atšaukti',        // Lithuanian
             'нет', 'не', 'отмена',              // Russian (kept)
             'nie',                              // Polish
@@ -481,6 +481,13 @@ class WPContentBackend implements ContentBackend {
             $key     = (string) ($target['key'] ?? '');
             if (!$post_id || !$key) {
                 return ['error' => 'post_id and key required for wp_post_meta.'];
+            }
+            // Refuse protected (_-prefixed) meta — WordPress hides these from the
+            // custom-fields UI for the same reason: themes/plugins trust them
+            // (e.g. _wp_page_template, _thumbnail_id). Chat edits are limited to
+            // ordinary, user-facing meta.
+            if (is_protected_meta($key, 'post')) {
+                return ['error' => "Refusing to write protected meta key '$key'. Only non-protected (non-underscore) meta keys are editable."];
             }
             return ['kind' => 'wp_post_meta', 'post_id' => $post_id, 'key' => $key];
         }

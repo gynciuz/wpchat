@@ -65,6 +65,52 @@ class ToolsRoleGateTest extends TestCase {
         $this->assertSame('kind_role_restricted', $result['code']);
     }
 
+    public function test_list_content_blocks_refuses_meta_of_post_user_cannot_edit(): void {
+        // Admin owns a post carrying private (_-prefixed) meta.
+        $post_id = $this->factory()->post->create(['post_author' => $this->adminUserId]);
+        \update_post_meta($post_id, '_private_token', 'secret-123');
+
+        // An author cannot edit others' posts, so must not be able to read
+        // that post's meta via the list path either.
+        $author = $this->factory()->user->create(['role' => 'author']);
+        \wp_set_current_user($author);
+
+        $result = Tools::list_content_blocks([
+            'kind' => 'wp_post_meta',
+            'args' => ['post_id' => $post_id],
+        ]);
+
+        $this->assertArrayHasKey('error', $result, 'Listing meta of a non-editable post must be refused.');
+        $this->assertSame('kind_role_restricted', $result['code']);
+    }
+
+    public function test_list_content_blocks_allows_meta_of_editable_post(): void {
+        // Admin (current user) can edit the post, so listing its meta is fine.
+        $post_id = $this->factory()->post->create(['post_author' => $this->adminUserId]);
+        \update_post_meta($post_id, 'color', 'blue');
+
+        $result = Tools::list_content_blocks([
+            'kind' => 'wp_post_meta',
+            'args' => ['post_id' => $post_id],
+        ]);
+
+        $this->assertArrayNotHasKey('error', $result);
+        $this->assertSame('wp_post_meta', $result['kind']);
+    }
+
+    public function test_seo_meta_requires_per_post_edit_cap(): void {
+        $post_id = $this->factory()->post->create(['post_author' => $this->adminUserId]);
+
+        // The required cap must be object-scoped (edit_post), not the
+        // role-level edit_posts, so it binds to the specific post.
+        $this->assertSame('edit_post', Tools::kind_required_cap('seo_meta', ['post_id' => $post_id]));
+
+        // An author cannot edit someone else's post, so cannot set its SEO meta.
+        $author = $this->factory()->user->create(['role' => 'author']);
+        \wp_set_current_user($author);
+        $this->assertFalse(Tools::user_can_edit_kind('seo_meta', ['post_id' => $post_id]));
+    }
+
     public function test_system_prompt_omits_disabled_kinds(): void {
         \update_option(Onboarding::DISABLED_KINDS_OPT, ['wp_term']);
 

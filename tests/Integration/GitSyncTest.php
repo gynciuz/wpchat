@@ -59,6 +59,19 @@ class GitSyncTest extends TestCase {
         parent::tear_down();
     }
 
+    public function test_path_is_within_rejects_sibling_sharing_prefix(): void {
+        $root = '/var/www/html';
+        // Files at or under the root are within.
+        $this->assertTrue(GitSync::path_is_within($root, $root));
+        $this->assertTrue(GitSync::path_is_within($root . '/wp-content/page.html', $root));
+        // A sibling directory that merely shares the string prefix is NOT within.
+        $this->assertFalse(
+            GitSync::path_is_within('/var/www/html-secrets/x.txt', $root),
+            'A sibling dir sharing the repo-root prefix must be rejected.'
+        );
+        $this->assertFalse(GitSync::path_is_within('/etc/passwd', $root));
+    }
+
     public function test_skipped_when_disabled(): void {
         $result = GitSync::commit_files([$this->file], 'no-op', []);
         $this->assertFalse($result['ok']);

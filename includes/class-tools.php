@@ -321,10 +321,13 @@ class Tools {
                 return 'manage_categories';
         }
 
-        // Custom kinds — let the backend declare its own required cap.
+        // Custom kinds — let the backend declare its own required cap. The
+        // target is passed so a backend can resolve an object-scoped cap
+        // (e.g. seo_meta → edit_post for the specific post) rather than a
+        // role-level one.
         $backend = ContentRouter::for_kind($kind);
         if ($backend && method_exists($backend, 'required_cap')) {
-            $cap = (string) $backend->required_cap($kind);
+            $cap = (string) $backend->required_cap($kind, $target);
             if ($cap !== '') {
                 return $cap;
             }
@@ -381,6 +384,13 @@ class Tools {
             ];
         }
         $sub_args = is_array($args['args'] ?? null) ? $args['args'] : [];
+        // Gate reads the same way preview/apply are gated: a caller may only
+        // list a kind they're allowed to edit for the given target. Without
+        // this, wp_post_meta listing would disclose ALL meta (incl. protected
+        // and plugin-private keys) of any post_id, even ones the user can't edit.
+        if ($err = self::check_kind_access($kind, $sub_args)) {
+            return $err;
+        }
         return $backend->list_items($kind, $sub_args);
     }
 
@@ -432,7 +442,10 @@ class Tools {
         // turn (finding #2). Off that path (trusted callers) fall through to the
         // backend's own phrase check, unchanged.
         if (self::request_conversation() !== '' && empty($args['_confirmed'])) {
-            $confirmed = ContentConfirmation::is_confirmed($confirmation)
+            // Consent is the user's own latest message, not the model-authored
+            // `confirmation` arg (which prompt injection could supply), plus a
+            // preview recorded in a strictly earlier turn.
+            $confirmed = ContentConfirmation::is_confirmed(self::request_user_message())
                 && self::consume_pending(self::content_target_key($kind, $target, $field));
             if (!$confirmed) {
                 return [
@@ -535,6 +548,16 @@ class Tools {
         return (int) (self::$request_context['turn'] ?? 0);
     }
 
+    /**
+     * The user's actual latest chat message on the LLM path (empty off it).
+     * Consent for a mutating apply must be a confirmation the *user* typed
+     * here — never a model-authored `confirmation` argument, which content the
+     * model merely read (prompt injection) could otherwise supply.
+     */
+    private static function request_user_message(): string {
+        return (string) (self::$request_context['user_message'] ?? '');
+    }
+
     private static function record_pending(string $target_key): void {
         PendingConfirmation::record(self::request_conversation(), $target_key, self::request_turn());
     }
@@ -562,11 +585,16 @@ class Tools {
         if (!empty($args['_confirmed'])) {
             return true;
         }
-        $phrase_ok = ContentConfirmation::is_confirmed((string) ($args['confirmation'] ?? ''));
         if (self::request_conversation() === '') {
-            return $phrase_ok;
+            // Off the LLM path (direct/programmatic callers): the model-supplied
+            // phrase is the only signal, and the caller is trusted.
+            return ContentConfirmation::is_confirmed((string) ($args['confirmation'] ?? ''));
         }
-        if ($phrase_ok && self::consume_pending($target_key)) {
+        // On the LLM path, consent must be a confirmation the USER actually
+        // typed this turn — not the model's `confirmation` argument — AND a
+        // preview/needs_confirmation must have run in a strictly earlier turn.
+        $user_confirmed = ContentConfirmation::is_confirmed(self::request_user_message());
+        if ($user_confirmed && self::consume_pending($target_key)) {
             return true;
         }
         self::record_pending($target_key);

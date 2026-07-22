@@ -104,6 +104,12 @@ class ContentConfirmationTest extends TestCase {
             // refuse — the user is uncertain and should retry cleanly.
             'mixed signals ne taip' => ['ne, taip'],
             'mixed signals no ok'   => ['no, ok'],
+            // Explicit refusals that embed the "do it" affirmative substring —
+            // these must NOT slip through as confirmations.
+            'do not do it'   => ['do not do it'],
+            "don't do it"    => ["don't do it"],
+            'dont do it'     => ['dont do it'],
+            'please do not'  => ['please do not'],
         ];
     }
 

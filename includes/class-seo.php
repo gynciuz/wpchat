@@ -364,7 +364,21 @@ class SeoBackend implements ContentBackend {
 
     /** @return string capability required to edit the kind. */
     public function required_cap(string $kind, array $target = []): string {
-        return $kind === 'seo_setting' ? 'manage_options' : 'edit_posts';
+        if ($kind === 'seo_setting') {
+            return 'manage_options';
+        }
+        // seo_meta — resolve the object-scoped edit cap for the specific post
+        // (edit_post / edit_page) so a user can only set SEO on posts they may
+        // actually edit, not any post site-wide. Falls back to edit_posts when
+        // no post is in the target (e.g. describing the kind).
+        $post_id = (int) ($target['post_id'] ?? 0);
+        if ($post_id) {
+            $type_obj = get_post_type_object(get_post_type($post_id) ?: 'post');
+            if ($type_obj && !empty($type_obj->cap->edit_post)) {
+                return (string) $type_obj->cap->edit_post;
+            }
+        }
+        return 'edit_posts';
     }
 
     public function list_items(string $kind, array $args = []): array {

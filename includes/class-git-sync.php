@@ -44,6 +44,17 @@ class GitSync {
      * @param array{name?: string, email?: string} $author Author info; falls back to git config.
      * @return array {ok: bool, skipped_reason?: string, commit_sha?: string, error?: string}
      */
+    /**
+     * True iff $path is the repo root itself or a file/dir strictly under it.
+     * Uses a trailing-separator boundary so a sibling directory that merely
+     * shares the root's string prefix (e.g. `/var/www/html-secrets` vs a root
+     * of `/var/www/html`) is correctly rejected.
+     */
+    public static function path_is_within(string $path, string $root): bool {
+        $root = rtrim($root, '/');
+        return $path === $root || strpos($path, $root . '/') === 0;
+    }
+
     public static function commit_files(array $absolute_paths, string $message, array $author = []): array {
         if (!self::is_enabled()) {
             return ['ok' => false, 'skipped_reason' => 'CHATADMIN_GIT_SYNC_ENABLED not set to true in wp-config.php'];
@@ -59,7 +70,7 @@ class GitSync {
             return ['ok' => false, 'skipped_reason' => 'no files'];
         }
         foreach ($absolute_paths as $p) {
-            if (strpos($p, $repo_root) !== 0) {
+            if (!self::path_is_within($p, $repo_root)) {
                 return ['ok' => false, 'error' => 'File outside repo root: ' . $p];
             }
         }

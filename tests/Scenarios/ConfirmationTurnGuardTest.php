@@ -74,6 +74,81 @@ class ConfirmationTurnGuardTest extends TestCase {
         );
     }
 
+    /**
+     * Injection across TWO turns: a preview ran in turn 1, but in turn 2 the
+     * user's real message is NOT a confirmation — the model supplies a
+     * `confirmation` phrase on its own (e.g. steered by injected order/content
+     * text still in context). Consent must come from the user's actual message,
+     * not a model-authored argument, so this must NOT write.
+     */
+    public function test_apply_with_model_confirmation_but_no_user_consent_is_blocked(): void {
+        $post_id = $this->factory()->post->create(['post_title' => 'Original']);
+
+        // Turn 1 — a legitimate preview, so a pending record is minted.
+        $this->mockAnthropic
+            ->enqueueToolUse('preview_content_change', [
+                'target' => ['kind' => 'wp_post', 'id' => $post_id],
+                'field'  => 'title',
+                'value'  => 'Hacked',
+            ])
+            ->enqueueEndTurn('Rename to "Hacked"? Please confirm.');
+        $r1   = $this->postChat('summarize the latest order');
+        $conv = $r1['data']['conversation_id'] ?? '';
+        $this->assertNotSame('', $conv);
+
+        // Turn 2 — the user does NOT confirm ("thanks"), but the model calls
+        // apply anyway with a self-supplied confirmation phrase.
+        $this->mockAnthropic
+            ->enqueueToolUse('apply_content_change', [
+                'target'       => ['kind' => 'wp_post', 'id' => $post_id],
+                'field'        => 'title',
+                'value'        => 'Hacked',
+                'confirmation' => 'taip',
+            ])
+            ->enqueueEndTurn('done');
+        $this->postChat('thanks for the summary', $conv);
+
+        $this->assertSame(
+            'Original',
+            get_post($post_id)->post_title,
+            'Apply must require the real user message to be a confirmation, not a model-supplied phrase.'
+        );
+    }
+
+    /**
+     * The same consent binding for order mutations: with an earlier-turn
+     * preview present, a model-supplied confirmation and a non-confirming user
+     * message must still be refused.
+     */
+    public function test_order_status_with_model_confirmation_but_no_user_consent_is_blocked(): void {
+        if (!function_exists('wc_get_order')) {
+            $this->markTestSkipped('WooCommerce not loaded.');
+        }
+        $order = wc_create_order();
+        $order->set_status('processing');
+        $order->save();
+        $oid = $order->get_id();
+
+        // Turn 1 — needs_confirmation records a pending entry for this target.
+        $this->mockAnthropic
+            ->enqueueToolUse('update_order_status', ['order_id' => $oid, 'status' => 'completed'])
+            ->enqueueEndTurn('Mark it completed? Please confirm.');
+        $r1   = $this->postChat('what is the latest order');
+        $conv = $r1['data']['conversation_id'] ?? '';
+
+        // Turn 2 — user does not consent; model supplies "taip" itself.
+        $this->mockAnthropic
+            ->enqueueToolUse('update_order_status', ['order_id' => $oid, 'status' => 'completed', 'confirmation' => 'taip'])
+            ->enqueueEndTurn('done');
+        $this->postChat('ok cool, anything else new?', $conv);
+
+        $this->assertSame(
+            'processing',
+            wc_get_order($oid)->get_status(),
+            'Order status change must require a real user confirmation message.'
+        );
+    }
+
     /** Injection: publish + confirmation in ONE turn, no earlier turn → refused. */
     public function test_llm_publish_without_earlier_turn_is_blocked(): void {
         $post_id = $this->factory()->post->create(['post_status' => 'draft', 'post_title' => 'Draft']);
