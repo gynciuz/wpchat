@@ -4,7 +4,7 @@ Tags: woocommerce, chat, ai, claude, orders
 Requires at least: 6.5
 Tested up to: 7.0
 Requires PHP: 8.1
-Stable tag: 0.7.2
+Stable tag: 0.7.3
 License: MIT
 License URI: https://opensource.org/licenses/MIT
 
@@ -83,6 +83,15 @@ and "Report a problem" sends the details to the developer.
 3. A two-minute first-run wizard gets the plugin ready for your site.
 
 == Changelog ==
+
+= 0.7.3 =
+Security hardening for the confirmation gate and content-edit permissions.
+* **Confirmation is bound to your real message.** A mutating action (order status/note/action, publish, content edit) now proceeds only when the confirmation is a phrase *you* actually typed — not one the model supplied. This closes a path where text read from order/content data (prompt injection) could drive an unconfirmed change across turns.
+* **Refusals are read as refusals.** The confirmation whitelist now rejects "not" / "don't" / "dont", so "do not do it" and "don't do it" are no longer mistaken for consent.
+* **Listing content is permission-checked.** `list_content_blocks` now applies the same per-kind capability check as preview/apply, so post meta can't be listed for posts you can't edit.
+* **Protected meta is read-only from chat.** `wp_post_meta` edits reject protected (`_`-prefixed) keys like `_wp_page_template`.
+* **Per-post SEO permissions.** Editing a post's SEO title/description now requires edit rights on *that* post, not the generic edit-posts role.
+* Hardened the optional git-sync repo-root boundary check.
 
 = 0.7.2 =
 Simpler provider setup + wp-admin chat fixes.
