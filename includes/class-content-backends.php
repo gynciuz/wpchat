@@ -265,7 +265,7 @@ class WPContentBackend implements ContentBackend {
     public function describe_kinds(): array {
         return [
             'wp_post' => [
-                'description' => 'A WordPress post or page referenced by ID. Target shape: {kind: "wp_post", id: <int>}.',
+                'description' => 'Any WordPress post, page, OR custom-post-type item (team member, portfolio, service, …) referenced by ID. Target shape: {kind: "wp_post", id: <int>}. To find one, list_content_blocks("wp_post", {post_type: "<type>" | "any", search: "<words>"}).',
                 'fields'      => ['title', 'content', 'excerpt', 'status'],
             ],
             'wp_page_slug' => [
@@ -283,11 +283,40 @@ class WPContentBackend implements ContentBackend {
         ];
     }
 
+    /**
+     * Registered post types the current user may edit — everything with an
+     * admin UI, minus WordPress/WooCommerce system types (attachments, blocks,
+     * templates, orders/coupons: those aren't free-text content and orders are
+     * PII gated separately). Used to resolve post_type:"any" for discovery.
+     *
+     * @return string[]
+     */
+    private static function editable_post_types(): array {
+        $skip = ['attachment', 'wp_block', 'wp_template', 'wp_template_part', 'wp_navigation', 'nav_menu_item', 'custom_css', 'customize_changeset', 'revision', 'oembed_cache', 'user_request', 'shop_order', 'shop_order_refund', 'shop_coupon', 'shop_subscription', 'product_variation'];
+        $out  = [];
+        foreach (get_post_types(['show_ui' => true], 'objects') as $pt) {
+            if (in_array($pt->name, $skip, true)) {
+                continue;
+            }
+            $edit_cap = (is_object($pt->cap) && !empty($pt->cap->edit_posts)) ? $pt->cap->edit_posts : 'edit_posts';
+            if (current_user_can($edit_cap)) {
+                $out[] = $pt->name;
+            }
+        }
+        return $out ?: ['post', 'page'];
+    }
+
     public function list_items(string $kind, array $args = []): array {
         switch ($kind) {
             case 'wp_post':
             case 'wp_page_slug':
                 $post_type = $args['post_type'] ?? ['post', 'page'];
+                // "any" searches across every editable content type (custom post
+                // types included) so theme/plugin content — team members,
+                // portfolio, services — is discoverable, not just posts/pages.
+                if ($post_type === 'any' || $post_type === '*') {
+                    $post_type = self::editable_post_types();
+                }
                 $limit     = max(1, min((int) ($args['limit'] ?? 20), 100));
                 $search    = (string) ($args['search'] ?? '');
                 $query = new \WP_Query([

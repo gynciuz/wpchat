@@ -4,7 +4,7 @@ Tags: woocommerce, chat, ai, claude, orders
 Requires at least: 6.5
 Tested up to: 7.0
 Requires PHP: 8.1
-Stable tag: 0.7.6
+Stable tag: 0.7.7
 License: MIT
 License URI: https://opensource.org/licenses/MIT
 
@@ -83,6 +83,11 @@ and "Report a problem" sends the details to the developer.
 3. A two-minute first-run wizard gets the plugin ready for your site.
 
 == Changelog ==
+
+= 0.7.7 =
+Editing theme/plugin content, and a feedback loop that learns what the assistant can't yet do.
+* **Custom post types are now editable in chat.** Team members, portfolio items, services, testimonials and other theme/plugin content types can be found and edited through the same preview→confirm flow as posts and pages — the assistant now knows they exist and can search across them (`post_type: "any"`). When the same wrong text appears on many items, it's usually one shared taxonomy label, and the assistant fixes it in a single edit.
+* **Automatic "unmet request" signal.** When the assistant has to fall back to a wp-admin link because no tool could do the job, ChatAdmin now records that (with the request text anonymised — emails and long numbers stripped) so the most-wanted missing capabilities surface in Diagnostics and, if error reporting is on, to the developer. No thumbs-up/down needed; it just learns from the handoffs.
 
 = 0.7.6 =
 * **"Open full screen ↗" opens in a new tab.** The full-screen chat link in the ChatAdmin admin menu now opens `/chatadmin` in a new browser tab, so your wp-admin session stays put behind it.

@@ -104,6 +104,53 @@ class Rest {
         return current_user_can('manage_woocommerce') || current_user_can('edit_shop_orders');
     }
 
+    /**
+     * Auto-detect "unmet requests." When a chat turn resolves with a
+     * `get_admin_url` handoff (the model's "no tool can do this, here's the
+     * wp-admin link" fallback) and NO in-app mutation succeeded, log a
+     * `capability_gap` event carrying only the anonymised request text plus the
+     * handed-off resource. These are the product's top improvement signals —
+     * e.g. "user wanted to edit a team-member's label, we couldn't." Routed
+     * through Telemetry, so they appear in Diagnostics locally and, when the
+     * admin opted in and a collector is configured, phone home.
+     *
+     * @param array<int,array{name?:string,input?:mixed,output?:mixed}> $tool_calls
+     */
+    private function maybe_log_capability_gap(string $user_message, array $tool_calls): void {
+        if ($user_message === '' || empty($tool_calls)) {
+            return;
+        }
+
+        $mutators = ['apply_content_change', 'create_content', 'publish_content', 'update_order_status', 'add_order_note', 'trigger_order_action'];
+        $handoff  = null;
+        $mutated  = false;
+
+        foreach ($tool_calls as $call) {
+            $name = (string) ($call['name'] ?? '');
+            if ($name === 'get_admin_url') {
+                $handoff = $call;
+            } elseif (in_array($name, $mutators, true)) {
+                $out = $call['output'] ?? null;
+                if (is_array($out) && empty($out['error']) && (!empty($out['ok']) || !empty($out['post_id']) || !empty($out['status']))) {
+                    $mutated = true;
+                }
+            }
+        }
+
+        // A handoff that FOLLOWED a successful edit isn't a gap (e.g. "done —
+        // here's the page"). Only a handoff with nothing accomplished is.
+        if ($handoff === null || $mutated) {
+            return;
+        }
+
+        $resource = is_array($handoff['input'] ?? null) ? (string) ($handoff['input']['resource'] ?? '') : '';
+        Telemetry::log('capability_gap', [
+            'message' => Telemetry::redact_pii($user_message),
+            'tool'    => 'get_admin_url',
+            'code'    => $resource,
+        ]);
+    }
+
     public function handle_chat(\WP_REST_Request $request): \WP_REST_Response {
         $messages = $request->get_param('messages');
         if (!is_array($messages) || empty($messages)) {
@@ -201,6 +248,14 @@ class Rest {
                 $conversation_id,
                 'assistant',
                 (string) ($result['text'] ?? ''),
+                is_array($result['tool_calls'] ?? null) ? $result['tool_calls'] : []
+            );
+            // Learn from what we couldn't do: if this turn ended in a wp-admin
+            // handoff with no successful in-app mutation, record it as a
+            // capability gap (anonymised request only) so the top unmet
+            // requests surface in Diagnostics / the collector.
+            $this->maybe_log_capability_gap(
+                $latest_user_message,
                 is_array($result['tool_calls'] ?? null) ? $result['tool_calls'] : []
             );
         }
@@ -435,6 +490,30 @@ PROMPT;
             ? "\n" . implode("\n", $kind_lines)
             : "\n  (no content kinds registered)";
 
+        // Enumerate the site's custom post types (beyond post/page) the current
+        // user may edit. Theme/plugin content — team members, portfolio,
+        // services, testimonials — lives in these, and wp_post / wp_post_meta
+        // already edit ANY post type by id. Listing them here is what stops the
+        // model dead-ending on "that's stored separately" (the reported
+        // trx_team "meistrai" handoff): now it knows the type exists and can
+        // target it.
+        $skip_types = ['post', 'page', 'attachment', 'wp_block', 'wp_template', 'wp_template_part', 'wp_navigation', 'nav_menu_item', 'custom_css', 'customize_changeset', 'revision', 'oembed_cache', 'user_request', 'shop_order', 'shop_order_refund', 'shop_coupon', 'shop_subscription', 'product_variation'];
+        $cpt_lines  = [];
+        foreach (get_post_types(['show_ui' => true], 'objects') as $pt) {
+            if (in_array($pt->name, $skip_types, true)) {
+                continue;
+            }
+            $edit_cap = (is_object($pt->cap) && !empty($pt->cap->edit_posts)) ? $pt->cap->edit_posts : 'edit_posts';
+            if (!current_user_can($edit_cap)) {
+                continue;
+            }
+            $label = (is_object($pt->labels) && !empty($pt->labels->name)) ? $pt->labels->name : $pt->name;
+            $cpt_lines[] = sprintf('  - `%s` — %s', $pt->name, $label);
+        }
+        $cpt_block = $cpt_lines
+            ? "\n" . implode("\n", $cpt_lines)
+            : "\n  (none beyond posts and pages)";
+
         // The current user's WooCommerce order rights. Everything ChatAdmin
         // lets someone do is scoped to their WP role, so the prompt tells the
         // model up-front whether THIS user may touch orders — an admin can, a
@@ -540,6 +619,14 @@ Use `create_content` to make a new post or page. It always creates a **DRAFT** (
 
 # Content editing — STRICT two-step + dynamic kinds
 This site exposes the following editable content kinds via the registered content backends:{$kind_block}
+
+## Custom post types (theme / plugin content — team members, portfolio, services, testimonials, …)
+Beyond posts and pages, this site has these editable content types:{$cpt_block}
+They are edited with the SAME tools you already have — a "team member", "portfolio item", etc. is just a post of its type:
+- **Find the item:** `list_content_blocks("wp_post", {post_type: "<type>", search: "<words>"})`. Pass `post_type: "any"` to search across every type at once.
+- **See where a value lives:** if the text isn't the title/content, call `list_content_blocks("wp_post_meta", {post_id: <id>})` and scan the meta for it.
+- **Edit it:** preview→apply on `wp_post` (title / content / excerpt) or on `wp_post_meta` (a non-protected key). Meta keys starting with `_` are theme-managed and can't be changed from chat — for those, hand off with `get_admin_url(resource='post', id=<id>)`.
+- **Same wrong value on MANY items** (e.g. every team member shows the same wrong label/position) is almost always ONE shared taxonomy term, not N separate edits: find it with `list_taxonomy_terms`, then rename that term ONCE via `wp_term` — that fixes them all. Try this before editing items one by one.
 
 ## Discover before giving up — MANDATORY
 Before you ever tell the user "I can't edit X" or "X is static HTML" or "you need FTP":
