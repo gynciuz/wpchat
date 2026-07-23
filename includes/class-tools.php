@@ -281,6 +281,25 @@ class Tools {
     }
 
     /**
+     * Whether the current user may use the order tools at all. Order data is
+     * customer PII and order mutations email customers, so both reads and
+     * writes require WooCommerce order-management rights — `edit_shop_orders`
+     * (or the broader `manage_woocommerce`). A content-only user (e.g. an
+     * editor) gets a clean refusal, mirroring how content kinds are gated by
+     * `user_can_edit_kind`. Returns null when allowed, or an LLM-shaped
+     * `['error' => …, 'code' => 'orders_role_restricted']` when not.
+     */
+    public static function require_order_access(): ?array {
+        if (current_user_can('manage_woocommerce') || current_user_can('edit_shop_orders')) {
+            return null;
+        }
+        return [
+            'error' => "Your WordPress role doesn't include WooCommerce order management, so the order tools aren't available to this account — it can edit site content only. Don't retry; if the user needs order access, tell them an administrator must grant their role the 'edit_shop_orders' capability.",
+            'code'  => 'orders_role_restricted',
+        ];
+    }
+
+    /**
      * Map a content `kind` to the WordPress capability the current user
      * needs in order to edit it. Built-in kinds resolve to their natural
      * caps; custom kinds may declare via the ContentBackend's optional
@@ -492,6 +511,9 @@ class Tools {
 
     public static function list_orders(array $args): array {
         self::require_wc();
+        if ($err = self::require_order_access()) {
+            return $err;
+        }
         $limit  = max(1, min((int) ($args['limit'] ?? 10), 50));
         $status = $args['status'] ?? '';
         $search = $args['search'] ?? '';
@@ -523,6 +545,9 @@ class Tools {
 
     public static function get_order(array $args): array {
         self::require_wc();
+        if ($err = self::require_order_access()) {
+            return $err;
+        }
         $order = wc_get_order((int) ($args['order_id'] ?? 0));
         if (!$order) {
             return ['error' => 'Order not found.'];
@@ -603,6 +628,9 @@ class Tools {
 
     public static function update_order_status(array $args): array {
         self::require_wc();
+        if ($err = self::require_order_access()) {
+            return $err;
+        }
         $order = wc_get_order((int) ($args['order_id'] ?? 0));
         if (!$order) {
             return ['error' => 'Order not found.'];
@@ -638,6 +666,9 @@ class Tools {
 
     public static function add_order_note(array $args): array {
         self::require_wc();
+        if ($err = self::require_order_access()) {
+            return $err;
+        }
         $order = wc_get_order((int) ($args['order_id'] ?? 0));
         if (!$order) {
             return ['error' => 'Order not found.'];
@@ -728,6 +759,9 @@ class Tools {
 
     public static function find_customer_orders(array $args): array {
         self::require_wc();
+        if ($err = self::require_order_access()) {
+            return $err;
+        }
         $query = trim((string) ($args['query'] ?? ''));
         if (!$query) {
             return ['error' => 'Query is required.'];
@@ -793,6 +827,9 @@ class Tools {
 
     public static function list_order_actions(array $args): array {
         self::require_wc();
+        if ($err = self::require_order_access()) {
+            return $err;
+        }
         $order = wc_get_order((int) ($args['order_id'] ?? 0));
         if (!$order) {
             return ['error' => 'Order not found.'];
@@ -805,6 +842,9 @@ class Tools {
 
     public static function trigger_order_action(array $args): array {
         self::require_wc();
+        if ($err = self::require_order_access()) {
+            return $err;
+        }
         $order = wc_get_order((int) ($args['order_id'] ?? 0));
         if (!$order) {
             return ['error' => 'Order not found.'];

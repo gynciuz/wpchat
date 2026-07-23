@@ -79,7 +79,12 @@ final class Plugin {
             ]);
         }
         History::migrate();
-        Capabilities::provision();
+        // NOTE: ChatAdmin deliberately does NOT grant capabilities to any role.
+        // What a user can do through the chat is derived entirely from the WP
+        // capabilities their role already holds (see Tools::user_can_edit_kind
+        // and Tools::require_order_access) — an admin can do more than an
+        // editor precisely because their role does. Granting caps here would
+        // flatten that distinction, so we don't.
     }
 
     public static function deactivate(): void {

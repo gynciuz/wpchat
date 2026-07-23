@@ -87,7 +87,9 @@ class Onboarding {
     }
 
     public function check_permission(): bool {
-        return current_user_can('manage_woocommerce') || current_user_can('edit_shop_orders');
+        return current_user_can('manage_woocommerce')
+            || current_user_can('edit_shop_orders')
+            || current_user_can('edit_posts');
     }
 
     public function handle_status(\WP_REST_Request $request): \WP_REST_Response {

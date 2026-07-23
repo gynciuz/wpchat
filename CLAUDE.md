@@ -71,7 +71,7 @@ It is rebuilt per-request and encodes most of the product behavior: the live WC 
 - `chatadmin_anthropic_http_response` — returning non-null short-circuits the real HTTP call. **This is the test seam** — `tests/MockAnthropic.php` enqueues scripted Anthropic responses so real tools run against real WP while the LLM is deterministic and free.
 
 ### Per-kind capability gating
-Content edits are gated at three layers: hidden from the system prompt if disabled or the user lacks the cap (`Tools::user_can_edit_kind`), and re-checked on dispatch in `Tools::apply_content_change` (`check_kind_access`). REST permission is `manage_woocommerce || edit_shop_orders` for chat, `edit_posts` for the page.
+Content edits are gated at three layers: hidden from the system prompt if disabled or the user lacks the cap (`Tools::user_can_edit_kind`), and re-checked on dispatch in `Tools::apply_content_change` (`check_kind_access`). **ChatAdmin never grants capabilities** — what a user can do is derived entirely from the WP caps their role already holds, so an admin can do more than an editor. Chat access (`Rest::check_permission`) is `manage_woocommerce || edit_shop_orders || edit_posts` (anyone who can manage orders or edit content); the order tools additionally require `edit_shop_orders`/`manage_woocommerce` via `Tools::require_order_access` (and the direct-action routes via `check_order_permission`), so a content-only editor can chat and edit content but not touch orders. The system prompt states each user's order access so the model won't offer a tool their role forbids.
 
 ### Optional, off-by-default integrations (gated by wp-config constants)
 - `CHATADMIN_ANTHROPIC_API_KEY` — overrides the DB-stored key (`Settings::get_api_key` prefers the constant).

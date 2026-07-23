@@ -4,7 +4,7 @@ Tags: woocommerce, chat, ai, claude, orders
 Requires at least: 6.5
 Tested up to: 7.0
 Requires PHP: 8.1
-Stable tag: 0.7.4
+Stable tag: 0.7.5
 License: MIT
 License URI: https://opensource.org/licenses/MIT
 
@@ -84,12 +84,18 @@ and "Report a problem" sends the details to the developer.
 
 == Changelog ==
 
+= 0.7.5 =
+ChatAdmin now mirrors your WordPress roles: what each person can do in the chat comes straight from their own role's capabilities.
+* **Permissions follow the user's WordPress role — nothing is granted.** ChatAdmin no longer adds capabilities to any role. What you can do through the chat is exactly what your WordPress role already allows: an administrator can do more than an editor, an editor more than an author, each derived from the site's own roles-and-capabilities map.
+* **Editors (and other content roles) can use ChatAdmin.** Anyone who can edit content can now open the chat and edit posts/pages within their rights — previously only shop managers/admins could open it at all.
+* **Order tools require WooCommerce order rights.** Listing/searching orders and changing status/notes/actions now need the `edit_shop_orders` (or `manage_woocommerce`) capability. A content-only user gets a clear "your role can't access orders" message instead of order data. The chat's system prompt also tells the assistant, per user, whether orders are available so it won't offer an action your role forbids.
+
 = 0.7.4 =
-Fixes for the full-screen chat route, the in-chat Settings link, page-editing permissions, and update robustness.
+Fixes for the full-screen chat route, the in-chat Settings link, page editing, and update robustness.
 * **Full-screen chat route no longer 404s, and is now `/chatadmin`.** The chat is served at `/chatadmin` (matching the ChatAdmin brand), with `/wpchat` and `/chat-admin` kept as aliases so existing links keep working, and it now returns a proper HTTP 200 — so finishing onboarding lands on the chat instead of a "Not Found" page.
 * **The "Settings" link in the chat works.** It pointed at an unregistered page slug (`chatadmin-settings`) and gave everyone, admins included, "Sorry, you are not allowed to access this page." It now opens the real Settings page.
-* **Editing pages through chat.** ChatAdmin now tops up the content-editing capabilities (posts, pages, categories, uploads) on the administrator role and on any role that can use ChatAdmin, so a role left without page-edit rights can fix page text from the chat again.
-* **Updates keep your settings and stay active.** Migrations now also run after an auto-update (WordPress skips the activation hook on update), so settings, the messages table, and capabilities survive an update instead of leaving a half-migrated install.
+* **Page editing through chat respects your role.** Editing a page works when your WordPress role permits it (see 0.7.5 for the full role-derived model).
+* **Updates keep your settings and stay active.** Migrations now also run after an auto-update (WordPress skips the activation hook on update), so your settings and the messages table survive an update instead of leaving a half-migrated install.
 
 = 0.7.3 =
 Security hardening for the confirmation gate and content-edit permissions.
