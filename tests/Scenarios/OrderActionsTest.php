@@ -3,7 +3,7 @@
  * SCENARIO — ChatAdmin can TRIGGER order emails / order actions instead of
  * dead-ending with a manual "go click this in wp-admin" handoff.
  *
- * Motivating case (Gentleman's Empire): "pakartok dovanų kupono siuntimą
+ * Motivating case (Example Store): "pakartok dovanų kupono siuntimą
  * užsakymui 2847" — the assistant should discover the order's actions
  * (PW Gift Cards "Resend gift cards" lives among them) and trigger the
  * matching one, rather than describing where to click.

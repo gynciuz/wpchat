@@ -2,10 +2,10 @@
 /**
  * Git commit-on-write helper.
  *
- * Site backends that mutate tracked files (e.g. GE's chatadmin-gentleman-backend
- * editing html/pages/*.html) can call this helper after a successful write
- * to commit + push the change automatically. Without it, edits sit
- * uncommitted on prod and disappear on the next disaster-recovery reset.
+ * A site backend that mutates tracked files (e.g. editing static HTML files)
+ * can call this helper after a successful write to commit + push the change
+ * automatically. Without it, edits sit uncommitted on prod and disappear on
+ * the next disaster-recovery reset.
  *
  * **Off by default.** Activates only when wp-config.php defines:
  *

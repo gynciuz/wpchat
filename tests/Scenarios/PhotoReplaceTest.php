@@ -4,10 +4,10 @@
  * kind: preview returns old + new image URLs, apply rewrites <img src> in
  * fixture HTML files, missing confirmation rejects.
  *
- * We register a fake backend that mirrors the GE one's shape (parses
+ * We register a fake backend that mirrors a custom backend's shape (parses
  * team__member blocks, accepts field=role and field=photo) but operates
- * on tmp fixture files instead of the real GE static HTML — so the test
- * is reproducible without GE installed.
+ * on tmp fixture files instead of the real static HTML — so the test
+ * is reproducible without that backend installed.
  *
  * @package ChatAdmin\Tests
  */

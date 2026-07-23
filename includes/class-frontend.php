@@ -86,10 +86,11 @@ class Frontend {
         }
         $js_src = esc_url($build_url . ($entry['file'] ?? ''));
 
-        // Some WP installs store `blogname` already HTML-entity-encoded (e.g.
-        // "Gentleman&#039;s Empire"). esc_html'ing that again produces
-        // "Gentleman&amp;#039;s Empire" which the browser only half-decodes,
-        // leaving "&#039;" visible. Decode entities first, then escape once.
+        // Some WP installs store `blogname` already HTML-entity-encoded (e.g. a
+        // name with an apostrophe stored as "Tom&#039;s Store"). esc_html'ing
+        // that again produces "Tom&amp;#039;s Store", which the browser only
+        // half-decodes, leaving "&#039;" visible. Decode entities first, then
+        // escape once.
         $site_name = html_entity_decode((string) get_bloginfo('name'), ENT_QUOTES | ENT_HTML5, 'UTF-8');
 
         $mode = Onboarding::should_show_for_user(get_current_user_id()) ? 'onboarding' : 'chat';

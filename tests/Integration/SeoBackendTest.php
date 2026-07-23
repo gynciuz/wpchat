@@ -97,13 +97,13 @@ class SeoBackendTest extends TestCase {
         // (normal sanitize_option behavior the plugin handles for display).
         Tools::apply_content_change([
             'target' => ['kind' => 'seo_setting'], 'field' => 'site_title',
-            'value' => 'Gentleman Empire Barbershop', 'confirmation' => 'yes',
+            'value' => 'Example Barbershop', 'confirmation' => 'yes',
         ]);
         Tools::apply_content_change([
             'target' => ['kind' => 'seo_setting'], 'field' => 'tagline',
             'value' => 'Premium barbershop', 'confirmation' => 'yes',
         ]);
-        $this->assertSame('Gentleman Empire Barbershop', get_option('blogname'));
+        $this->assertSame('Example Barbershop', get_option('blogname'));
         $this->assertSame('Premium barbershop', get_option('blogdescription'));
     }
 
@@ -126,10 +126,10 @@ class SeoBackendTest extends TestCase {
         $preview = Tools::preview_content_change([
             'target' => ['kind' => 'seo_meta', 'post_id' => $post_id],
             'field'  => 'seo_title',
-            'value'  => 'Best barbershop in town | Gentleman\'s Empire',
+            'value'  => 'Best barbershop in town | Example Store',
         ]);
         $this->assertArrayHasKey('changes', $preview);
-        $this->assertSame('Best barbershop in town | Gentleman\'s Empire', $preview['changes'][0]['new']);
+        $this->assertSame('Best barbershop in town | Example Store', $preview['changes'][0]['new']);
 
         // No SEO plugin in the test scaffold → apply returns a graceful error.
         $apply = Tools::apply_content_change([

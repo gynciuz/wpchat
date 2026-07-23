@@ -4,7 +4,7 @@ Tags: woocommerce, chat, ai, claude, orders
 Requires at least: 6.5
 Tested up to: 7.0
 Requires PHP: 8.1
-Stable tag: 0.7.9
+Stable tag: 0.7.10
 License: MIT
 License URI: https://opensource.org/licenses/MIT
 
@@ -84,10 +84,12 @@ and "Report a problem" sends the details to the developer.
 
 == Changelog ==
 
+= 0.7.10 =
+* Internal housekeeping: removed a bundled example and tidied internal references. No functional change.
+
 = 0.7.9 =
 Groundwork so ChatAdmin stays universal and grows into whatever a site installs it on.
-* **`find_text` now covers custom content backends too.** A site plugin that stores content its own way (static HTML, page-builder data, an external store) can implement an optional `search()` method, and its content becomes findable through `find_text` alongside posts, meta and terms — so the assistant catches it organically, with no change to ChatAdmin's core.
-* **Documented the extension contract.** New `docs/extending-backends.md` + a complete, drop-in `docs/examples/example-content-backend.php` show how to expose non-standard content (e.g. a theme's team members) to ChatAdmin via the `chatadmin_content_backends` filter — the supported way to make ChatAdmin edit site-specific/static content without touching the plugin.
+* **`find_text` now covers custom content backends too.** A site plugin that registers its own content backend (via the `chatadmin_content_backends` filter) can implement an optional `search()` method, and its content becomes findable through `find_text` alongside posts, meta and terms — so the assistant catches it organically, with no change to ChatAdmin's core.
 * **No more phantom Confirm/Cancel bar.** The Confirm/Cancel buttons now appear only when a preview actually produced a change to confirm. Previously a *failed* preview (e.g. the assistant couldn't edit the item and handed you a wp-admin link instead) still showed the bar, offering to "confirm" a change it had already given up on.
 
 = 0.7.8 =
@@ -172,7 +174,7 @@ This ships the choice UI now. The actual Cloud service (hosted proxy + billing +
 = 0.5.11 =
 * **Mobile order tables actually scroll horizontally now.** Discovered the v0.5.7 fix was being clipped by a `overflow-hidden` on the message-stream wrapper (`Chat.tsx:275`), which cut off any horizontal overflow from child elements regardless of their own scroll declarations. Constrained to `overflow-y-auto` so messages stream vertically while the table inside can scroll horizontally on a phone — the Statusas column + 3-dot menu now reachable by swiping.
 * **Onboarding footer no longer hides under the keyboard / off-screen on tall cards.** Wizard switched from `min-h-screen` to `min-h-[100dvh]` (dynamic viewport — survives Safari address-bar collapse + iOS keyboard show); main slot is `overflow-y-auto` so tall cards scroll inside the wizard not the document; Back / Skip / Next footer is now `sticky bottom-0` with `env(safe-area-inset-bottom)` padding so it never gets buried.
-* **Removed Cloudflare auto-purge + Git auto-commit cards from the public onboarding.** Both are site-specific (CachePurge lives in the GE child theme, GitSync needs a writable git repo at ABSPATH) and don't apply to a fresh WordPress install. They stay documented in the plugin README + remain available via wp-config constants for power users — they just don't clutter the first-run wizard anymore. Per design principles #2 (one sharp thing) + #5 (state of mind, not state of app).
+* **Removed Cloudflare auto-purge + Git auto-commit cards from the public onboarding.** Both are site-specific (CachePurge lives in a site's child theme, GitSync needs a writable git repo at ABSPATH) and don't apply to a fresh WordPress install. They stay documented in the plugin README + remain available via wp-config constants for power users — they just don't clutter the first-run wizard anymore. Per design principles #2 (one sharp thing) + #5 (state of mind, not state of app).
 
 = 0.5.10 =
 * **First-run onboarding wizard.** On first /chat-admin visit (or via `?onboarding=1`), the chat is replaced by a guided stepper that reflects the user back at themselves (their name, their site), then walks through the capabilities ChatAdmin needs: Anthropic API key (interactive paste-and-save), model picker (interactive), required WP capabilities (diagnostic + deep link), WooCommerce active status, detected analytics provider (Site Kit / Jetpack / WP Statistics / MonsterInsights), content backends available on this site, and optional CF / Git integrations. Ends with a capability matrix summary and one tap to enter the chat.
@@ -185,7 +187,7 @@ This ships the choice UI now. The actual Cloud service (hosted proxy + billing +
 = 0.5.9 =
 * **Auto-updates from GitHub Releases — no more SCP-from-Actions.** Vendor Yahnis Elsts' Plugin Update Checker library (PUC, v5.7, MIT) under `vendor-puc/`. Wired in `wpchat.php` to track `gynciuz/wpchat` release assets. Every WP site running the plugin now sees update notifications in **Plugins → Updates** within ~12 h of a release being published (or on manual "Check Again"), and the standard one-click "Update Now" pulls the latest release ZIP. Same flow WP.org plugins use; no submission queue, no review delays.
 * New `Update URI: https://github.com/gynciuz/wpchat` header in the plugin metadata pins WordPress's update lookups to this repository — a future plugin on the WP.org directory with the same slug can't silently hijack our update channel. (WP 5.8+ honors this header.)
-* This release ships via the existing `install-wpchat.yml` workflow ONE LAST TIME. From v0.5.10 onward, GE (and any other site running the plugin) will auto-update via wp-admin — no GitHub Actions, no SSH, no SCP. The install workflow can be deleted after one verified auto-update cycle.
+* This release ships via the existing `install-wpchat.yml` workflow ONE LAST TIME. From v0.5.10 onward, every site running the plugin will auto-update via wp-admin — no GitHub Actions, no SSH, no SCP. The install workflow can be deleted after one verified auto-update cycle.
 
 = 0.5.8 =
 * Autolink bare URLs in assistant replies. `analytics.google.com` etc. without an `https://` prefix were rendered as plain text by react-markdown (only `https://` and `www.` prefixed URLs autolink by default in remark-gfm). New preprocessing step wraps bare domain.tld matches in markdown link brackets before passing to react-markdown, so they render as proper `<a>` tags with the existing underline styling. Covers common TLDs (.com .lt .net .org .app .io .dev .ai .co .eu .ru .de .uk .pl .fr .es). Skips text already inside markdown links / inline code / explicit autolinks.
@@ -219,7 +221,7 @@ This ships the choice UI now. The actual Cloud service (hosted proxy + billing +
 = 0.5.0 =
 * **First slice of v0.5-media — image upload + team_member photo replacement.** Tap the 📎 button in the chat input → native picker → pick a JPG / PNG / WebP. The file uploads to the WP media library before the message is sent; a `[Uploaded foo.jpg → attachment 1234]` marker is silently prepended to the message text so the LLM knows the attachment id, while the user sees a thumbnail next to their bubble. Subsequent preview / apply uses the same confirmation buttons as text edits.
 * New `POST /chat-admin/v1/upload` REST endpoint (same permission check as /chat). Uses WP core's `wp_handle_upload` + `wp_insert_attachment` + `wp_generate_attachment_metadata` — no custom file handling. Validates: JPG / PNG / WebP only (415 otherwise), max 10 MB (413 otherwise).
-* GE-side team_member backend gains a `photo` field. Preview returns old + new image URLs; apply rewrites the `<img src>` attribute in both index.html and musu-meistrai.html. Inherits existing cache-purge + git auto-commit tail for free.
+* A site's custom backend can gain a `photo` field. Preview returns old + new image URLs; apply rewrites the `<img src>` attribute in the relevant static files. Inherits the existing cache-purge + git auto-commit tail for free.
 * New components: `AttachButton.tsx`, plus pending-attachment chip + thumbnail rendering in `Chat.tsx`.
 * New tests: `UploadTest` (jpeg/png happy path, 415 pdf, 413 oversized, 401/403 subscriber, 400 missing) + `PhotoReplaceTest` (preview returns urls without writing, apply rewrites src, no-confirmation rejected).
 
@@ -228,13 +230,13 @@ This ships the choice UI now. The actual Cloud service (hosted proxy + billing +
 * Redundant order-table markdown removed from assistant replies. When `list_orders` or `find_customer_orders` runs, the chat UI already renders a structured React `<OrdersTable>` above the assistant's prose. System prompt now explicitly instructs the LLM to write a short prose summary only (not a markdown reproduction). Defensive: the frontend also strips any GFM markdown table the model still emits in that context, so the user never sees the same data twice.
 
 = 0.4.9 =
-* Fix double-HTML-encoding in the `/chat-admin` page title and chat header. Sites where `blogname` is stored already entity-encoded (e.g. "Gentleman&#039;s Empire") were rendering "Gentleman&#039;s Empire" literally in the browser tab title and the chat header subtitle. Decode entities first, then escape once.
+* Fix double-HTML-encoding in the `/chat-admin` page title and chat header. Sites where `blogname` is stored already entity-encoded (e.g. a name with an apostrophe saved as "Tom&#039;s Store") were rendering the "&#039;" literally in the browser tab title and the chat header subtitle. Decode entities first, then escape once.
 
 = 0.4.8 =
-* New `\ChatAdmin\GitSync` helper. Site backends that mutate tracked files (e.g. the GE team_member backend writing to static HTML) can call `GitSync::commit_files($paths, $message, $author)` after a successful write to commit + push automatically. Without this, ChatAdmin-originated edits would sit uncommitted on prod and silently disappear on the next disaster-recovery reset (which is what happened during the 2026-05-26 reconcile incident).
+* New `\ChatAdmin\GitSync` helper. A site backend that mutates tracked files (e.g. one writing to static HTML) can call `GitSync::commit_files($paths, $message, $author)` after a successful write to commit + push automatically. Without this, ChatAdmin-originated edits would sit uncommitted on prod and silently disappear on the next disaster-recovery reset (which is what happened during the 2026-05-26 reconcile incident).
 * Opt-in by design — gracefully no-ops with a clear `skipped_reason` when `WPCHAT_GIT_SYNC_ENABLED` is not set to true in wp-config.php. Operator sees "(Git auto-sync skipped: …)" in the chat assistant's success message, never silent.
 * `proc_open` with argv arrays (no shell invocation, no escaping bugs). Concurrent writes serialise via `flock` against a lockfile so two rapid edits don't race. Push failure is surfaced as a distinct error from commit failure — the commit lands locally even if push can't reach origin, and the response reflects that.
-* GE backend wired in: a successful team_member apply now commits + pushes the changed HTML files with the WP user's display name + email as commit author. Defaults to bot identity if the WP user has no email.
+* Site-backend git wiring: a successful file-writing apply can commit + push the changed files with the WP user's display name + email as commit author. Defaults to bot identity if the WP user has no email.
 * GitSyncTest covers: opt-in default-off behaviour, commit + push happy path, idempotent no-op when file is unchanged, rejection of files outside repo root, and the commit-succeeded-push-failed split error.
 
 = 0.4.7 =
@@ -276,7 +278,7 @@ This ships the choice UI now. The actual Cloud service (hosted proxy + billing +
 * REST: `POST /chat` now accepts/returns `conversation_id`; new `GET /conversations` and `GET /conversations/{uuid}` endpoints.
 
 = 0.4.0 =
-* Generic content-backend dispatch — `list_content_blocks`, `preview_content_change`, `apply_content_change` route to whichever backend claims a given `kind`. Replaces the previous Gentleman's Empire-specific `list_team_members` / `preview_team_member_role_change` / `apply_team_member_role_change` tools (those lived in the plugin and only worked on GE's static-HTML pages).
+* Generic content-backend dispatch — `list_content_blocks`, `preview_content_change`, `apply_content_change` route to whichever backend claims a given `kind`. Replaces the previous site-specific team tools that used to live in the plugin and only worked on one site's static-HTML pages.
 * New `\ChatAdmin\ContentBackend` interface + default `WPContentBackend` handling `wp_post`, `wp_page_slug`, `wp_post_meta`, `wp_term` via core WP functions (`wp_update_post`, `update_post_meta`, `wp_update_term`).
 * Site-specific backends register via the new `wpchat_content_backends` filter. Site code (theme / MU-plugin) implements `\ChatAdmin\ContentBackend` and appends an instance to the filter; the plugin no longer carries any per-site paths or selectors.
 * System prompt enumerates available content kinds + editable fields at runtime by walking the registered backends. The two-step preview-then-apply pattern with confirmation-phrase whitelist (yes/taip/да/tak/patvirtinu/...) is centralised in `\ChatAdmin\ContentConfirmation::is_confirmed()` so every backend gates writes identically.

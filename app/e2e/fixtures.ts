@@ -15,7 +15,7 @@ export const BOOT = {
   userName: "Test Admin",
   firstName: "Test",
   locale: "en",
-  siteName: "Gentleman's Empire",
+  siteName: "Example Store",
   siteUrl: "https://example.test",
   logoutUrl: "https://example.test/wp-login.php?action=logout",
 };
@@ -104,7 +104,7 @@ export const ONBOARDING_STATUS = {
   disabled_kinds: [],
   isAdmin: true,
   user: { id: 1, display_name: "Test Admin", first_name: "Test", locale: "en" },
-  site: { name: "Gentleman's Empire", url: "https://example.test", admin: "https://example.test/wp-admin" },
+  site: { name: "Example Store", url: "https://example.test", admin: "https://example.test/wp-admin" },
 };
 
 interface RouteHandlers {
