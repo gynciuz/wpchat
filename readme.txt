@@ -4,7 +4,7 @@ Tags: woocommerce, chat, ai, claude, orders
 Requires at least: 6.5
 Tested up to: 7.0
 Requires PHP: 8.1
-Stable tag: 0.7.5
+Stable tag: 0.7.6
 License: MIT
 License URI: https://opensource.org/licenses/MIT
 
@@ -83,6 +83,9 @@ and "Report a problem" sends the details to the developer.
 3. A two-minute first-run wizard gets the plugin ready for your site.
 
 == Changelog ==
+
+= 0.7.6 =
+* **"Open full screen ↗" opens in a new tab.** The full-screen chat link in the ChatAdmin admin menu now opens `/chatadmin` in a new browser tab, so your wp-admin session stays put behind it.
 
 = 0.7.5 =
 ChatAdmin now mirrors your WordPress roles: what each person can do in the chat comes straight from their own role's capabilities.

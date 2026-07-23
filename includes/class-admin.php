@@ -33,6 +33,24 @@ class Admin {
     public function __construct() {
         add_action('admin_menu', [$this, 'register_menu']);
         add_action('admin_enqueue_scripts', [$this, 'enqueue_assets']);
+        add_action('admin_footer', [$this, 'open_fullscreen_in_new_tab']);
+    }
+
+    /**
+     * Make the "Open full screen ↗" admin-menu link open the /chatadmin app in
+     * a new browser tab. WordPress renders a URL-slug submenu item as a plain
+     * same-tab <a> and gives no menu-API way to set target/rel, so we tag that
+     * one specific link client-side. Runs on every admin screen because the
+     * menu lives in the sidebar everywhere. The href is matched exactly against
+     * the same home_url() the menu item was built from.
+     */
+    public function open_fullscreen_in_new_tab(): void {
+        $selector = '#adminmenu a[href="' . esc_url(home_url(Frontend::URL_PATH)) . '"]';
+        // wp_json_encode safely embeds the selector (and any quotes) into JS.
+        printf(
+            '<script>(function(){var l=document.querySelector(%s);if(l){l.target="_blank";l.rel="noopener";}})();</script>',
+            wp_json_encode($selector)
+        );
     }
 
     public function register_menu(): void {
