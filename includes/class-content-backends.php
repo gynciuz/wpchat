@@ -4,9 +4,15 @@
  *
  * The plugin ships with a default WPContentBackend that handles standard
  * WordPress content (posts, pages-by-slug, post meta, terms). Sites with
- * non-standard content (e.g. Gentleman's Empire's static-HTML team blocks)
- * register additional backends via the `chatadmin_content_backends` filter,
- * each declaring which `kind` slugs they handle.
+ * non-standard content — static-HTML blocks, page-builder data, an external
+ * store, a theme's custom "team member" records — register additional backends
+ * via the `chatadmin_content_backends` filter, each declaring which `kind`
+ * slugs it handles. ChatAdmin auto-detects them: their kinds appear in the
+ * assistant's system prompt, are capability-gated, and route through the
+ * standard preview→apply flow, with no change to the core plugin.
+ *
+ * See docs/extending-backends.md and docs/examples/example-content-backend.php
+ * for a complete, adaptable reference.
  *
  * @package ChatAdmin
  */
@@ -25,7 +31,16 @@ if (!defined('ABSPATH')) {
  *   { kind: "wp_page_slug",   slug: "apie-mus" }
  *   { kind: "wp_post_meta",   post_id: 123, key: "voucher_pdf_cy" }
  *   { kind: "wp_term",        term_id: 5 }
- *   { kind: "team_member",    name: "Nesar" }
+ *   { kind: "<custom_kind>",  <custom keys a site backend defines> }
+ *
+ * Optional method a backend MAY implement (checked via method_exists, so it is
+ * fully back-compatible):
+ *   public function search(string $query): array
+ *     Return find_text-shaped hits for content this backend stores, so the
+ *     `find_text` tool can locate it too. Each hit:
+ *       ['where' => string, 'kind' => string, 'target' => array|null,
+ *        'editable' => bool, 'note' => ?string]
+ *     Scope results to the current user's capabilities.
  */
 interface ContentBackend {
 
