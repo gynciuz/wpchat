@@ -1,0 +1,47 @@
+name: Release
+
+# Manually publish a GitHub Release (tag + release notes + the plugin ZIP
+# asset) from the current default branch. Runs bin/release.sh --publish on a
+# GitHub-hosted runner, which has the gh CLI and a contents:write token — so a
+# release can be cut straight from the repo without a local gh install or tag
+# push. The Plugin Update Checker on every site reads the attached ZIP asset.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: Package + publish GitHub Release
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: pnpm
+          cache-dependency-path: app/pnpm-lock.yaml
+
+      # bin/release.sh reads the version from chat-admin.php, asserts version
+      # consistency, rebuilds the app and requires the committed build/ to match,
+      # packages a clean chat-admin-vX.Y.Z.zip via git archive, then (with
+      # --publish) creates the tag + GitHub Release and uploads the ZIP asset.
+      # It refuses if the tag already exists, so re-running after a release is a
+      # safe no-op failure rather than a duplicate.
+      - name: Build, package, and publish the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bin/release.sh --publish
