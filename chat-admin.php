@@ -25,6 +25,7 @@ define('CHATADMIN_DIR', plugin_dir_path(__FILE__));
 define('CHATADMIN_URL', plugin_dir_url(__FILE__));
 
 require_once CHATADMIN_DIR . 'includes/class-plugin.php';
+require_once CHATADMIN_DIR . 'includes/class-capabilities.php';
 require_once CHATADMIN_DIR . 'includes/class-admin.php';
 require_once CHATADMIN_DIR . 'includes/class-settings.php';
 require_once CHATADMIN_DIR . 'includes/class-llm-providers.php';

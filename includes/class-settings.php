@@ -15,13 +15,24 @@ class Settings {
 
     const OPTION = 'chatadmin_settings';
 
+    const GROUP = 'chatadmin_settings_group';
+
     public function __construct() {
         add_action('admin_init', [$this, 'register']);
+        // WordPress's options.php enforces `manage_options` on Settings-API
+        // saves by default. Lower it to the ChatAdmin admin cap so shop
+        // managers who can open the Settings page can also save it (otherwise
+        // the page loads but every save dies with "not allowed").
+        add_filter('option_page_capability_' . self::GROUP, [$this, 'settings_capability']);
+    }
+
+    public function settings_capability(): string {
+        return Admin::ADMIN_CAPABILITY;
     }
 
     public function register(): void {
         register_setting(
-            'chatadmin_settings_group',
+            self::GROUP,
             self::OPTION,
             [
                 'type'              => 'array',

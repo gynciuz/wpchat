@@ -539,7 +539,7 @@ export function Chat({ boot }: { boot?: Boot }) {
             <LifeBuoy className="size-3" /> {helpLabel(boot?.locale)}
           </button>
           <a
-            href="/wp-admin/admin.php?page=chatadmin-settings"
+            href="/wp-admin/admin.php?page=chat-admin-settings"
             className="inline-flex items-center gap-1 hover:text-foreground"
           >
             Settings <ExternalLink className="size-3" />

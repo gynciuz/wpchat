@@ -77,11 +77,13 @@ class Onboarding {
         ]);
     }
 
-    /** Stricter gate: only manage_options users (site admins) may change
-     *  site-wide settings — the API key, model, provider(s), and the
-     *  disabled-kinds list. */
+    /** Gate for changing site-wide settings — the API key, model, provider(s),
+     *  and the disabled-kinds list. Uses the ChatAdmin admin capability
+     *  (`manage_woocommerce`) so shop managers can finish onboarding and manage
+     *  settings, consistent with the Settings page. Stays above the plain chat
+     *  gate (`edit_shop_orders`). */
     public function check_admin(): bool {
-        return current_user_can('manage_options');
+        return current_user_can(Admin::ADMIN_CAPABILITY);
     }
 
     public function check_permission(): bool {
@@ -102,7 +104,7 @@ class Onboarding {
             'backends'       => $this->backends_status(),
             'integrations'   => $this->integrations_status(),
             'disabled_kinds' => self::get_site_disabled_kinds(),
-            'isAdmin'        => current_user_can('manage_options'),
+            'isAdmin'        => current_user_can(Admin::ADMIN_CAPABILITY),
             'user'           => [
                 'id'           => $user->ID,
                 'display_name' => html_entity_decode((string) $user->display_name, ENT_QUOTES | ENT_HTML5, 'UTF-8'),
