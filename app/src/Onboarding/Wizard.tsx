@@ -64,9 +64,9 @@ export function OnboardingWizard({ boot }: { boot: Boot }) {
         headers: { "X-WP-Nonce": boot.nonce, "Content-Type": "application/json" },
         credentials: "same-origin",
       });
-      window.location.href = boot.siteUrl ? `${boot.siteUrl}/wpchat` : "/wpchat";
+      window.location.href = boot.siteUrl ? `${boot.siteUrl}/chatadmin` : "/chatadmin";
     } catch {
-      window.location.href = "/wpchat";
+      window.location.href = "/chatadmin";
     }
   }
 

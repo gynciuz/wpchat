@@ -1,7 +1,7 @@
 # WPChat
 
 Chat-based admin for WooCommerce. Type *"mark order 2833 used, customer
-spent 30€ of 100€"* in your WordPress site's chat at `/wpchat` and watch
+spent 30€ of 100€"* in your WordPress site's chat at `/chatadmin` and watch
 it happen — the assistant calls the right WC functions, renders rich
 cards (orders table, confirm buttons, image previews) inline, and writes
 back to your site.
@@ -18,7 +18,7 @@ listing required).
    **Install Now** → **Activate**.
 3. Sidebar → **WPChat → Settings** → paste your Anthropic API key from
    [console.anthropic.com](https://console.anthropic.com).
-4. Visit **`https://your-site.example/wpchat`** → start chatting.
+4. Visit **`https://your-site.example/chatadmin`** → start chatting.
 
 ## Auto-updates
 
