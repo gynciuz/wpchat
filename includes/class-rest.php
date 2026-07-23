@@ -65,22 +65,42 @@ class Rest {
         // burning API credits or risking tool-call hallucinations.
         register_rest_route(self::NAMESPACE, '/actions/order/(?P<id>\d+)/status', [
             'methods'             => 'POST',
-            'permission_callback' => [$this, 'check_permission'],
+            'permission_callback' => [$this, 'check_order_permission'],
             'callback'            => [$this, 'handle_action_order_status'],
         ]);
         register_rest_route(self::NAMESPACE, '/actions/order/(?P<id>\d+)/note', [
             'methods'             => 'POST',
-            'permission_callback' => [$this, 'check_permission'],
+            'permission_callback' => [$this, 'check_order_permission'],
             'callback'            => [$this, 'handle_action_order_note'],
         ]);
         register_rest_route(self::NAMESPACE, '/actions/order-statuses', [
             'methods'             => 'GET',
-            'permission_callback' => [$this, 'check_permission'],
+            'permission_callback' => [$this, 'check_order_permission'],
             'callback'            => [$this, 'handle_action_order_statuses'],
         ]);
     }
 
+    /**
+     * Who may open ChatAdmin at all. Anyone who can manage orders
+     * (`manage_woocommerce` / `edit_shop_orders`) OR edit content
+     * (`edit_posts`) qualifies — the same floor as the /chatadmin page. What
+     * they can actually DO once inside is gated per-tool against their own WP
+     * capabilities (Tools::require_order_access for orders, user_can_edit_kind
+     * for content), so an editor gets content editing only while an admin gets
+     * everything. The power comes from the user's role, not from ChatAdmin.
+     */
     public function check_permission(): bool {
+        return current_user_can('manage_woocommerce')
+            || current_user_can('edit_shop_orders')
+            || current_user_can('edit_posts');
+    }
+
+    /**
+     * Order management (the LLM-free 3-dot-menu routes) requires WooCommerce
+     * order rights specifically — a content-only user (editor) can open the
+     * chat but not touch orders, matching Tools::require_order_access.
+     */
+    public function check_order_permission(): bool {
         return current_user_can('manage_woocommerce') || current_user_can('edit_shop_orders');
     }
 
@@ -415,9 +435,24 @@ PROMPT;
             ? "\n" . implode("\n", $kind_lines)
             : "\n  (no content kinds registered)";
 
+        // The current user's WooCommerce order rights. Everything ChatAdmin
+        // lets someone do is scoped to their WP role, so the prompt tells the
+        // model up-front whether THIS user may touch orders — an admin can, a
+        // content-only editor can't. Enforcement is in Tools::require_order_access;
+        // this just stops the model offering an action it will be refused.
+        $can_orders  = current_user_can('manage_woocommerce') || current_user_can('edit_shop_orders');
+        $orders_perm = $can_orders
+            ? '- **Orders:** ALLOWED — you may list/search orders and, with confirmation, change status, add notes, and run order actions.'
+            : "- **Orders:** NOT ALLOWED for this user — their WordPress role has no WooCommerce order permission. Do NOT call the order tools (they return a permission error). If they ask about orders or customers, say their role can't access orders here and, if useful, hand off with `get_admin_url`.";
+
         // phpcs:ignore PluginCheck.CodeAnalysis.Heredoc.NotAllowed -- internal prompt template string, not output.
         return <<<PROMPT
 You are ChatAdmin, a concise admin assistant embedded in the WordPress site "{$site}" (locale: {$locale}). You manage WooCommerce orders and (carefully) edit site content via tool calls.
+
+# This user's permissions (RESPECT THESE)
+What you can do is scoped to THIS user's WordPress role and capabilities — an administrator can do more than an editor, and you must never claim to do something their role forbids or call a tool their role can't use.
+{$orders_perm}
+- **Content editing:** limited to the kinds listed under the content section below — that list is already filtered to what this user's role may edit. If a kind isn't listed there, this user cannot edit it; say so and, if useful, hand off with `get_admin_url`.
 
 # How to be useful (READ THIS FIRST)
 The user is a busy shop owner, not an engineer. They don't know about slugs, REST, HPOS, or status codes — and they don't want to. Your job is to get their task done with the available tools. If a direct path doesn't exist, find one:
