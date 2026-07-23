@@ -188,4 +188,16 @@ class Telemetry {
     private static function truncate(string $s, int $max): string {
         return strlen($s) > $max ? substr($s, 0, $max) . '…' : $s;
     }
+
+    /**
+     * Best-effort PII scrub for free-text we phone home (e.g. the anonymised
+     * request behind a capability_gap signal). Strips email addresses and long
+     * digit runs (order numbers, phone numbers, cards) and truncates. Intent
+     * text like "fix the typo on the team page" survives; identifiers don't.
+     */
+    public static function redact_pii(string $text): string {
+        $text = (string) preg_replace('/[\w.+-]+@[\w-]+\.[a-z]{2,}/iu', '[email]', $text);
+        $text = (string) preg_replace('/\d{5,}/u', '[number]', $text);
+        return self::truncate(trim($text), 300);
+    }
 }

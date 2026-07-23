@@ -104,6 +104,53 @@ class Rest {
         return current_user_can('manage_woocommerce') || current_user_can('edit_shop_orders');
     }
 
+    /**
+     * Auto-detect "unmet requests." When a chat turn resolves with a
+     * `get_admin_url` handoff (the model's "no tool can do this, here's the
+     * wp-admin link" fallback) and NO in-app mutation succeeded, log a
+     * `capability_gap` event carrying only the anonymised request text plus the
+     * handed-off resource. These are the product's top improvement signals —
+     * e.g. "user wanted to edit a team-member's label, we couldn't." Routed
+     * through Telemetry, so they appear in Diagnostics locally and, when the
+     * admin opted in and a collector is configured, phone home.
+     *
+     * @param array<int,array{name?:string,input?:mixed,output?:mixed}> $tool_calls
+     */
+    private function maybe_log_capability_gap(string $user_message, array $tool_calls): void {
+        if ($user_message === '' || empty($tool_calls)) {
+            return;
+        }
+
+        $mutators = ['apply_content_change', 'create_content', 'publish_content', 'update_order_status', 'add_order_note', 'trigger_order_action'];
+        $handoff  = null;
+        $mutated  = false;
+
+        foreach ($tool_calls as $call) {
+            $name = (string) ($call['name'] ?? '');
+            if ($name === 'get_admin_url') {
+                $handoff = $call;
+            } elseif (in_array($name, $mutators, true)) {
+                $out = $call['output'] ?? null;
+                if (is_array($out) && empty($out['error']) && (!empty($out['ok']) || !empty($out['post_id']) || !empty($out['status']))) {
+                    $mutated = true;
+                }
+            }
+        }
+
+        // A handoff that FOLLOWED a successful edit isn't a gap (e.g. "done —
+        // here's the page"). Only a handoff with nothing accomplished is.
+        if ($handoff === null || $mutated) {
+            return;
+        }
+
+        $resource = is_array($handoff['input'] ?? null) ? (string) ($handoff['input']['resource'] ?? '') : '';
+        Telemetry::log('capability_gap', [
+            'message' => Telemetry::redact_pii($user_message),
+            'tool'    => 'get_admin_url',
+            'code'    => $resource,
+        ]);
+    }
+
     public function handle_chat(\WP_REST_Request $request): \WP_REST_Response {
         $messages = $request->get_param('messages');
         if (!is_array($messages) || empty($messages)) {
@@ -201,6 +248,14 @@ class Rest {
                 $conversation_id,
                 'assistant',
                 (string) ($result['text'] ?? ''),
+                is_array($result['tool_calls'] ?? null) ? $result['tool_calls'] : []
+            );
+            // Learn from what we couldn't do: if this turn ended in a wp-admin
+            // handoff with no successful in-app mutation, record it as a
+            // capability gap (anonymised request only) so the top unmet
+            // requests surface in Diagnostics / the collector.
+            $this->maybe_log_capability_gap(
+                $latest_user_message,
                 is_array($result['tool_calls'] ?? null) ? $result['tool_calls'] : []
             );
         }
@@ -435,6 +490,30 @@ PROMPT;
             ? "\n" . implode("\n", $kind_lines)
             : "\n  (no content kinds registered)";
 
+        // Enumerate the site's custom post types (beyond post/page) the current
+        // user may edit. Theme/plugin content — team members, portfolio,
+        // services, testimonials — lives in these, and wp_post / wp_post_meta
+        // already edit ANY post type by id. Listing them here is what stops the
+        // model dead-ending on "that's stored separately" (the reported
+        // trx_team "meistrai" handoff): now it knows the type exists and can
+        // target it.
+        $skip_types = ['post', 'page', 'attachment', 'wp_block', 'wp_template', 'wp_template_part', 'wp_navigation', 'nav_menu_item', 'custom_css', 'customize_changeset', 'revision', 'oembed_cache', 'user_request', 'shop_order', 'shop_order_refund', 'shop_coupon', 'shop_subscription', 'product_variation'];
+        $cpt_lines  = [];
+        foreach (get_post_types(['show_ui' => true], 'objects') as $pt) {
+            if (in_array($pt->name, $skip_types, true)) {
+                continue;
+            }
+            $edit_cap = (is_object($pt->cap) && !empty($pt->cap->edit_posts)) ? $pt->cap->edit_posts : 'edit_posts';
+            if (!current_user_can($edit_cap)) {
+                continue;
+            }
+            $label = (is_object($pt->labels) && !empty($pt->labels->name)) ? $pt->labels->name : $pt->name;
+            $cpt_lines[] = sprintf('  - `%s` — %s', $pt->name, $label);
+        }
+        $cpt_block = $cpt_lines
+            ? "\n" . implode("\n", $cpt_lines)
+            : "\n  (none beyond posts and pages)";
+
         // The current user's WooCommerce order rights. Everything ChatAdmin
         // lets someone do is scoped to their WP role, so the prompt tells the
         // model up-front whether THIS user may touch orders — an admin can, a
@@ -541,12 +620,21 @@ Use `create_content` to make a new post or page. It always creates a **DRAFT** (
 # Content editing — STRICT two-step + dynamic kinds
 This site exposes the following editable content kinds via the registered content backends:{$kind_block}
 
+## Custom post types (theme / plugin content — team members, portfolio, services, testimonials, …)
+Beyond posts and pages, this site has these editable content types:{$cpt_block}
+They are edited with the SAME tools you already have — a "team member", "portfolio item", etc. is just a post of its type:
+- **Find the item:** `list_content_blocks("wp_post", {post_type: "<type>", search: "<words>"})`. Pass `post_type: "any"` to search across every type at once.
+- **See where a value lives:** if the text isn't the title/content, call `list_content_blocks("wp_post_meta", {post_id: <id>})` and scan the meta for it.
+- **Edit it:** preview→apply on `wp_post` (title / content / excerpt) or on `wp_post_meta` (a non-protected key). Meta keys starting with `_` are theme-managed and can't be changed from chat — for those, hand off with `get_admin_url(resource='post', id=<id>)`.
+- **Same wrong value on MANY items** (e.g. every team member shows the same wrong label/position) is almost always ONE shared taxonomy term, not N separate edits: find it with `list_taxonomy_terms`, then rename that term ONCE via `wp_term` — that fixes them all. Try this before editing items one by one.
+
 ## Discover before giving up — MANDATORY
-Before you ever tell the user "I can't edit X" or "X is static HTML" or "you need FTP":
-1. Identify what KIND of thing the user wants to edit (a person/barber/master → team_member; a page section → wp_page_slug; a post → wp_post; a setting → wp_post_meta; a category/tag → wp_term).
-2. Call `list_content_blocks(kind, args)` for the matching kind. If you're unsure which kind, try the most likely 2-3 in turn.
-3. ONLY after every plausible kind returns no match can you say you couldn't find the item. Even then: don't dead-end — call `get_admin_url` and hand the user a link to the WP admin section where they could edit it themselves.
-4. **NEVER refuse a content edit on the grounds that the page is "static HTML."** A kind in the list above may explicitly handle static HTML on this site (e.g. `team_member` on GE). If the kind's description mentions a location, it CAN write there. Use it.
+Before you EVER tell the user "I can't edit X", "X is static HTML", or "you need FTP/admin":
+1. **Call `find_text("<the exact wrong text>")` FIRST.** It reports every place that text is stored — page/post/custom-post-type title/content/excerpt, post meta, taxonomy terms, and (for admins) site options — and whether each is `editable` from chat. This is how you locate "static-looking" theme content instead of guessing a kind.
+2. Fix each hit marked `editable:true` with the two-step preview→apply below, using the `target` that hit gives you. If a hit is `shared:true` (a taxonomy term), edit that ONE term — it fixes every item that uses it, so prefer it when the same wrong text appears on many items.
+3. If you already know exactly which item it is, you may instead call `list_content_blocks(kind, args)` directly (e.g. `wp_post` with a `post_type` for a custom type, `wp_term`, `wp_post_meta`).
+4. Only after `find_text` returns no editable hit may you say you can't fix it from chat — and even then DON'T dead-end: `find_text` tells you WHERE the text lives (a protected theme field, a site option, or nowhere in the DB = hard-coded in the theme), so relay that precisely and call `get_admin_url` to hand the user the right screen.
+5. **Never refuse just because a page "looks static."** Most theme / page-builder content lives in the database — a custom post type, its meta, a term, or an option — and `find_text` will find it. Only text baked into a theme's PHP/template files is truly out of reach.
 
 ## Two-step preview → apply
 To change anything in the list above:
@@ -555,16 +643,16 @@ To change anything in the list above:
 3. When the next user message arrives after a preview, treat ANY affirmative as confirmation (yes / ok / taip / gerai / sutinku / patvirtinu / да / хорошо / tak / dobrze) and call `apply_content_change(target, field, value, confirmation)` with that exact word. The whitelist is generous — don't gatekeep.
 4. NEVER call apply without a preview in the conversation. NEVER guess the confirmation when none was given.
 5. If the user says "no" / "ne" / "нет" / "cancel" / "nie" — do nothing and confirm in the user's language that you're not changing anything.
-6. Match the `target` shape to the kind: e.g. {kind: "wp_post", id: 123}, {kind: "wp_page_slug", slug: "apie-mus"}, {kind: "team_member", name: "Nesar"}.
+6. Match the `target` shape to the kind — usually just copy the `target` from the find_text / list_content_blocks hit. E.g. {kind: "wp_post", id: 123} (any post type), {kind: "wp_page_slug", slug: "apie-mus"}, {kind: "wp_post_meta", post_id: 123, key: "subtitle"}, {kind: "wp_term", term_id: 5, taxonomy: "team_group"}.
 
 # Image uploads (attachments)
 When the user picks a photo in the chat, the message they send is prefixed with a marker line like:
 
     [Uploaded barber-1.jpg → attachment 1234]
 
-Treat `attachment 1234` as a valid `attachment_id` you can pass to backends. For the GE site's `team_member` kind (and any other backend that declares a `photo` field), call:
+Treat `attachment 1234` as a valid `attachment_id`. For a featured image, pass it to `create_content` (`featured_image`) or, on a content kind that declares an image/`photo` field (shown in that kind's description), preview→apply it:
 
-    preview_content_change({kind: "team_member", name: "<n>"}, field: "photo", value: <attachment_id>)
+    preview_content_change(<target>, field: "<image field>", value: <attachment_id>)
 
 then `apply_content_change(...)` after the user confirms. The frontend shows side-by-side old/new image previews and the Confirm / Cancel buttons — same flow as text edits. NEVER repeat the upload marker line back to the user; it's a hint for you, not part of the conversation.
 
