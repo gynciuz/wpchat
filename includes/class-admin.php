@@ -16,6 +16,20 @@ class Admin {
     const CAPABILITY = 'edit_shop_orders';
     const MENU_SLUG  = 'chat-admin';
 
+    /**
+     * Single source of truth for the capability that governs ChatAdmin
+     * administration — reaching the Settings page, saving the API key/model,
+     * and the onboarding admin endpoints.
+     *
+     * `manage_options` (site administrators) by design: the API key is a
+     * site-wide secret with real billing attached, so changing it is reserved
+     * for admins — the deliberate v0.7.3 security boundary, locked in by
+     * ProviderConfigTest::test_non_admin_cannot_set_api_key. Centralised here
+     * so all four call sites agree; a site that wants to hand settings to shop
+     * managers can lower this one line to `manage_woocommerce`.
+     */
+    const ADMIN_CAPABILITY = 'manage_options';
+
     public function __construct() {
         add_action('admin_menu', [$this, 'register_menu']);
         add_action('admin_enqueue_scripts', [$this, 'enqueue_assets']);
@@ -49,7 +63,7 @@ class Admin {
             self::MENU_SLUG,
             __('Settings', 'chatadmin'),
             __('Settings', 'chatadmin'),
-            'manage_options',
+            self::ADMIN_CAPABILITY,
             self::MENU_SLUG . '-settings',
             [$this, 'render_settings_page']
         );
@@ -70,7 +84,7 @@ class Admin {
             $submenu[self::MENU_SLUG][] = [
                 __('Open full screen ↗', 'chatadmin'),
                 $capability,
-                home_url('/chat-admin'),
+                home_url(Frontend::URL_PATH),
             ];
         }
     }
@@ -171,7 +185,7 @@ class Admin {
     }
 
     public function render_settings_page(): void {
-        if (!current_user_can('manage_options')) {
+        if (!current_user_can(self::ADMIN_CAPABILITY)) {
             return;
         }
         echo '<div class="wrap">';
@@ -182,7 +196,7 @@ class Admin {
         submit_button();
         echo '</form>';
 
-        $onboarding_url = esc_url(home_url('/chat-admin?onboarding=1'));
+        $onboarding_url = esc_url(home_url(Frontend::URL_PATH . '?onboarding=1'));
         echo '<p style="margin-top:2rem;border-top:1px solid #c3c4c7;padding-top:1rem;">';
         echo '<a href="' . $onboarding_url . '">' . esc_html__('Re-run onboarding wizard', 'chatadmin') . '</a> '; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- $onboarding_url is esc_url()'d above.
         echo '<span class="description">' . esc_html__('— walk through the capability check + settings again.', 'chatadmin') . '</span>';

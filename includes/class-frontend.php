@@ -13,7 +13,15 @@ if (!defined('ABSPATH')) {
 
 class Frontend {
 
-    const URL_PATH = '/chat-admin';
+    /** Canonical public path for the full-screen chat. */
+    const URL_PATH = '/wpchat';
+
+    /**
+     * Every path (without slashes) that resolves to the full-screen chat.
+     * `wpchat` is canonical; `chat-admin` is kept as an alias so older
+     * bookmarks / links (and earlier plugin versions) keep working.
+     */
+    const PATHS = ['wpchat', 'chat-admin'];
 
     public function __construct() {
         add_action('template_redirect', [$this, 'maybe_render']);
@@ -21,7 +29,7 @@ class Frontend {
 
     public function maybe_render(): void {
         $path = trim((string) wp_parse_url(sanitize_text_field(wp_unslash($_SERVER['REQUEST_URI'] ?? '')), PHP_URL_PATH), '/');
-        if ($path !== 'chat-admin') {
+        if (!in_array($path, self::PATHS, true)) {
             return;
         }
 
@@ -38,6 +46,17 @@ class Frontend {
                 ['response' => 403]
             );
         }
+
+        // `/wpchat` is a virtual route with no matching WP post/page, so the main
+        // query flagged it as a 404 and queued a 404 status header. Clear that and
+        // send a real 200 before streaming the SPA — otherwise the page renders but
+        // caches/CDNs/search engines see it as "Not Found" (the reported bug).
+        global $wp_query;
+        if ($wp_query instanceof \WP_Query) {
+            $wp_query->is_404 = false;
+        }
+        status_header(200);
+        nocache_headers();
 
         $this->render();
         exit;

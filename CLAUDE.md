@@ -4,11 +4,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-ChatAdmin is a WordPress plugin (slug `chat-admin`, distributed as `chat-admin-vX.Y.Z.zip`) that adds a chat-based admin assistant for WooCommerce. A logged-in editor/admin visits `/chat-admin`, types a request in any language (e.g. "mark order 2833 used, customer spent 30€ of 100€"), and the backend runs an LLM tool-use loop (Anthropic Claude, OpenAI, or Gemini — user's choice) that calls WC/WP PHP functions directly and renders rich React cards inline (orders table, confirm buttons, image previews).
+ChatAdmin is a WordPress plugin (slug `chat-admin`, distributed as `chat-admin-vX.Y.Z.zip`) that adds a chat-based admin assistant for WooCommerce. A logged-in editor/admin visits `/wpchat` (the canonical public route; `/chat-admin` is kept as an alias), types a request in any language (e.g. "mark order 2833 used, customer spent 30€ of 100€"), and the backend runs an LLM tool-use loop (Anthropic Claude, OpenAI, or Gemini — user's choice) that calls WC/WP PHP functions directly and renders rich React cards inline (orders table, confirm buttons, image previews).
 
 Two halves:
 - **PHP plugin** (`includes/`, `chat-admin.php`) — REST API, the Anthropic tool-use loop, all tools.
-- **React app** (`app/`) — the `/chat-admin` SPA, built with Vite into `build/` and served by the PHP `Frontend` class.
+- **React app** (`app/`) — the `/wpchat` SPA, built with Vite into `build/` and served by the PHP `Frontend` class.
 
 The plugin auto-updates from GitHub Releases via the vendored Plugin Update Checker (`vendor-puc/`) — there is no WP.org listing. The version must be bumped in **all four** places when releasing: `chat-admin.php` (header `Version:` **and** `CHATADMIN_VERSION`) and `readme.txt` (`Stable tag:` **and** a matching `= X.Y.Z =` changelog heading). `bin/release.sh` asserts these agree, rebuilds the app, and packages a clean `chat-admin-vX.Y.Z.zip` via `git archive` (honoring `.gitattributes` export-ignore); the CI `release-guard` job enforces version consistency + that committed `build/` is current.
 
@@ -40,7 +40,7 @@ The `build/` output is committed to the repo because the released ZIP serves pre
 ## Architecture
 
 ### Request flow
-1. `Frontend::maybe_render` intercepts `/chat-admin` via `template_redirect`, gates on login + `edit_posts`, reads `build/manifest.json`, and emits a bare HTML page with `window.CHATADMIN_BOOT` (REST URL, nonce, locale, site info, and `mode: 'chat' | 'onboarding'`).
+1. `Frontend::maybe_render` intercepts `/wpchat` (and the `/chat-admin` alias) via `template_redirect`, gates on login + `edit_posts`, forces an HTTP 200 (the virtual route would otherwise inherit the main query's 404 status), reads `build/manifest.json`, and emits a bare HTML page with `window.CHATADMIN_BOOT` (REST URL, nonce, locale, site info, and `mode: 'chat' | 'onboarding'`).
 2. The React app (`app/src/main.tsx`) renders `Chat` or `OnboardingWizard` based on `boot.mode`.
 3. `Chat` POSTs to `chatadmin/v1/chat` (`includes/class-rest.php`). `Rest::handle_chat` persists the user message (`History`), builds the **system prompt**, then calls `LLM::run_with_tools` (the active provider).
 4. `BaseLLMProvider::run_with_tools` (`includes/class-llm-providers.php`) runs the tool-use loop (max 8 turns), executing tool callables and feeding `tool_result` blocks back until `end_turn`. Returns `{text, messages, tool_calls}`.
