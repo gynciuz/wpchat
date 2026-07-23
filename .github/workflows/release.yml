@@ -1,11 +1,17 @@
 name: Release
 
-# Manually publish a GitHub Release (tag + release notes + the plugin ZIP
-# asset) from the current default branch. Runs bin/release.sh --publish on a
-# GitHub-hosted runner, which has the gh CLI and a contents:write token — so a
-# release can be cut straight from the repo without a local gh install or tag
-# push. The Plugin Update Checker on every site reads the attached ZIP asset.
+# Publish a GitHub Release (tag + notes + plugin ZIP asset) when the version
+# in chat-admin.php has no matching release yet. Runs bin/release.sh --publish
+# on a GitHub-hosted runner (which has the gh CLI and a contents:write token),
+# so releases are cut from the repo itself — no local gh install or tag push.
+#
+# Idempotent: it checks for an existing release FIRST and skips the build
+# entirely when the current version is already released, so ordinary pushes to
+# main are a fast no-op and only a version bump actually publishes. The Plugin
+# Update Checker on every site reads the attached ZIP asset.
 on:
+  push:
+    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -25,23 +31,38 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Has this version already been released?
+        id: check
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          VERSION="$(grep -m1 -E '^\s*\*\s*Version:' chat-admin.php | sed -E 's/.*Version:[[:space:]]*//; s/[[:space:]]*$//')"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          if gh release view "v$VERSION" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+            echo "::notice::Release v$VERSION already exists — nothing to publish."
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::v$VERSION not released yet — will build and publish."
+          fi
+
       - uses: pnpm/action-setup@v4
+        if: steps.check.outputs.exists == 'false'
         with:
           version: 10
 
       - uses: actions/setup-node@v4
+        if: steps.check.outputs.exists == 'false'
         with:
           node-version: '22'
           cache: pnpm
           cache-dependency-path: app/pnpm-lock.yaml
 
-      # bin/release.sh reads the version from chat-admin.php, asserts version
-      # consistency, rebuilds the app and requires the committed build/ to match,
-      # packages a clean chat-admin-vX.Y.Z.zip via git archive, then (with
-      # --publish) creates the tag + GitHub Release and uploads the ZIP asset.
-      # It refuses if the tag already exists, so re-running after a release is a
-      # safe no-op failure rather than a duplicate.
+      # bin/release.sh asserts version consistency, rebuilds and checks the
+      # committed build/, packages a clean chat-admin-vX.Y.Z.zip via git archive,
+      # then creates the tag + GitHub Release and uploads the ZIP asset.
       - name: Build, package, and publish the release
+        if: steps.check.outputs.exists == 'false'
         env:
           GH_TOKEN: ${{ github.token }}
         run: bin/release.sh --publish
