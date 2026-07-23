@@ -88,6 +88,7 @@ and "Report a problem" sends the details to the developer.
 Groundwork so ChatAdmin stays universal and grows into whatever a site installs it on.
 * **`find_text` now covers custom content backends too.** A site plugin that stores content its own way (static HTML, page-builder data, an external store) can implement an optional `search()` method, and its content becomes findable through `find_text` alongside posts, meta and terms — so the assistant catches it organically, with no change to ChatAdmin's core.
 * **Documented the extension contract.** New `docs/extending-backends.md` + a complete, drop-in `docs/examples/example-content-backend.php` show how to expose non-standard content (e.g. a theme's team members) to ChatAdmin via the `chatadmin_content_backends` filter — the supported way to make ChatAdmin edit site-specific/static content without touching the plugin.
+* **No more phantom Confirm/Cancel bar.** The Confirm/Cancel buttons now appear only when a preview actually produced a change to confirm. Previously a *failed* preview (e.g. the assistant couldn't edit the item and handed you a wp-admin link instead) still showed the bar, offering to "confirm" a change it had already given up on.
 
 = 0.7.8 =
 Editing theme/plugin content, finding "static-looking" text anywhere it hides, and a feedback loop that learns what the assistant can't yet do.

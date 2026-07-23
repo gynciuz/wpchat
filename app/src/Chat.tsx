@@ -966,16 +966,28 @@ function stripUploadMarker(text: string): string {
  * Decide whether an assistant message is in "awaiting confirmation" state, so
  * the UI can render Confirm/Cancel buttons and the user doesn't have to type
  * one of taip/gerai/ok/etc. Two cases:
- *  - a content edit: it called a preview_* tool (older: preview_team_member_role_change)
- *    AND no later message applied via an apply_* tool.
+ *  - a content edit: it called a preview_* tool that SUCCEEDED (returned a
+ *    diff to confirm) AND no later message applied via an apply_* tool.
  *  - an order mutation: a tool returned `needs_confirmation` (status change,
  *    order action, or customer-visible note). Re-calling the tool replaces this
  *    as the latest message, so the latest-message gate clears the buttons.
+ *
+ * A FAILED preview (missing rights, text not found, wrong kind) must NOT show
+ * the bar — the assistant has nothing to apply and typically hands off with a
+ * link, so a dangling Confirm/Cancel would offer to apply a change it already
+ * decided it can't make.
  */
 function isPendingConfirmation(message: ChatMessage, index: number, all: ChatMessage[]): boolean {
   if (message.role !== "assistant") return false;
   const calls = message.toolCalls ?? [];
-  const hasPreview = calls.some((c) => c.name.startsWith("preview_"));
+  const hasPreview = calls.some((c) => {
+    if (!c.name.startsWith("preview_")) return false;
+    const out = c.output;
+    if (out == null || typeof out !== "object") return false;
+    const o = out as { error?: unknown; matches?: unknown[] };
+    // Real pending change: the preview succeeded and produced at least one diff.
+    return !o.error && Array.isArray(o.matches) && o.matches.length > 0;
+  });
   const needsConfirm = calls.some(
     (c) =>
       c.output != null &&
