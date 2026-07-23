@@ -542,6 +542,38 @@ class Tools {
             }
         }
 
+        // 5) Custom backends may store content outside WordPress's own tables
+        //    (static HTML files, a page-builder blob, an external store). Any
+        //    backend that implements the optional search() method participates
+        //    here, so find_text stays universal as a site adds capabilities via
+        //    the chatadmin_content_backends filter — no core change needed.
+        foreach (ContentRouter::backends() as $backend) {
+            if (!method_exists($backend, 'search')) {
+                continue;
+            }
+            try {
+                $backend_hits = $backend->search($query);
+            } catch (\Throwable $e) {
+                continue; // a misbehaving backend must never break the search
+            }
+            if (!is_array($backend_hits)) {
+                continue;
+            }
+            foreach ($backend_hits as $h) {
+                if (!is_array($h) || empty($h['kind'])) {
+                    continue;
+                }
+                $target = is_array($h['target'] ?? null) ? $h['target'] : [];
+                // Honour site-disabled kinds + the user's role: if they can't
+                // edit this kind, still show WHERE the text is but never mark it
+                // editable from chat.
+                if (self::check_kind_access((string) $h['kind'], $target) !== null) {
+                    $h['editable'] = false;
+                }
+                $hits[] = $h;
+            }
+        }
+
         $editable_count = count(array_filter($hits, static fn($h) => !empty($h['editable'])));
 
         return [
