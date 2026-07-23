@@ -86,7 +86,7 @@ and "Report a problem" sends the details to the developer.
 
 = 0.7.4 =
 Fixes for the full-screen chat route, the in-chat Settings link, page-editing permissions, and update robustness.
-* **`/wpchat` no longer 404s.** The full-screen chat is served at `/wpchat` (with `/chat-admin` kept as an alias) and now returns a proper HTTP 200, so finishing onboarding — which sends you to `/wpchat` — lands on the chat instead of a "Not Found" page.
+* **Full-screen chat route no longer 404s, and is now `/chatadmin`.** The chat is served at `/chatadmin` (matching the ChatAdmin brand), with `/wpchat` and `/chat-admin` kept as aliases so existing links keep working, and it now returns a proper HTTP 200 — so finishing onboarding lands on the chat instead of a "Not Found" page.
 * **The "Settings" link in the chat works.** It pointed at an unregistered page slug (`chatadmin-settings`) and gave everyone, admins included, "Sorry, you are not allowed to access this page." It now opens the real Settings page.
 * **Editing pages through chat.** ChatAdmin now tops up the content-editing capabilities (posts, pages, categories, uploads) on the administrator role and on any role that can use ChatAdmin, so a role left without page-edit rights can fix page text from the chat again.
 * **Updates keep your settings and stay active.** Migrations now also run after an auto-update (WordPress skips the activation hook on update), so settings, the messages table, and capabilities survive an update instead of leaving a half-migrated install.

@@ -1,6 +1,6 @@
 <?php
 /**
- * Public-facing /wpchat route — full-screen chat (no wp-admin chrome).
+ * Public-facing /chatadmin route — full-screen chat (no wp-admin chrome).
  *
  * @package ChatAdmin
  */
@@ -14,14 +14,15 @@ if (!defined('ABSPATH')) {
 class Frontend {
 
     /** Canonical public path for the full-screen chat. */
-    const URL_PATH = '/wpchat';
+    const URL_PATH = '/chatadmin';
 
     /**
      * Every path (without slashes) that resolves to the full-screen chat.
-     * `wpchat` is canonical; `chat-admin` is kept as an alias so older
-     * bookmarks / links (and earlier plugin versions) keep working.
+     * `chatadmin` is canonical (matches the brand + REST namespace); `wpchat`
+     * and `chat-admin` are kept as aliases so older bookmarks / links (and
+     * earlier plugin versions) keep working.
      */
-    const PATHS = ['wpchat', 'chat-admin'];
+    const PATHS = ['chatadmin', 'wpchat', 'chat-admin'];
 
     public function __construct() {
         add_action('template_redirect', [$this, 'maybe_render']);
@@ -47,7 +48,7 @@ class Frontend {
             );
         }
 
-        // `/wpchat` is a virtual route with no matching WP post/page, so the main
+        // `/chatadmin` is a virtual route with no matching WP post/page, so the main
         // query flagged it as a 404 and queued a 404 status header. Clear that and
         // send a real 200 before streaming the SPA — otherwise the page renders but
         // caches/CDNs/search engines see it as "Not Found" (the reported bug).

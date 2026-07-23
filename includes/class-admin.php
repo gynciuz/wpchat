@@ -77,7 +77,7 @@ class Admin {
             [$this, 'render_diagnostics_page']
         );
 
-        // Quick link to the dedicated full-screen chat at /wpchat (no wp-admin
+        // Quick link to the dedicated full-screen chat at /chatadmin (no wp-admin
         // chrome). A URL as the menu slug renders as a plain link.
         global $submenu;
         if (isset($submenu[self::MENU_SLUG])) {
@@ -149,7 +149,7 @@ class Admin {
         // (`input[type=text]`, `.wrap h2`, …) outrank the app's utility classes,
         // which breaks the theme. So we render on our own dark panel (NOT the
         // `.wrap` class) and neutralize wp-admin's form-control bleed inside the
-        // root. (The dedicated /wpchat page renders full-screen with no chrome.)
+        // root. (The dedicated /chatadmin page renders full-screen with no chrome.)
         ?>
         <style>
             #chatadmin-shell {
