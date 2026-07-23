@@ -3,16 +3,12 @@
  * ChatAdmin content-backend infrastructure.
  *
  * The plugin ships with a default WPContentBackend that handles standard
- * WordPress content (posts, pages-by-slug, post meta, terms). Sites with
- * non-standard content — static-HTML blocks, page-builder data, an external
- * store, a theme's custom "team member" records — register additional backends
- * via the `chatadmin_content_backends` filter, each declaring which `kind`
- * slugs it handles. ChatAdmin auto-detects them: their kinds appear in the
- * assistant's system prompt, are capability-gated, and route through the
- * standard preview→apply flow, with no change to the core plugin.
- *
- * See docs/extending-backends.md and docs/examples/example-content-backend.php
- * for a complete, adaptable reference.
+ * WordPress content (posts, pages-by-slug, post meta, terms). A site can
+ * register additional backends for non-standard content via the
+ * `chatadmin_content_backends` filter, each declaring which `kind` slugs it
+ * handles. ChatAdmin auto-detects them: their kinds appear in the assistant's
+ * system prompt, are capability-gated, and route through the standard
+ * preview→apply flow, with no change to the core plugin.
  *
  * @package ChatAdmin
  */
@@ -280,7 +276,7 @@ class WPContentBackend implements ContentBackend {
     public function describe_kinds(): array {
         return [
             'wp_post' => [
-                'description' => 'Any WordPress post, page, OR custom-post-type item (team member, portfolio, service, …) referenced by ID. Target shape: {kind: "wp_post", id: <int>}. To find one, list_content_blocks("wp_post", {post_type: "<type>" | "any", search: "<words>"}).',
+                'description' => 'Any WordPress post, page, OR custom-post-type item (e.g. a portfolio item, service, or other registered type) referenced by ID. Target shape: {kind: "wp_post", id: <int>}. To find one, list_content_blocks("wp_post", {post_type: "<type>" | "any", search: "<words>"}).',
                 'fields'      => ['title', 'content', 'excerpt', 'status'],
             ],
             'wp_page_slug' => [

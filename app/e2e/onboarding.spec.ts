@@ -9,7 +9,7 @@ test.describe("Onboarding wizard", () => {
     // WelcomeCard greets the user by first name and names their site.
     await expect(page.getByRole("heading", { name: "Hi, Test." })).toBeVisible();
     await expect(
-      page.getByText("Let's get ChatAdmin ready for Gentleman's Empire", { exact: false })
+      page.getByText("Let's get ChatAdmin ready for Example Store", { exact: false })
     ).toBeVisible();
 
     await expect(page).toHaveScreenshot("onboarding-welcome.png", { fullPage: true });

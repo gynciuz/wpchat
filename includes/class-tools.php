@@ -193,7 +193,7 @@ class Tools {
                     'properties' => [
                         'target' => [
                             'type'        => 'object',
-                            'description' => 'Kind-specific reference to the item. Must include `kind` and the fields the kind requires (e.g. {kind: "wp_post", id: 123}, {kind: "wp_page_slug", slug: "apie-mus"}, {kind: "team_member", name: "Nesar"}).',
+                            'description' => 'Kind-specific reference to the item. Must include `kind` and the fields the kind requires (e.g. {kind: "wp_post", id: 123}, {kind: "wp_page_slug", slug: "apie-mus"}, {kind: "wp_term", term_id: 5, taxonomy: "category"}).',
                         ],
                         'field' => ['type' => 'string', 'description' => 'Which property to change. Allowed values depend on the kind (see the system prompt).'],
                         'value' => ['description' => 'Proposed new value. Usually a string; some fields accept other types.'],

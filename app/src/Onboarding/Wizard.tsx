@@ -342,7 +342,7 @@ function buildSteps(status: OnboardingStatus | null, boot: Boot): Step[] {
   });
 
   // CF auto-purge + Git auto-commit integrations are site-specific
-  // (CachePurge lives in GE's child theme; GitSync needs a writable
+  // (CachePurge lives in a site's child theme; GitSync needs a writable
   // git repo at ABSPATH). They're documented in the plugin README for
   // power users; they don't belong in a first-run wizard — per design
   // principle #5 (state of mind, not state of app), a fresh-install
