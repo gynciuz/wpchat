@@ -61,15 +61,19 @@ OUT="chat-admin-v$VERSION.zip"
 rm -f "$OUT"
 git archive --format=zip --prefix=chat-admin/ -o "$OUT" HEAD
 ok "Wrote $OUT ($(du -h "$OUT" | cut -f1))."
+# Snapshot the listing once. Piping `unzip -l` straight into `grep -q` trips
+# `set -o pipefail`: grep exits on first match, unzip gets SIGPIPE (141), and
+# the pipeline is reported as failed even though the file WAS found.
+LISTING="$(unzip -l "$OUT")"
 echo "Top-level contents:"
-unzip -l "$OUT" | awk '{print $4}' | sed -n 's#^chat-admin/\([^/]*\)/\?$#  \1#p' | sort -u
+echo "$LISTING" | awk '{print $4}' | sed -n 's#^chat-admin/\([^/]*\)/\?$#  \1#p' | sort -u
 
 # Sanity: dev files must NOT be in the package.
-if unzip -l "$OUT" | grep -qE 'chat-admin/(tests/|app/src/|composer\.json|phpunit)'; then
+if echo "$LISTING" | grep -qE 'chat-admin/(tests/|app/src/|composer\.json|phpunit)'; then
   fail "Package contains dev files that should be export-ignored — check .gitattributes."
 fi
 # Sanity: the built assets MUST be in the package.
-unzip -l "$OUT" | grep -q 'chat-admin/build/manifest.json' \
+echo "$LISTING" | grep -q 'chat-admin/build/manifest.json' \
   || fail "Package is missing build/manifest.json — the plugin would 500 on load."
 ok "Package sanity checks passed."
 
