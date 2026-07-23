@@ -8,6 +8,10 @@ node_modules/
 app/dist/
 *.tsbuildinfo
 
+# Packaged release ZIPs (bin/release.sh) — these are uploaded to GitHub
+# Releases as assets, not committed to the repo.
+/chat-admin-v*.zip
+
 # editor / OS
 .DS_Store
 .vscode/
