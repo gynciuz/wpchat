@@ -4,7 +4,7 @@ Tags: woocommerce, chat, ai, claude, orders
 Requires at least: 6.5
 Tested up to: 7.0
 Requires PHP: 8.1
-Stable tag: 0.7.7
+Stable tag: 0.7.8
 License: MIT
 License URI: https://opensource.org/licenses/MIT
 
@@ -84,10 +84,12 @@ and "Report a problem" sends the details to the developer.
 
 == Changelog ==
 
-= 0.7.7 =
-Editing theme/plugin content, and a feedback loop that learns what the assistant can't yet do.
+= 0.7.8 =
+Editing theme/plugin content, finding "static-looking" text anywhere it hides, and a feedback loop that learns what the assistant can't yet do.
 * **Custom post types are now editable in chat.** Team members, portfolio items, services, testimonials and other theme/plugin content types can be found and edited through the same preview→confirm flow as posts and pages — the assistant now knows they exist and can search across them (`post_type: "any"`). When the same wrong text appears on many items, it's usually one shared taxonomy label, and the assistant fixes it in a single edit.
+* **"Find this text anywhere" — the assistant now locates static-looking content.** New `find_text` capability: give the assistant the wrong wording and it reports every place that text is stored — page/post/custom-post-type content, post meta, taxonomy labels, and (for admins) site settings — and whether each is editable from chat. So instead of guessing or giving up, it fixes what it can and, for theme-managed or hard-coded text, tells you exactly where it lives. (It never exposes meta/option values — only locations.)
 * **Automatic "unmet request" signal.** When the assistant has to fall back to a wp-admin link because no tool could do the job, ChatAdmin now records that (with the request text anonymised — emails and long numbers stripped) so the most-wanted missing capabilities surface in Diagnostics and, if error reporting is on, to the developer. No thumbs-up/down needed; it just learns from the handoffs.
+* **No more chasing a capability that isn't there.** Removed built-in prompt references to a "team_member" content type that only exists if a site actually registers it, so the assistant relies on what's really available and hands off precisely when text is baked into the theme.
 
 = 0.7.6 =
 * **"Open full screen ↗" opens in a new tab.** The full-screen chat link in the ChatAdmin admin menu now opens `/chatadmin` in a new browser tab, so your wp-admin session stays put behind it.

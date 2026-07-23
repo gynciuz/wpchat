@@ -160,8 +160,19 @@ class Tools {
                 ],
             ],
             [
+                'name'        => 'find_text',
+                'description' => 'Locate a literal piece of text ANYWHERE it is stored on the site — across posts/pages/custom-post-types (title, content, excerpt), post meta, and taxonomy terms, plus a read-only check of site options. Use this FIRST whenever the user reports wrong/typo text ("it says X, should be Y") and you do not already know where X lives — instead of guessing a kind or giving up. Each hit reports WHERE the text is and whether it is `editable` from chat, so you can fix the editable ones (preview→apply on the returned `target`) and, for non-editable ones (protected theme fields, site options, static storage), tell the user exactly where it is and hand off. If a hit is `shared` (a taxonomy term), editing that one term fixes every item using it.',
+                'input_schema' => [
+                    'type'       => 'object',
+                    'properties' => [
+                        'query' => ['type' => 'string', 'description' => 'The exact text to locate (e.g. the misspelled word). 2+ characters.'],
+                    ],
+                    'required' => ['query'],
+                ],
+            ],
+            [
                 'name'        => 'list_content_blocks',
-                'description' => 'List content items of a given kind. Available kinds depend on which backends are registered on this site (see the system prompt). Common kinds: wp_post, wp_page_slug, wp_post_meta, wp_term. Sites may add custom kinds (e.g. team_member).',
+                'description' => 'List content items of a given kind. Available kinds depend on which backends are registered on this site (see the system prompt). Common kinds: wp_post, wp_page_slug, wp_post_meta, wp_term.',
                 'input_schema' => [
                     'type'       => 'object',
                     'properties' => [
@@ -265,6 +276,7 @@ class Tools {
             // Generic content-backend dispatch (v0.4).
             // Routes to whichever registered backend claims target.kind.
             // Backends are pulled via apply_filters('chatadmin_content_backends').
+            'find_text'             => [__CLASS__, 'find_text'],
             'list_content_blocks'   => [__CLASS__, 'list_content_blocks'],
             'preview_content_change' => [__CLASS__, 'preview_content_change'],
             'apply_content_change'  => [__CLASS__, 'apply_content_change'],
@@ -386,6 +398,162 @@ class Tools {
     // Generic content-backend dispatch (v0.4)
     // Routes to whichever registered backend claims target.kind.
     // ============================================================
+
+    /**
+     * Locate a literal string wherever it is stored, so the assistant can find
+     * "static-looking" text (theme custom-post-type meta, taxonomy labels,
+     * page content, site options) instead of guessing or dead-ending. Every
+     * surface is scoped to the current user's capabilities, and each hit is
+     * flagged `editable` so the model knows what it can fix from chat vs. what
+     * lives in a protected/theme/option location (→ precise handoff).
+     *
+     * Deliberately never returns meta or option VALUES (they can hold secrets
+     * or huge theme blobs) — only WHERE the match is and whether it's editable.
+     */
+    public static function find_text(array $args): array {
+        global $wpdb;
+
+        $query = trim((string) ($args['query'] ?? ''));
+        if (mb_strlen($query) < 2) {
+            return ['error' => 'Provide at least 2 characters of the text to locate.'];
+        }
+        $like = '%' . $wpdb->esc_like($query) . '%';
+        $hits = [];
+
+        // Post types the current user may edit (custom post types included).
+        $skip_types = ['attachment', 'wp_block', 'wp_template', 'wp_template_part', 'wp_navigation', 'nav_menu_item', 'custom_css', 'customize_changeset', 'revision', 'oembed_cache', 'user_request', 'shop_order', 'shop_order_refund', 'shop_coupon', 'shop_subscription', 'product_variation'];
+        $types = [];
+        foreach (get_post_types(['show_ui' => true], 'objects') as $pt) {
+            if (in_array($pt->name, $skip_types, true)) {
+                continue;
+            }
+            $cap = (is_object($pt->cap) && !empty($pt->cap->edit_posts)) ? $pt->cap->edit_posts : 'edit_posts';
+            if (current_user_can($cap)) {
+                $types[] = $pt->name;
+            }
+        }
+
+        // 1) Post title / content / excerpt across editable types.
+        if ($types) {
+            $q = new \WP_Query([
+                'post_type'      => $types,
+                'post_status'    => ['publish', 'draft', 'private', 'pending', 'future'],
+                's'              => $query,
+                'posts_per_page' => 20,
+                'no_found_rows'  => true,
+            ]);
+            foreach ($q->posts as $p) {
+                $fields = [];
+                if (mb_stripos((string) $p->post_title, $query) !== false)   { $fields[] = 'title'; }
+                if (mb_stripos((string) $p->post_content, $query) !== false) { $fields[] = 'content'; }
+                if (mb_stripos((string) $p->post_excerpt, $query) !== false) { $fields[] = 'excerpt'; }
+                if (!$fields) { $fields[] = 'content'; }
+                $type_obj  = get_post_type_object($p->post_type);
+                $editable  = current_user_can(($type_obj->cap->edit_post ?? 'edit_post'), $p->ID);
+                $hits[] = [
+                    'where'    => sprintf('%s #%d “%s”', $p->post_type, $p->ID, get_the_title($p)),
+                    'kind'     => 'wp_post',
+                    'target'   => ['kind' => 'wp_post', 'id' => (int) $p->ID],
+                    'fields'   => $fields,
+                    'editable' => (bool) $editable,
+                ];
+            }
+        }
+
+        // 2) Taxonomy terms (name/description). A shared label lives here — fix
+        //    once to fix every item using it.
+        $terms = get_terms([
+            'taxonomy'   => array_values(get_taxonomies(['public' => true])),
+            'hide_empty' => false,
+            'search'     => $query,
+            'number'     => 20,
+        ]);
+        if (!is_wp_error($terms)) {
+            foreach ($terms as $t) {
+                $tax_obj  = get_taxonomy($t->taxonomy);
+                $editable = current_user_can($tax_obj->cap->edit_terms ?? 'manage_categories');
+                $hits[] = [
+                    'where'    => sprintf('term “%s” (%s)', $t->name, $t->taxonomy),
+                    'kind'     => 'wp_term',
+                    'target'   => ['kind' => 'wp_term', 'term_id' => (int) $t->term_id, 'taxonomy' => $t->taxonomy],
+                    'fields'   => ['name', 'description'],
+                    'editable' => (bool) $editable,
+                    'shared'   => true,
+                ];
+            }
+        }
+
+        // 3) Post meta — only for posts the user can edit. Protected (_-prefixed)
+        //    keys are theme/plugin-managed and NOT editable from chat. Values are
+        //    never returned.
+        $meta_rows = $wpdb->get_results(
+            $wpdb->prepare("SELECT post_id, meta_key FROM {$wpdb->postmeta} WHERE meta_value LIKE %s LIMIT 40", $like)
+        );
+        $seen_meta = [];
+        foreach ((array) $meta_rows as $r) {
+            $pid  = (int) $r->post_id;
+            $key  = (string) $r->meta_key;
+            $dedup = $pid . '|' . $key;
+            if (isset($seen_meta[$dedup])) {
+                continue;
+            }
+            $seen_meta[$dedup] = true;
+            $ptype = get_post_type($pid);
+            if (!$ptype) {
+                continue;
+            }
+            $type_obj = get_post_type_object($ptype);
+            if (!current_user_can(($type_obj->cap->edit_post ?? 'edit_post'), $pid)) {
+                continue; // don't disclose meta of posts the user can't edit
+            }
+            $protected = is_protected_meta($key, 'post');
+            $hits[] = [
+                'where'    => sprintf('post #%d (%s) meta[%s]', $pid, $ptype, $key),
+                'kind'     => 'wp_post_meta',
+                'target'   => ['kind' => 'wp_post_meta', 'post_id' => $pid, 'key' => $key],
+                'fields'   => ['value'],
+                'editable' => !$protected,
+                'note'     => $protected ? 'Protected theme/plugin field — not editable from chat; edit in wp-admin.' : null,
+            ];
+        }
+
+        // 4) Site options — admins only, names only (values can hold secrets),
+        //    sensitive names skipped. Reported as a LOCATION, not editable here.
+        if (current_user_can('manage_options')) {
+            $opt_rows = $wpdb->get_results(
+                $wpdb->prepare(
+                    "SELECT option_name FROM {$wpdb->options} WHERE option_value LIKE %s AND option_name NOT LIKE %s LIMIT 20",
+                    $like,
+                    $wpdb->esc_like('_transient') . '%'
+                )
+            );
+            foreach ((array) $opt_rows as $r) {
+                $name = (string) $r->option_name;
+                if (preg_match('/(secret|token|_key|apikey|api_key|password|passwd|auth|nonce|salt|session|_transient|cron)/i', $name)) {
+                    continue;
+                }
+                $hits[] = [
+                    'where'    => sprintf('site option “%s”', $name),
+                    'kind'     => 'option',
+                    'target'   => null,
+                    'editable' => false,
+                    'note'     => 'Stored in a site/theme setting — edit in the relevant Settings screen, not from chat.',
+                ];
+            }
+        }
+
+        $editable_count = count(array_filter($hits, static fn($h) => !empty($h['editable'])));
+
+        return [
+            'query'          => $query,
+            'count'          => count($hits),
+            'editable_count' => $editable_count,
+            'hits'           => $hits,
+            'guidance'       => $hits
+                ? 'Fix editable hits with preview_content_change → apply_content_change on the given target. If a hit has shared:true (a taxonomy term), editing that one term fixes every item using it — prefer that. For hits with editable:false, tell the user exactly where the text lives and hand off with get_admin_url; do NOT claim you changed it.'
+                : 'The text was not found in any editable content, post meta, term, or (for admins) site option. It may be hard-coded in a theme template/file or an external source — tell the user where to look and hand off with get_admin_url.',
+        ];
+    }
 
     public static function list_content_blocks(array $args): array {
         $kind = (string) ($args['kind'] ?? '');
