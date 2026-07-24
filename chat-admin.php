@@ -3,7 +3,7 @@
  * Plugin Name:       ChatAdmin – AI chat admin
  * Plugin URI:        https://github.com/gynciuz/wpchat
  * Description:       Chat-based admin for WooCommerce orders. Type "mark order 2833 used" — the assistant calls the right WP/WC functions and renders rich UI inline.
- * Version:           0.7.10
+ * Version:           0.7.11
  * Requires at least: 6.5
  * Requires PHP:      8.1
  * Author:            Gintaras Lukoševičius
@@ -19,7 +19,27 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('CHATADMIN_VERSION', '0.7.10');
+/*
+ * Re-entry guard — bail if a second copy of ChatAdmin is loaded this request.
+ *
+ * ChatAdmin's on-disk identity changed over its history: the main file was
+ * renamed wpchat.php → chat-admin.php (v0.7.2) and the folder/slug moved
+ * wpchat → chat-admin. The bundled update checker installs each update into the
+ * *existing* directory (Puc ...\UpdateChecker::fixDirectoryName), so a site first
+ * installed as wp-content/plugins/wpchat/ keeps updating there. If that ever
+ * leaves two physical copies in the plugins directory (e.g. a leftover wpchat/
+ * next to a re-uploaded chat-admin/) and both end up active, WordPress loads
+ * both — and because require_once keys on the absolute path, the two folders
+ * each re-require includes/class-plugin.php, re-declaring every ChatAdmin\ class.
+ * That fatal ("Cannot redeclare class ChatAdmin\Plugin") is what surfaces as
+ * "There has been a critical error on this website", most visibly right after an
+ * update. Returning here lets the first-loaded copy win so the site stays up.
+ */
+if (defined('CHATADMIN_VERSION')) {
+    return;
+}
+
+define('CHATADMIN_VERSION', '0.7.11');
 define('CHATADMIN_FILE', __FILE__);
 define('CHATADMIN_DIR', plugin_dir_path(__FILE__));
 define('CHATADMIN_URL', plugin_dir_url(__FILE__));
