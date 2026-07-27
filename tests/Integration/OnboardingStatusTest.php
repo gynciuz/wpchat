@@ -60,6 +60,17 @@ class OnboardingStatusTest extends TestCase {
         $this->assertSame('Vlad', $data['user']['first_name']);
     }
 
+    public function test_status_does_not_expose_git_sync_integration(): void {
+        // GitSync is decoupled from ChatAdmin core (a site-specific concern);
+        // the onboarding status must no longer advertise it.
+        $request  = new \WP_REST_Request('GET', '/chatadmin/v1/onboarding/status');
+        $response = \rest_get_server()->dispatch($request);
+        $data     = $response->get_data();
+
+        $this->assertArrayHasKey('integrations', $data);
+        $this->assertArrayNotHasKey('git_sync', $data['integrations']);
+    }
+
     public function test_status_requires_permission(): void {
         $sub = $this->factory()->user->create(['role' => 'subscriber']);
         \wp_set_current_user($sub);

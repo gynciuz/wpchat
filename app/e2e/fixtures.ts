@@ -99,7 +99,6 @@ export const ONBOARDING_STATUS = {
   ],
   integrations: {
     cf_purge: { configured: false, snippet: "" },
-    git_sync: { configured: false, snippet: "" },
   },
   disabled_kinds: [],
   isAdmin: true,

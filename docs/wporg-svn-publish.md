@@ -6,7 +6,7 @@ contains the SVN URL: `https://plugins.svn.wordpress.org/chatadmin/`.
 
 wp.org distribution is **SVN**, not Git. Your Git repo stays the source of
 truth; SVN is just the publish target. The reviewed ZIP already is the correct
-"stripped" build (no PUC, no `Update URI`, no GitSync), so publishing = putting
+"stripped" build (no PUC, no `Update URI`), so publishing = putting
 that build into `trunk/` + assets, then tagging.
 
 ## One-time prerequisites
@@ -83,7 +83,7 @@ svn copy ^/trunk ^/tags/0.7.2 -m "Tag 0.7.2" --username chatapp
 4. `SVN_USER=chatapp bin/publish-wporg.sh 0.7.3`.
 
 ## Gotchas
-- **Never commit `vendor-puc/`, `includes/updater.php`, `class-git-sync.php`, or
+- **Never commit `vendor-puc/`, `includes/updater.php`, or
   the `Update URI` header to wp.org.** The ZIP already excludes them; only ever
   publish from `bin/build-wporg.sh` output, never the raw repo.
 - **Main file is `chat-admin.php`** while the slug is `chatadmin` — that's fine

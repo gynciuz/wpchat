@@ -29,7 +29,7 @@ import { ProviderCard } from "./cards/ProviderCard";
  *   5. WooCommerce (diagnostic, only if not active)
  *   6. Analytics (diagnostic, always — a no-detected reply prompts an install)
  *   7. Content backends (diagnostic, always — shows what's available)
- *   8. Integrations (CF + Git, diagnostic, only if either is unconfigured)
+ *   8. Integrations (CF, diagnostic, only if unconfigured)
  *   9. Summary — capability matrix + "Take me to the chat".
  */
 export function OnboardingWizard({ boot }: { boot: Boot }) {
@@ -341,12 +341,11 @@ function buildSteps(status: OnboardingStatus | null, boot: Boot): Step[] {
     ),
   });
 
-  // CF auto-purge + Git auto-commit integrations are site-specific
-  // (CachePurge lives in a site's child theme; GitSync needs a writable
-  // git repo at ABSPATH). They're documented in the plugin README for
-  // power users; they don't belong in a first-run wizard — per design
-  // principle #5 (state of mind, not state of app), a fresh-install
-  // user is not in "advanced sysadmin" mode.
+  // CF auto-purge is site-specific (CachePurge lives in a site's child
+  // theme). It's documented in the plugin README for power users; it
+  // doesn't belong in a first-run wizard — per design principle #5
+  // (state of mind, not state of app), a fresh-install user is not in
+  // "advanced sysadmin" mode.
 
   steps.push({
     id: "summary",

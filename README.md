@@ -76,9 +76,11 @@ announced if and when it launches.
 - `wpchat_content_backends` — register custom content kinds for your
   site (e.g. a `team_member` backend that writes to static HTML files,
   a `testimonial` backend that updates an ACF repeater).
-- Cache purge + git-commit-on-write hooks — see the `WPChat\CachePurge`
-  and `WPChat\GitSync` helpers; gated behind wp-config constants so
-  default behavior is pure-WP.
+
+Site-specific side effects (cache purge, git-commit-on-write, etc.)
+belong in your own backend's write path, not in the plugin. A custom
+file-writing backend that needs to commit + push its output does so
+from its own `apply()` — ChatAdmin ships no git integration.
 
 ## Dev
 

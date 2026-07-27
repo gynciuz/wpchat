@@ -8,7 +8,7 @@
 # What it does:
 #   1. Checks out (or updates) the SVN repo under dist/svn-chatadmin/
 #   2. Fills trunk/ from the reviewed wp.org ZIP (the stripped build — no PUC,
-#      no updater, no GitSync, no Update URI), so trunk == what was reviewed
+#      no updater, no Update URI), so trunk == what was reviewed
 #   3. Copies the directory assets (icon/banner/screenshots) into assets/
 #   4. svn add/delete, commits trunk + assets, then tags the version
 #

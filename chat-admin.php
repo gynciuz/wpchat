@@ -52,11 +52,6 @@ require_once CHATADMIN_DIR . 'includes/class-anthropic.php';
 require_once CHATADMIN_DIR . 'includes/class-content-backends.php';
 require_once CHATADMIN_DIR . 'includes/class-seo.php';
 require_once CHATADMIN_DIR . 'includes/class-analytics-providers.php';
-// GitSync (optional git-commit-on-write API for file-writing backends) is
-// omitted from the WordPress.org build — load it only when the file is present.
-if (file_exists(CHATADMIN_DIR . 'includes/class-git-sync.php')) {
-    require_once CHATADMIN_DIR . 'includes/class-git-sync.php';
-}
 require_once CHATADMIN_DIR . 'includes/class-history.php';
 require_once CHATADMIN_DIR . 'includes/class-telemetry.php';
 require_once CHATADMIN_DIR . 'includes/class-tools.php';

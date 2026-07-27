@@ -433,10 +433,6 @@ class Onboarding {
                 'configured' => defined('CLOUDFLARE_API_TOKEN') && defined('CLOUDFLARE_ZONE_ID'),
                 'snippet'    => "define('CLOUDFLARE_API_TOKEN', '...');\ndefine('CLOUDFLARE_ZONE_ID', '...');",
             ],
-            'git_sync' => [
-                'configured' => defined('CHATADMIN_GIT_SYNC_ENABLED') && CHATADMIN_GIT_SYNC_ENABLED === true,
-                'snippet'    => "define('CHATADMIN_GIT_SYNC_ENABLED', true);",
-            ],
         ];
     }
 

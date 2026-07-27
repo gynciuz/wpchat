@@ -75,7 +75,8 @@ Content edits are gated at three layers: hidden from the system prompt if disabl
 
 ### Optional, off-by-default integrations (gated by wp-config constants)
 - `CHATADMIN_ANTHROPIC_API_KEY` — overrides the DB-stored key (`Settings::get_api_key` prefers the constant).
-- `GitSync` (`includes/class-git-sync.php`) — `CHATADMIN_GIT_SYNC_ENABLED` + `CHATADMIN_GIT_SYNC_PATH`: commit+push files mutated by file-writing backends. No-ops gracefully when prerequisites are missing.
+
+> Git-commit-on-write (`GitSync`) is **not** part of ChatAdmin core — it's a site-specific concern. A site whose custom file-writing backend needs to commit+push mutated files does so from inside its own backend's `apply()` (registered via the `chatadmin_content_backends` filter), carrying its own copy of that logic. ChatAdmin exposes no git integration.
 
 ### Other components
 - `History` (`includes/class-history.php`) — custom `{prefix}chatadmin_messages` table; conversations grouped by a 30-min idle gap. `History::migrate()` runs on activation and in the test bootstrap.
