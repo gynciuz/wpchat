@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { Send, Loader2, ExternalLink, LogOut, ChevronDown, History as HistoryIcon, Plus, Check, X, LifeBuoy } from "lucide-react";
 import ReactMarkdown from "react-markdown";
@@ -10,6 +10,13 @@ import { HistoryDrawer } from "./HistoryDrawer";
 import { OrdersTable, extractOrders } from "./OrdersTable";
 import { QuickChips } from "./QuickChips";
 import { cn } from "@/lib/utils";
+import {
+  type Lang,
+  detectConversationLang,
+  normalizeLang,
+  toolCallsLabel,
+  ui,
+} from "@/lib/i18n";
 
 interface Boot {
   restUrl: string;
@@ -69,6 +76,17 @@ export function Chat({ boot }: { boot?: Boot }) {
   const [loadingConversation, setLoadingConversation] = useState(false);
   const [supportView, setSupportView] = useState<null | "help" | "report">(null);
   const endRef = useRef<HTMLDivElement>(null);
+
+  // The language of the UI chrome follows the conversation, not just the
+  // WordPress locale: once the operator starts typing (or the assistant
+  // replies) in a given language, "Thinking…", the tool-call disclosure, the
+  // input placeholder and the buttons switch to it. Falls back to the site
+  // locale before any message carries a signal.
+  const lang: Lang = useMemo(
+    () => detectConversationLang(messages.map((m) => m.text)) ?? normalizeLang(boot?.locale),
+    [messages, boot?.locale]
+  );
+  const strings = ui(lang);
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -238,7 +256,7 @@ export function Chat({ boot }: { boot?: Boot }) {
             variant="ghost"
             size="icon"
             onClick={() => setHistoryOpen(true)}
-            aria-label="Open chat history"
+            aria-label={strings.openHistory}
             className="size-9 text-muted-foreground"
           >
             <HistoryIcon className="size-4" />
@@ -298,7 +316,7 @@ export function Chat({ boot }: { boot?: Boot }) {
       <div className="flex flex-1 flex-col gap-3 overflow-y-auto">
         {messages.length === 0 && !busy && (
           <EmptyHero
-            locale={boot?.locale}
+            locale={lang}
             input={input}
             setInput={setInput}
             onSend={handleSend}
@@ -375,13 +393,13 @@ export function Chat({ boot }: { boot?: Boot }) {
                 </>
               )}
               {m.toolCalls && m.toolCalls.length > 0 && (
-                <ToolCallDisclosure calls={m.toolCalls} />
+                <ToolCallDisclosure calls={m.toolCalls} lang={lang} />
               )}
               {m.role === "assistant" && isPendingConfirmation(m, i, messages) && !busy && (
                 <ConfirmCancelButtons
                   onConfirm={() => sendText("taip")}
                   onCancel={() => sendText("ne")}
-                  locale={boot?.locale}
+                  locale={lang}
                 />
               )}
             </motion.div>
@@ -400,7 +418,7 @@ export function Chat({ boot }: { boot?: Boot }) {
               style={{ borderRadius: 10 }}
             >
               <Loader2 className="size-3.5 animate-spin" />
-              <span>Thinking…</span>
+              <span>{strings.thinking}</span>
             </motion.div>
           )}
         </AnimatePresence>
@@ -416,7 +434,7 @@ export function Chat({ boot }: { boot?: Boot }) {
               onClick={() => setSupportView("report")}
               className="shrink-0 whitespace-nowrap rounded-md border border-destructive/40 px-2 py-1 text-xs hover:bg-destructive/20"
             >
-              {reportLabel(boot?.locale)}
+              {reportLabel(lang)}
             </button>
           </div>
         )}
@@ -426,7 +444,7 @@ export function Chat({ boot }: { boot?: Boot }) {
 
       {messages.length > 0 && (
         <QuickChips
-          locale={boot?.locale}
+          locale={lang}
           busy={busy || loadingConversation}
           onSelect={(q) => sendText(q)}
         />
@@ -458,7 +476,7 @@ export function Chat({ boot }: { boot?: Boot }) {
                   <div className="truncate font-medium text-foreground">{att.file.name}</div>
                   <div className="text-[10.5px] text-muted-foreground">
                     {attachmentUploading
-                      ? "Įkeliama…"
+                      ? strings.uploading
                       : `${(att.file.size / 1024).toFixed(0)} KB`}
                   </div>
                 </div>
@@ -468,7 +486,7 @@ export function Chat({ boot }: { boot?: Boot }) {
                   size="icon"
                   onClick={() => clearAttachmentAt(i)}
                   disabled={attachmentUploading}
-                  aria-label="Remove attachment"
+                  aria-label={strings.removeAttachment}
                   className="size-7 text-muted-foreground"
                 >
                   <X className="size-4" />
@@ -484,10 +502,11 @@ export function Chat({ boot }: { boot?: Boot }) {
         <InlineInput
           value={input}
           onChange={setInput}
-          placeholder={busy ? "Waiting for assistant…" : "Type…"}
+          placeholder={busy ? strings.waiting : strings.typePlaceholder}
           disabled={busy}
           onAttachPick={pickAttachments}
           attachDisabled={busy || attachmentUploading}
+          attachLabel={strings.attachImage}
         />
 
         <Button
@@ -495,7 +514,7 @@ export function Chat({ boot }: { boot?: Boot }) {
           size="icon"
           disabled={(!input.trim() && attachments.length === 0) || busy}
           className="size-10 shrink-0"
-          aria-label="Send message"
+          aria-label={strings.sendMessage}
         >
           <AnimatePresence mode="wait" initial={false}>
             {busy ? (
@@ -536,7 +555,7 @@ export function Chat({ boot }: { boot?: Boot }) {
             onClick={() => setSupportView("help")}
             className="inline-flex items-center gap-1 hover:text-foreground"
           >
-            <LifeBuoy className="size-3" /> {helpLabel(boot?.locale)}
+            <LifeBuoy className="size-3" /> {helpLabel(lang)}
           </button>
           <a
             href="/wp-admin/admin.php?page=chat-admin-settings"
@@ -722,6 +741,7 @@ interface InlineInputProps {
   disabled?: boolean;
   onAttachPick: (files: File[]) => void;
   attachDisabled?: boolean;
+  attachLabel?: string;
   inputRef?: React.Ref<HTMLInputElement>;
   autoFocus?: boolean;
   large?: boolean;
@@ -771,7 +791,7 @@ function InlineInput(props: InlineInputProps) {
         type="button"
         onClick={() => fileRef.current?.click()}
         disabled={props.attachDisabled}
-        aria-label="Attach image"
+        aria-label={props.attachLabel ?? "Attach image"}
         className="absolute right-1.5 top-1/2 flex size-7 -translate-y-1/2 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground disabled:opacity-50"
       >
         <Plus className="size-4" />
@@ -781,7 +801,7 @@ function InlineInput(props: InlineInputProps) {
 }
 
 interface EmptyHeroProps {
-  locale?: string;
+  locale?: Lang;
   input: string;
   setInput: (v: string) => void;
   onSend: (e: FormEvent) => void;
@@ -802,6 +822,7 @@ interface EmptyHeroProps {
 function EmptyHero(props: EmptyHeroProps) {
   const { confirm: _c, title, placeholder } = heroLabelsFor(props.locale);
   void _c;
+  const strings = ui(props.locale);
   const inputRef = useRef<HTMLInputElement>(null);
 
   // Auto-focus on mount so the cursor is ready. iOS Safari only honors
@@ -835,7 +856,7 @@ function EmptyHero(props: EmptyHeroProps) {
                 <div className="truncate font-medium text-foreground">{att.file.name}</div>
                 <div className="text-[10.5px] text-muted-foreground">
                   {props.attachmentUploading
-                    ? "Įkeliama…"
+                    ? strings.uploading
                     : `${(att.file.size / 1024).toFixed(0)} KB`}
                 </div>
               </div>
@@ -845,7 +866,7 @@ function EmptyHero(props: EmptyHeroProps) {
                 size="icon"
                 onClick={() => props.onAttachClearAt(i)}
                 disabled={props.attachmentUploading}
-                aria-label="Remove attachment"
+                aria-label={strings.removeAttachment}
                 className="size-7 text-muted-foreground"
               >
                 <X className="size-4" />
@@ -864,6 +885,7 @@ function EmptyHero(props: EmptyHeroProps) {
           disabled={props.busy}
           onAttachPick={props.onAttachPick}
           attachDisabled={props.busy}
+          attachLabel={strings.attachImage}
           autoFocus
           large
         />
@@ -872,7 +894,7 @@ function EmptyHero(props: EmptyHeroProps) {
           size="icon"
           disabled={(!props.input.trim() && props.attachments.length === 0) || props.busy}
           className="size-11 shrink-0"
-          aria-label="Send message"
+          aria-label={strings.sendMessage}
         >
           <Send className="size-4" />
         </Button>
@@ -1049,7 +1071,7 @@ function labelsFor(locale?: string): { confirm: string; cancel: string } {
   }
 }
 
-function ToolCallDisclosure({ calls }: { calls: ToolCall[] }) {
+function ToolCallDisclosure({ calls, lang }: { calls: ToolCall[]; lang: Lang }) {
   const [open, setOpen] = useState(false);
   return (
     <div
@@ -1064,7 +1086,7 @@ function ToolCallDisclosure({ calls }: { calls: ToolCall[] }) {
         <ChevronDown
           className={"size-3 transition-transform " + (open ? "rotate-0" : "-rotate-90")}
         />
-        {calls.length} tool call{calls.length > 1 ? "s" : ""}
+        {toolCallsLabel(lang, calls.length)}
       </button>
       {open && (
         <motion.div
