@@ -4,7 +4,7 @@ Tags: woocommerce, chat, ai, claude, orders
 Requires at least: 6.5
 Tested up to: 7.0
 Requires PHP: 8.1
-Stable tag: 0.7.11
+Stable tag: 0.7.12
 License: MIT
 License URI: https://opensource.org/licenses/MIT
 
@@ -83,6 +83,9 @@ and "Report a problem" sends the details to the developer.
 3. A two-minute first-run wizard gets the plugin ready for your site.
 
 == Changelog ==
+
+= 0.7.12 =
+* **The chat UI now follows the language you type in.** Previously the interface labels — "Thinking…", the tool-call count, the input placeholder, Confirm/Cancel, Help/Report, the attachment and history controls — only tracked your WordPress site language, so someone whose WordPress is in English but who chats in Lithuanian saw a mixed English/Lithuanian screen. ChatAdmin now detects the language of the conversation itself and switches the whole interface to match (Lithuanian, Russian, Polish, English, and more), falling back to the site language before the first message. A few labels that were hardcoded in one language are fully translated now too.
 
 = 0.7.11 =
 * **Fix: "critical error" after updating on some sites.** Sites that carried the plugin through its earlier folder rename (wpchat → chat-admin) could end up with two copies in the plugins directory; when both loaded, WordPress fataled with "Cannot redeclare class" and showed "There has been a critical error on this website" right after an update. The plugin now detects a second copy and bails harmlessly so the site stays up. To fully resolve it, delete the stale duplicate plugin folder under wp-content/plugins/ (typically a leftover "wpchat" folder alongside "chat-admin"), keeping only the active one.
