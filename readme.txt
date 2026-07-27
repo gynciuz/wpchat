@@ -4,7 +4,7 @@ Tags: woocommerce, chat, ai, claude, orders
 Requires at least: 6.5
 Tested up to: 7.0
 Requires PHP: 8.1
-Stable tag: 0.7.11
+Stable tag: 0.7.12
 License: MIT
 License URI: https://opensource.org/licenses/MIT
 
@@ -83,6 +83,10 @@ and "Report a problem" sends the details to the developer.
 3. A two-minute first-run wizard gets the plugin ready for your site.
 
 == Changelog ==
+
+= 0.7.12 =
+* **Fix: "critical error" on the Plugins screen (Class "Parsedown" not found).** The release ZIP was built without the update checker's bundled Parsedown library, because a broad `vendor/` ignore rule had kept it out of version control. When WordPress ran the GitHub update check on a release with notes, the plugin fataled and could take down wp-admin/plugins.php. The library now ships with the plugin.
+* **Fix: content-edit confirmation loop that could exhaust API credits.** Confirming an edit to two things at once (e.g. two pages), or the assistant re-showing a preview on the same turn you confirmed, could leave the change never applying — the assistant kept re-asking "confirm?" and burning API calls. Pending confirmations are now tracked per target and each confirms independently, while the same-turn security guard is preserved. Also accepts the Lithuanian "tinka" as a confirmation.
 
 = 0.7.11 =
 * **Fix: "critical error" after updating on some sites.** Sites that carried the plugin through its earlier folder rename (wpchat → chat-admin) could end up with two copies in the plugins directory; when both loaded, WordPress fataled with "Cannot redeclare class" and showed "There has been a critical error on this website" right after an update. The plugin now detects a second copy and bails harmlessly so the site stays up. To fully resolve it, delete the stale duplicate plugin folder under wp-content/plugins/ (typically a leftover "wpchat" folder alongside "chat-admin"), keeping only the active one.

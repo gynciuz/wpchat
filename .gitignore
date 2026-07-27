@@ -21,8 +21,11 @@ app/dist/
 .env*
 !.env.example
 
-# PHP
-vendor/
+# PHP — only the root Composer install dir. NOT a bare `vendor/`, which also
+# matches vendor-puc/plugin-update-checker/vendor/ (bundled Parsedown etc.) and
+# kept it out of git → the release ZIP shipped without Parsedown, fataling the
+# PUC GitHub update check ("Class Parsedown not found") on wp-admin/plugins.php.
+/vendor/
 composer.lock
 
 # PHPUnit cache

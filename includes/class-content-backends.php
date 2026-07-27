@@ -126,7 +126,7 @@ class ContentConfirmation {
             // English
             'yes', 'ok', 'okay', 'sure', 'confirm', 'apply',
             // Lithuanian
-            'taip', 'gerai', 'sutinku', 'patvirtinu',
+            'taip', 'gerai', 'sutinku', 'patvirtinu', 'tinka',
             // Russian (kept — still supported, just not featured)
             'да', 'хорошо', 'ок',
             // Polish
@@ -184,14 +184,31 @@ class PendingConfirmation {
     private const PREFIX = 'chatadmin_pending_';
     private const TTL    = 900; // 15 minutes
 
+    /**
+     * Record that a preview / needs_confirmation ran for $target_key in $turn.
+     *
+     * Pending records are stored as a MAP of target_key => earliest turn, not a
+     * single slot, so multiple targets previewed in one request (e.g. editing
+     * two pages at once) each keep their own record instead of clobbering one
+     * another — the single-slot store sent those batches into an unbreakable
+     * apply→needs_confirmation loop.
+     *
+     * The EARLIEST turn is retained on repeat: the model commonly re-previews a
+     * target on the same turn it confirms, and stamping that later turn would
+     * make consume()'s "preview ran in a strictly earlier turn" check
+     * impossible to satisfy — the second failure mode of the same loop.
+     */
     public static function record(string $conversation, string $target_key, int $turn): void {
         if ($conversation === '') {
             return;
         }
-        set_transient(self::PREFIX . md5($conversation), [
-            'target' => $target_key,
-            'turn'   => $turn,
-        ], self::TTL);
+        $key      = self::PREFIX . md5($conversation);
+        $pending  = self::read_map($key);
+        $existing = $pending[$target_key] ?? null;
+        if (!is_int($existing) || $turn < $existing) {
+            $pending[$target_key] = $turn;
+        }
+        set_transient($key, $pending, self::TTL);
     }
 
     public static function consume(string $conversation, string $target_key, int $current_turn): bool {
@@ -199,14 +216,41 @@ class PendingConfirmation {
             return false;
         }
         $key     = self::PREFIX . md5($conversation);
-        $pending = get_transient($key);
-        if (!is_array($pending)
-            || ($pending['target'] ?? null) !== $target_key
-            || (int) ($pending['turn'] ?? PHP_INT_MAX) >= $current_turn) {
+        $pending = self::read_map($key);
+        if (!array_key_exists($target_key, $pending)
+            || (int) $pending[$target_key] >= $current_turn) {
             return false;
         }
-        delete_transient($key);
+        unset($pending[$target_key]);
+        // Consume only this target; other pending previews in the same batch
+        // must survive so each of their applies can confirm independently.
+        if ($pending === []) {
+            delete_transient($key);
+        } else {
+            set_transient($key, $pending, self::TTL);
+        }
         return true;
+    }
+
+    /**
+     * Read the pending map, tolerating a pre-0.7.12 single-slot record left in a
+     * live transient across upgrade (its 'target'/'turn' keys simply don't
+     * match any real target_key, so it reads as "no pending" and expires).
+     *
+     * @return array<string, int>
+     */
+    private static function read_map(string $key): array {
+        $stored = get_transient($key);
+        if (!is_array($stored)) {
+            return [];
+        }
+        $map = [];
+        foreach ($stored as $target => $turn) {
+            if (is_string($target) && is_int($turn)) {
+                $map[$target] = $turn;
+            }
+        }
+        return $map;
     }
 }
 
