@@ -3,7 +3,7 @@
  * Plugin Name:       ChatAdmin – AI chat admin
  * Plugin URI:        https://github.com/gynciuz/wpchat
  * Description:       Chat-based admin for WooCommerce orders. Type "mark order 2833 used" — the assistant calls the right WP/WC functions and renders rich UI inline.
- * Version:           0.7.12
+ * Version:           0.7.13
  * Requires at least: 6.5
  * Requires PHP:      8.1
  * Author:            Gintaras Lukoševičius
@@ -39,7 +39,7 @@ if (defined('CHATADMIN_VERSION')) {
     return;
 }
 
-define('CHATADMIN_VERSION', '0.7.12');
+define('CHATADMIN_VERSION', '0.7.13');
 define('CHATADMIN_FILE', __FILE__);
 define('CHATADMIN_DIR', plugin_dir_path(__FILE__));
 define('CHATADMIN_URL', plugin_dir_url(__FILE__));

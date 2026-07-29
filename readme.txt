@@ -4,7 +4,7 @@ Tags: woocommerce, chat, ai, claude, orders
 Requires at least: 6.5
 Tested up to: 7.0
 Requires PHP: 8.1
-Stable tag: 0.7.12
+Stable tag: 0.7.13
 License: MIT
 License URI: https://opensource.org/licenses/MIT
 
@@ -83,6 +83,9 @@ and "Report a problem" sends the details to the developer.
 3. A two-minute first-run wizard gets the plugin ready for your site.
 
 == Changelog ==
+
+= 0.7.13 =
+* **Removed the built-in Git auto-commit (GitSync) integration.** Committing site files after a chat edit is a site-specific concern, not something the plugin should carry. A site whose custom content backend writes files and needs to commit them now does so from inside its own backend (registered via the `chatadmin_content_backends` filter), rather than through a plugin-provided helper. This has no effect on a standard install — GitSync was an optional, off-by-default power-user feature that no default content backend used.
 
 = 0.7.12 =
 * **Fix: "critical error" on the Plugins screen (Class "Parsedown" not found).** The release ZIP was built without the update checker's bundled Parsedown library, because a broad `vendor/` ignore rule had kept it out of version control. When WordPress ran the GitHub update check on a release with notes, the plugin fataled and could take down wp-admin/plugins.php. The library now ships with the plugin.
