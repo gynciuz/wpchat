@@ -67,9 +67,6 @@ export interface OnboardingStatus {
     userCanEdit: boolean;
     siteDisabled: boolean;
   }>;
-  integrations: {
-    cf_purge: { configured: boolean; snippet: string };
-  };
   disabled_kinds: string[];
   isAdmin: boolean;
   user: {

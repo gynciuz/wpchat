@@ -18,7 +18,7 @@ class OnboardingStatusTest extends TestCase {
         $this->assertSame(200, $response->get_status());
         $data = $response->get_data();
 
-        foreach (['apiKey', 'model', 'permissions', 'wc', 'analytics', 'backends', 'integrations', 'user', 'site'] as $key) {
+        foreach (['apiKey', 'model', 'permissions', 'wc', 'analytics', 'backends', 'user', 'site'] as $key) {
             $this->assertArrayHasKey($key, $data, "Status matrix missing key: $key");
         }
         $this->assertArrayHasKey('ok', $data['apiKey']);
@@ -60,15 +60,15 @@ class OnboardingStatusTest extends TestCase {
         $this->assertSame('Vlad', $data['user']['first_name']);
     }
 
-    public function test_status_does_not_expose_git_sync_integration(): void {
-        // GitSync is decoupled from ChatAdmin core (a site-specific concern);
-        // the onboarding status must no longer advertise it.
+    public function test_status_does_not_expose_site_specific_integrations(): void {
+        // GitSync and Cloudflare auto-purge are site-specific concerns,
+        // decoupled from ChatAdmin core; the status must not advertise them.
+        // The whole `integrations` block is gone (it held only those two).
         $request  = new \WP_REST_Request('GET', '/chatadmin/v1/onboarding/status');
         $response = \rest_get_server()->dispatch($request);
         $data     = $response->get_data();
 
-        $this->assertArrayHasKey('integrations', $data);
-        $this->assertArrayNotHasKey('git_sync', $data['integrations']);
+        $this->assertArrayNotHasKey('integrations', $data);
     }
 
     public function test_status_requires_permission(): void {

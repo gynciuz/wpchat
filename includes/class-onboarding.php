@@ -104,7 +104,6 @@ class Onboarding {
             'wc'             => $this->wc_status(),
             'analytics'      => $this->analytics_status(),
             'backends'       => $this->backends_status(),
-            'integrations'   => $this->integrations_status(),
             'disabled_kinds' => self::get_site_disabled_kinds(),
             'isAdmin'        => current_user_can(Admin::ADMIN_CAPABILITY),
             'user'           => [
@@ -425,15 +424,6 @@ class Onboarding {
             }
         }
         return $out;
-    }
-
-    private function integrations_status(): array {
-        return [
-            'cf_purge' => [
-                'configured' => defined('CLOUDFLARE_API_TOKEN') && defined('CLOUDFLARE_ZONE_ID'),
-                'snippet'    => "define('CLOUDFLARE_API_TOKEN', '...');\ndefine('CLOUDFLARE_ZONE_ID', '...');",
-            ],
-        ];
     }
 
     // ------------------------------------------------------------------

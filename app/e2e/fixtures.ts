@@ -97,9 +97,6 @@ export const ONBOARDING_STATUS = {
       siteDisabled: false,
     },
   ],
-  integrations: {
-    cf_purge: { configured: false, snippet: "" },
-  },
   disabled_kinds: [],
   isAdmin: true,
   user: { id: 1, display_name: "Test Admin", first_name: "Test", locale: "en" },
