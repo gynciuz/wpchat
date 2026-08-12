@@ -66,7 +66,10 @@ ok "Wrote $OUT ($(du -h "$OUT" | cut -f1))."
 # the pipeline is reported as failed even though the file WAS found.
 LISTING="$(unzip -l "$OUT")"
 echo "Top-level contents:"
-echo "$LISTING" | awk '{print $4}' | sed -n 's#^chat-admin/\([^/]*\)/\?$#  \1#p' | sort -u
+# `sed -E` (extended regex) is portable across BSD (macOS) and GNU sed. The
+# older `\?` optional-quantifier is a GNU-only extension — under BSD sed it
+# matches a literal '?', so this listing came out empty on macOS.
+echo "$LISTING" | awk '{print $4}' | sed -E -n 's#^chat-admin/([^/]+)/?$#  \1#p' | sort -u
 
 # Sanity: dev files must NOT be in the package.
 if echo "$LISTING" | grep -qE 'chat-admin/(tests/|app/src/|composer\.json|phpunit)'; then
