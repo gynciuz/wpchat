@@ -74,7 +74,7 @@ class Settings {
             __('Privacy & diagnostics', 'chatadmin'),
             function () {
                 echo '<p>' . esc_html__('ChatAdmin sends the content of your requests (which can include order and customer data) to your chosen AI provider to generate replies.', 'chatadmin') . '</p>';
-                echo '<p>' . esc_html__('Two channels also send data to the plugin developer: “Report a problem” sends your recent conversation (which can include customer data) plus your login/email, and error reporting (below, on by default) sends PII-free diagnostics when something fails. Turn error reporting off below. See the plugin README / PRIVACY.md for the full data-handling note.', 'chatadmin') . '</p>';
+                echo '<p>' . esc_html__('Two channels can send data to the plugin developer, and both need your say-so: “Report a problem” sends your recent conversation (which can include customer data) plus your login/email, and only when you press the button; error reporting (below) is off unless you tick it, and then sends PII-free diagnostics when something fails. See the plugin README / PRIVACY.md for the full data-handling note.', 'chatadmin') . '</p>';
             },
             'chatadmin-settings'
         );
@@ -179,7 +179,7 @@ class Settings {
             '<label><input type="checkbox" name="%s[telemetry]" value="1" %s /> %s</label>',
             esc_attr(self::OPTION),
             checked($enabled, true, false),
-            esc_html__('Send anonymous error reports (no order or customer data) so the developer can fix failures you hit. You can turn this off any time.', 'chatadmin')
+            esc_html__('Send anonymous error reports (no order or customer data) so the developer can fix failures you hit. Off by default — tick to opt in, untick any time.', 'chatadmin')
         );
     }
 

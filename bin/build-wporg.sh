@@ -6,6 +6,8 @@
 #   - NO bundled update checker (vendor-puc/)   — wp.org bans bundled updaters
 #   - NO `Update URI:` header                    — wp.org bans it
 #   - a wp.org-safe SLUG (no "wp")               — override with WPORG_SLUG
+#   - DOES ship the React source under app/      — wp.org guideline 4 requires
+#     human-readable code, and build/assets/*.js is minified Vite output
 #
 # chat-admin.php loads PUC behind a file_exists() guard, so removing that file
 # from the export is all that's needed for the code to no-op cleanly.
@@ -28,15 +30,37 @@ OUT="$STAGE/$SLUG"
 mkdir -p "$OUT"
 git -C "$ROOT" archive HEAD | tar -x -C "$OUT"
 
-# 2) Strip what wp.org bans.
+# 2) Add back the React source. .gitattributes export-ignores /app for the
+#    GitHub build (the ZIP only needs build/), but wp.org guideline 4 wants the
+#    unminified source next to the compiled bundle. Read blobs straight out of
+#    HEAD so export-ignore does not apply.
+git -C "$ROOT" ls-files -z app | while IFS= read -r -d '' f; do
+    mkdir -p "$OUT/$(dirname "$f")"
+    git -C "$ROOT" show "HEAD:$f" > "$OUT/$f"
+done
+
+# 3) Strip what wp.org bans.
 rm -rf "$OUT/vendor-puc"                    # bundled update checker
 rm -f  "$OUT/includes/updater.php"          # PUC bootstrap (updater code)
 
-# 3) Remove the `Update URI:` header line (a comment — can't be guarded in code).
-grep -v 'Update URI:' "$OUT/chat-admin.php" > "$OUT/chat-admin.php.tmp"
-mv "$OUT/chat-admin.php.tmp" "$OUT/chat-admin.php"
+# 4) Remove the `Update URI:` header line and the whole GitHub-auto-update
+#    block (comments — they can't be guarded in code). A reviewer reading the
+#    file should find no trace of an update channel, not prose describing one.
+python3 - "$OUT/chat-admin.php" <<'STRIP'
+import re, sys
+p = sys.argv[1]
+s = open(p).read()
+s = re.sub(r'^ \* Update URI:.*\n', '', s, flags=re.M)
+s = re.sub(
+    r'\n/\*\n \* Auto-update from GitHub Releases.*?\*/\n'
+    r'// Optional GitHub-Releases auto-update helper\..*?\n(?://.*\n)*'
+    r'if \(file_exists\(CHATADMIN_DIR \. \'includes/updater\.php\'\)\) \{\n'
+    r'.*?\n\}\n',
+    '\n', s, flags=re.S)
+open(p, 'w').write(s)
+STRIP
 
-# 4) Package.
+# 5) Package.
 VERSION="$(grep -oE "CHATADMIN_VERSION', '[0-9.]+'" "$OUT/chat-admin.php" | grep -oE '[0-9.]+' | head -1)"
 mkdir -p "$DIST"
 ZIP="$DIST/${SLUG}-v${VERSION}-wporg.zip"

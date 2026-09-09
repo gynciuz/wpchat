@@ -52,11 +52,16 @@ class Telemetry {
         return (string) apply_filters('chatadmin_support_secret', $secret);
     }
 
-    /** Opt-in telemetry — default ON, disclosed in onboarding; admin can disable. */
+    /**
+     * Opt-in telemetry — default OFF. WordPress.org plugin guideline 7 forbids
+     * tracking without consent, so an absent key means "never chosen" and must
+     * read as disabled. Only an explicit tick in Settings → Privacy &
+     * diagnostics turns this on.
+     */
     public static function telemetry_enabled(): bool {
         $settings = (array) get_option(Settings::OPTION, []);
-        // Absent key = not yet chosen = default on.
-        return !array_key_exists('telemetry', $settings) || !empty($settings['telemetry']);
+        // Absent key = not yet chosen = off.
+        return !empty($settings['telemetry']);
     }
 
     /**

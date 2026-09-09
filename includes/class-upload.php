@@ -150,7 +150,8 @@ class Upload {
             $f = finfo_open(FILEINFO_MIME_TYPE);
             if ($f) {
                 $detected = finfo_file($f, $tmp_path) ?: '';
-                finfo_close($f);
+                // No finfo_close() — deprecated in PHP 8.5, and finfo objects
+                // are freed automatically.
                 if ($detected) {
                     return strtolower($detected);
                 }

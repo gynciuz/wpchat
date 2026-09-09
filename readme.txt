@@ -1,8 +1,8 @@
 === ChatAdmin – AI chat admin ===
-Contributors: gynciuz
+Contributors: chatapp
 Tags: woocommerce, chat, ai, claude, orders
 Requires at least: 6.5
-Tested up to: 7.0
+Tested up to: 7.1
 Requires PHP: 8.1
 Stable tag: 0.7.13
 License: MIT
@@ -26,18 +26,48 @@ Phase 1 (MVP):
 
 Bring your own Anthropic API key.
 
+== External services ==
+
+ChatAdmin relies on a third-party AI provider to answer your requests. You
+choose the provider by pasting its API key; ChatAdmin detects which one the
+key belongs to and talks only to that provider. Nothing is sent anywhere
+until you have saved a key and typed a request.
+
+**AI provider (one of the three below — whichever key you supply)**
+
+What is sent: the text of your chat request, the conversation so far, and
+the results of any WordPress or WooCommerce lookup the assistant performs
+to answer you. When you ask about orders or customers, that data (names,
+email addresses, addresses, order contents) is part of what is sent.
+When it is sent: on each message you submit in the chat.
+
+* Anthropic — endpoint api.anthropic.com. Terms: https://www.anthropic.com/legal/commercial-terms — Privacy policy: https://www.anthropic.com/legal/privacy
+* OpenAI — endpoint api.openai.com. Terms: https://openai.com/policies/business-terms/ — Privacy policy: https://openai.com/policies/privacy-policy/
+* Google Gemini — endpoint generativelanguage.googleapis.com. Terms: https://ai.google.dev/gemini-api/terms — Privacy policy: https://policies.google.com/privacy
+
+**Error reporting to the plugin developer (off by default)**
+
+What is sent: a PII-free failure summary — event name, error message, the
+tool that failed, plugin/PHP/WordPress versions and your site host. No
+order, customer or conversation content.
+When it is sent: only when something fails, and only if you have ticked
+"Send anonymous error reports" in Settings → Privacy & diagnostics. This
+setting is off on a fresh install and nothing is transmitted until you
+turn it on.
+
+**"Report a problem" button (only when you press it)**
+
+What is sent: your recent conversation, which can include customer data,
+plus your login name and email, so the developer can reproduce the fault.
+When it is sent: only on that explicit button press, never automatically.
+
 == Privacy ==
 
-ChatAdmin sends the content of your chat requests to Anthropic
-(api.anthropic.com) to generate replies. This can include order and
-customer data (names, emails) when you ask about orders. Your
-conversation history is stored only in your own site's database, and your
-API key is never exposed to the browser. Optional, PII-free error
-telemetry (on by default, switchable in Settings → Privacy & diagnostics)
-and an explicit "Report a problem" button are the only data sent to the
-plugin developer. If you operate under GDPR or similar, disclose this
-processing in your own site's privacy policy. See PRIVACY.md for full
-details.
+Your conversation history is stored only in your own site's database, and
+your API key is never exposed to the browser. Anything leaving your site is
+listed in the External services section above. If you operate under GDPR or
+similar, disclose the AI-provider processing in your own site's privacy
+policy. See PRIVACY.md for full details.
 
 == Installation ==
 
@@ -68,9 +98,25 @@ Yes — the content, SEO, image and admin-handoff features work on any
 WordPress site. The order tools require WooCommerce.
 
 = Is my data safe? =
-Your requests are sent to Anthropic to generate replies and can include
-order/customer data; your conversation history stays on your own site.
-See the Privacy section above and PRIVACY.md for full details.
+Your requests are sent to your chosen AI provider to generate replies and
+can include order/customer data; your conversation history stays on your
+own site. Error reporting to the developer is off unless you turn it on.
+See the External services and Privacy sections above, and PRIVACY.md.
+
+= Where is the unminified source for the JavaScript? =
+The chat interface is a React app. Its readable source ships inside this
+plugin under app/src/, alongside the build configuration (app/package.json,
+app/vite.config.ts, app/tsconfig*.json). build/assets/main-*.js is the
+compiled output of exactly that source.
+
+To rebuild it yourself:
+
+    cd app
+    pnpm install
+    pnpm build      # tsc -b && vite build → writes ../build/
+
+Node 20+ and pnpm are required. The full project, including tests and
+history, is public at https://github.com/gynciuz/wpchat
 
 = Something isn't working — how do I get help? =
 Open the Help panel in the chat (footer) — it answers common questions,

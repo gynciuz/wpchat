@@ -38,9 +38,11 @@ class TelemetryTest extends TestCase {
         $this->assertSame('m' . (Telemetry::MAX_ENTRIES + 9), end($recent)['message']);
     }
 
-    public function test_telemetry_enabled_defaults_true_then_respects_optout(): void {
+    public function test_telemetry_enabled_defaults_false_then_respects_optin(): void {
+        // wp.org guideline 7: no tracking without consent, so an untouched
+        // install must never phone home.
         \delete_option(Settings::OPTION);
-        $this->assertTrue(Telemetry::telemetry_enabled(), 'Absent setting = default on.');
+        $this->assertFalse(Telemetry::telemetry_enabled(), 'Absent setting = default off.');
 
         \update_option(Settings::OPTION, ['telemetry' => false]);
         $this->assertFalse(Telemetry::telemetry_enabled());
