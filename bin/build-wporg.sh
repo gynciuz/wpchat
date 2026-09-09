@@ -34,7 +34,10 @@ git -C "$ROOT" archive HEAD | tar -x -C "$OUT"
 #    GitHub build (the ZIP only needs build/), but wp.org guideline 4 wants the
 #    unminified source next to the compiled bundle. Read blobs straight out of
 #    HEAD so export-ignore does not apply.
+#    Dotfiles are skipped: the wp.org uploader rejects the whole package with
+#    "hidden_files: Hidden files are not permitted."
 git -C "$ROOT" ls-files -z app | while IFS= read -r -d '' f; do
+    case "/$f" in */.*) continue ;; esac
     mkdir -p "$OUT/$(dirname "$f")"
     git -C "$ROOT" show "HEAD:$f" > "$OUT/$f"
 done
@@ -62,6 +65,14 @@ STRIP
 
 # 5) Package.
 VERSION="$(grep -oE "CHATADMIN_VERSION', '[0-9.]+'" "$OUT/chat-admin.php" | grep -oE '[0-9.]+' | head -1)"
+# Refuse to package a hidden file — the wp.org uploader rejects the upload
+# outright, so catch it here rather than after a round-trip.
+if find "$OUT" -name '.*' -not -name '.' -not -name '..' | grep -q .; then
+    echo "ERROR: hidden files in the package — wp.org will reject it:" >&2
+    find "$OUT" -name '.*' -not -name '.' -not -name '..' | sed "s|$OUT|.|" >&2
+    exit 1
+fi
+
 mkdir -p "$DIST"
 ZIP="$DIST/${SLUG}-v${VERSION}-wporg.zip"
 rm -f "$ZIP"
