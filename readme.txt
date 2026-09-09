@@ -4,7 +4,7 @@ Tags: woocommerce, chat, ai, claude, orders
 Requires at least: 6.5
 Tested up to: 7.1
 Requires PHP: 8.1
-Stable tag: 0.7.13
+Stable tag: 0.7.14
 License: MIT
 License URI: https://opensource.org/licenses/MIT
 
@@ -129,6 +129,13 @@ and "Report a problem" sends the details to the developer.
 3. A two-minute first-run wizard gets the plugin ready for your site.
 
 == Changelog ==
+
+= 0.7.14 =
+Packaging and disclosure work for the WordPress.org submission. No change to how the plugin behaves once configured.
+* **Error reporting is now off until you turn it on.** Anonymous error reports previously defaulted to on for a fresh install. They now stay off until you tick the box in Settings → Privacy & diagnostics, so nothing leaves your site unless you ask for it.
+* **Every AI provider is now disclosed in readme.txt.** The new "External services" section lists Anthropic, OpenAI and Google Gemini with their endpoints, what data is sent and when, and links to each provider's terms and privacy policy.
+* **The React source ships with the plugin.** app/src/ and the build configuration now travel alongside the compiled bundle in build/assets/, with build instructions in readme.txt.
+* Changelog trimmed to the recent releases; the full history moved to changelog.txt. Dropped finfo_close(), deprecated in PHP 8.5.
 
 = 0.7.13 =
 * **Removed the built-in Git auto-commit (GitSync) integration.** Committing site files after a chat edit is a site-specific concern, not something the plugin should carry. A site whose custom content backend writes files and needs to commit them now does so from inside its own backend (registered via the `chatadmin_content_backends` filter), rather than through a plugin-provided helper. This has no effect on a standard install — GitSync was an optional, off-by-default power-user feature that no default content backend used.
