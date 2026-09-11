@@ -12,6 +12,10 @@ items, of which three were fixed in 0.7.14 and three are still open. Nothing is 
 until every item below is closed, because the team re-reviews the whole plugin each round
 and explicitly warns that partial fixes get the submission rejected.
 
+**Decision taken: the plugin is not being renamed.** The name `ChatAdmin` and the slug
+`chatadmin` stay. Section 2 covers how that is defended to the review team; the rest of
+the plan is written on that basis.
+
 ---
 
 ## 1. Status of every issue raised
@@ -36,15 +40,15 @@ the six URLs still resolve before packaging.
 | B3 | Upload route does not require the media capability | `class-upload.php:42` | blocker |
 | B4 | HEREDOC syntax | `class-frontend.php:117`, `class-rest.php:422`, `class-rest.php:528` | blocker |
 | W1 | Inline `script`/`style`/`link` instead of enqueue | `class-frontend.php`, `class-admin.php` | warning, will be checked manually |
-| W2 | Prefixing | project-wide | warning, largely a false positive |
+| W2 | Prefixing | project-wide | warning, false positive — see below |
 
 ### Open from T1, not repeated in T2 but not cleared
 
-| # | Issue | Severity |
+| # | Issue | Handling |
 |---|---|---|
-| N1 | Plugin name and slug: repetitive, descriptive, flagged as a possible trademark | blocker |
-| N2 | Readme description inconsistent with actual feature set | blocker |
-| N3 | Suggestion to migrate to the WordPress 7.0 core AI Client | optional |
+| N1 | Plugin name and slug flagged as repetitive, descriptive, possibly a trademark | answered with evidence, not a rename |
+| N2 | Readme description inconsistent with actual feature set | rewrite the readme |
+| N3 | Suggestion to adopt the WordPress 7.0 core AI Client | deferred, acknowledged in the reply |
 
 T2 did not repeat N1 and N2 because T2 came from the automated pre-screen, which only runs
 the code scanners. The naming and description findings came from the AI review pass in T1
@@ -52,29 +56,74 @@ and remain on the volunteer's checklist.
 
 ---
 
-## 2. The one decision needed before implementation starts
+## 2. Keeping the name: the reply to the review team (N1)
 
-The plugin must be renamed. This is the only item in the plan that is not a
-mechanical fix, and every other rename-dependent task blocks on it.
+The review objected on three grounds: the display name repeats itself, it is largely
+descriptive, and `ChatAdmin` was flagged by an AI as a *potential* trademark that may not
+belong to the submitter. Their suggested replacement was
+`Gynciuz Order Assistant for WooCommerce`.
 
-The reviewer's objection to `ChatAdmin – AI chat admin` has three parts: the name repeats
-itself, it is largely descriptive, and `ChatAdmin` reads as a project-style term that does
-not appear to belong to the submitter. Their own suggestion was
-**Gynciuz Order Assistant for WooCommerce**, slug `gynciuz-order-assistant`.
+The name is being kept. That is a legitimate response, not a refusal to engage: the review
+email states plainly that false positives are possible, and invites a clear, concise reply
+with a specific example when the author disagrees. What it does not tolerate is silence.
+So the reply must present evidence rather than assert a preference.
 
-**Recommendation: take the reviewer's suggestion verbatim.** It follows the pattern they
-published as acceptable, a distinctive term at the front and the trademark last after
-"for". Adopting it costs one round trip instead of two, and deviating invites a fresh
-objection from the volunteer who reads it next. The name saying "Order" while the plugin
-also edits content and runs SEO audits is fine. Plugins may do more than their name says.
-What is not fine is the readme being vague about it, which is issue N2 below.
+### Evidence to put in the reply
 
-If a different name is preferred, it must put a coined or personal term first and the
-WooCommerce reference last, and it must survive a search for lookalikes. Adding a generic
-word such as Advanced or Simple will not clear the similarity objection.
+- **No conflicting plugin exists.** No plugin in the directory is named `ChatAdmin` or uses
+  the slug `chatadmin`. The nearest neighbour is *Admin Chat Management*
+  (`wordpress.org/plugins/admin-chat-box/`), which shares neither name nor slug and inverts
+  the word order. Re-run this check immediately before replying so the claim is current.
+- **No trademark found.** A search for a registered `ChatAdmin` trademark returns nothing.
+  Chat-adjacent registrations exist (`CHATTER` by Salesforce, and a family of `CHAT*` marks
+  by OnCom), but none is `ChatAdmin` and none is a lookalike in the relevant class.
+- **The term is the author's own coinage**, not a borrowed project name. It is consistent
+  across the WordPress.org account `chatapp`, the author field, and the plugin URI.
+- **The flag was explicitly probabilistic.** The email says the AI "detected ✨ ChatAdmin as
+  potential trademark(s)" and that a human may reach a different conclusion. Asking for that
+  human judgement, with the above evidence attached, is the process working as intended.
 
-Everything downstream assumes the slug `gynciuz-order-assistant` and the text domain of the
-same name. Substitute throughout if the decision changes.
+### The one concession worth making
+
+The *repetition* objection is separate from the trademark one and is much harder to defend.
+`ChatAdmin – AI chat admin` does say the same thing twice. Fixing it costs nothing and does
+not touch the slug, the brand, the text domain, the prefixes, the options, the database
+table, or the REST namespace — it only replaces the descriptive half after the dash.
+
+Recommended display name: **`ChatAdmin for WooCommerce`**. It keeps the coined term at the
+front, which is the position the team's own guidance says a distinguishing term should
+occupy, and puts the WooCommerce reference last after "for", which is the pattern they
+publish as acceptable for a trademark the author does not own. It also removes the
+tautology in one edit.
+
+Making this change materially strengthens the reply, because it shows the objection was
+read and partly acted on rather than waved away. Declining it is supportable, but then the
+reply has to defend the repetition too, on weaker ground.
+
+### The risk, stated plainly
+
+A volunteer may still insist on a rename. If that happens the fallback is the full rename
+already scoped out, and it costs one extra review round. Holding the name is the right call
+if the brand matters; it is not a free choice, and the reply is what determines how it goes.
+
+### What this decision removes from the work
+
+Everything identity-related stays as it is: the slug and text domain `chatadmin`, the main
+file `chat-admin.php`, the namespace `ChatAdmin`, the `CHATADMIN_*` constants, every
+`chatadmin_*` option, the `chatadmin_pending_` and `chatadmin_rl_` transient prefixes, the
+`{prefix}chatadmin_messages` table, the `chatadmin/v1` REST namespace, the `/chatadmin`
+route, and the `CHATADMIN_BOOT` browser global.
+
+That also disposes of **W2**. The scanner's complaint was that the plugin uses "the common
+word chat as a prefix", but nothing is actually prefixed `chat_`. Every option, constant,
+transient and class sits behind `chatadmin_` / `CHATADMIN_` / `ChatAdmin` — nine characters,
+distinctive, and well past the four-character minimum. The finding is a substring match on
+`chat` inside `chatadmin`, not a real collision risk. Say so in the reply, in one sentence,
+with one example. No code change.
+
+With no rename and no prefix churn, there is no options migration, no table rename, and no
+forced rebuild of the React bundle to chase a changed REST namespace. The remaining work is
+the four blockers, the enqueue rework, and the readme.
 
 ---
 
@@ -147,7 +196,7 @@ Keep the `/chatadmin` route, but stop hand-rolling the document.
    on `wp_enqueue_scripts`, gated to that query var. Set the `type="module"` attribute via
    the `script_loader_tag` filter, or pass it through the `$args` array supported since
    WordPress 6.3.
-4. Move the boot object to `wp_add_inline_script( handle, 'window.GYNOA_BOOT = …', 'before' )`
+4. Move the boot object to `wp_add_inline_script( handle, 'window.CHATADMIN_BOOT = …', 'before' )`
    and the dark-surface CSS to `wp_add_inline_style`.
 5. Dequeue the active theme's stylesheets on that route. The app is an always-dark full-screen
    surface and theme CSS will fight it. This replaces what the bare document gave for free.
@@ -171,54 +220,20 @@ the system prompt is where most product behaviour lives.
 After this phase, `grep -rn '<<<' includes/` and `grep -rn '<script\|<style\|<link rel' includes/`
 must both come back empty.
 
-### Phase 3 — rename
+### Phase 3 — readme (N2)
 
-Scope, assuming `gynciuz-order-assistant`:
-
-| Item | From | To |
-|---|---|---|
-| Display name | `ChatAdmin – AI chat admin` | `Gynciuz Order Assistant for WooCommerce` |
-| Slug and text domain | `chatadmin` | `gynciuz-order-assistant` |
-| Main file | `chat-admin.php` | `gynciuz-order-assistant.php` |
-| Namespace | `ChatAdmin` | `GynciuzOrderAssistant` |
-| Constants | `CHATADMIN_*` | `GYNOA_*` |
-| Options | `chatadmin_*` | `gynoa_*` |
-| Transient prefixes | `chatadmin_pending_`, `chatadmin_rl_` | `gynoa_pending_`, `gynoa_rl_` |
-| History table | `{prefix}chatadmin_messages` | `{prefix}gynoa_messages` |
-| REST namespace | `chatadmin/v1` | `gynoa/v1` |
-| Front-end route | `/chatadmin` | `/gynciuz-order-assistant` |
-| JS boot global | `CHATADMIN_BOOT` | `GYNOA_BOOT` |
-
-`GYNOA_` is six characters, distinctive, and not a common word, which also closes W2. The
-current `chatadmin_` prefixing was already correct and the scanner's complaint about the
-common word "chat" was a false positive, but the rename makes the point moot.
-
-Migration matters because existing installs came from GitHub releases, not wp.org. Add a
-one-time upgrade routine keyed on the stored version option that renames the options,
-renames the table with `ALTER TABLE … RENAME TO`, and no-ops when the new names already
-exist. Keep `/chatadmin` as a redirect to the new route so bookmarks survive.
-
-Sequencing note: the React app reads the REST namespace and the boot global, so
-`app/src/main.tsx` and anything referencing `chatadmin/v1` must change in the same commit,
-and `pnpm build` must run before the package is cut. `build/` is committed.
-
-Reply to the review thread requesting the new slug reservation. Uploading before the
-reservation lands is fine and the team expects a text-domain warning in the interim.
-
-### Phase 4 — readme
-
-**N2.** The reviewer found the readme describes a WooCommerce order assistant while the FAQ
-claims content, SEO, image and admin-handoff features that appear nowhere else. Restructure
-the description so every capability the plugin actually ships is stated once, in order:
-orders, content creation and editing, SEO audit and metadata, traffic summary, image upload,
-and the deep-link handoff for everything else. Then state plainly what it cannot do, which
-is the bulk and delete operations withheld by design. Remove the Phase 1 (MVP) roadmap
-framing, which reads as an unfinished plugin.
+The reviewer found the readme describes a WooCommerce order assistant while the FAQ claims
+content, SEO, image and admin-handoff features that appear nowhere else. Restructure the
+description so every capability the plugin actually ships is stated once, in order: orders,
+content creation and editing, SEO audit and metadata, traffic summary, image upload, and the
+deep-link handoff for everything else. Then state plainly what it cannot do, which is the
+bulk and delete operations withheld by design. Remove the Phase 1 (MVP) roadmap framing,
+which reads as an unfinished plugin.
 
 Also in the readme:
 
-- Update the name heading and the `Tags` line, which currently carries `chat` and `ai`.
-- Keep `Contributors: chatapp`.
+- Update the name heading if the display name is shortened per section 2. The `Contributors`,
+  `Stable tag` and slug lines are unaffected.
 - Re-verify the six terms and privacy URLs resolve.
 - Bump `Stable tag` and add a matching `= 0.8.0 =` changelog entry.
 - The changelog must stay under the 5000-character wp.org limit, which was already trimmed once.
@@ -232,7 +247,7 @@ Note in the reply that it is on the roadmap for a later release.
 
 ## 4. Release and resubmission
 
-1. Bump the version in all four places: the `Version:` header, `GYNOA_VERSION`,
+1. Bump the version in all four places: the `Version:` header, `CHATADMIN_VERSION`,
    `readme.txt` `Stable tag`, and the matching changelog heading. `bin/release.sh` asserts
    these agree.
 2. `pnpm --dir app build`, then commit the regenerated `build/`.
@@ -240,24 +255,34 @@ Note in the reply that it is on the roadmap for a later release.
 4. Run Plugin Check and PHPCS with WordPress-Extra. The team names both tools explicitly and
    checks whether the author ran them.
 5. `bin/build-wporg.sh`. This already strips `vendor-puc/` and `includes/updater.php` and
-   removes the `Update URI:` header, so the bundled-updater guideline stays satisfied.
-   Update the hardcoded `WPORG_SLUG` default and the `chat-admin.php` filename inside the
-   script when the rename lands.
+   removes the `Update URI:` header, so the bundled-updater guideline stays satisfied. With
+   no rename, its `WPORG_SLUG` default and the `chat-admin.php` filename inside it need no
+   changes.
 6. Install the resulting ZIP on a clean WordPress with `WP_DEBUG` true and exercise the full
    path: onboarding, chat, an order status change, a content preview and apply, an image
    upload, and the diagnostics page. The team rejects submissions that fatal on activation.
 7. Upload via "Add your plugin" and reply on the existing thread.
 
-Keep the reply short. State that all listed issues are fixed, name the chosen slug and ask
-for the reservation, and say the core AI Client migration is planned for a later release.
-The team asks explicitly for brevity and does not want a change log in the reply.
+### The reply itself
+
+Keep it short. The team asks explicitly for brevity and does not want a change log. Four
+points, in this order:
+
+1. All code issues are fixed and the plugin was tested on a clean install with `WP_DEBUG`.
+2. On the name: state the evidence from section 2 in two or three sentences — no plugin in
+   the directory holds the name or slug, no trademark registration exists, the term is the
+   author's own. Say the display name was shortened if it was. Ask for a human look rather
+   than asserting the matter closed.
+3. On prefixing: one sentence noting that everything is prefixed `chatadmin_`, with one
+   example, and that the flag appears to be a substring match on `chat`.
+4. The core AI Client migration is planned for a later release.
 
 ---
 
 ## 5. Sequencing
 
-Phases 1 and 2 are independent and can run in parallel. Phase 3 touches nearly every file
-and should land after them to avoid rebasing the security fixes across a rename. Phase 4
-depends on the name being settled.
+Phases 1 and 2 are independent and can run in parallel, and neither depends on anything in
+section 2. Phase 3 depends only on whether the display name is shortened, which is a
+one-line decision.
 
-The name decision gates Phase 3 and Phase 4. Phases 1 and 2 can start immediately.
+There is no longer a decision gating the start of work. The whole plan can begin now.
