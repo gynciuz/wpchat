@@ -102,7 +102,11 @@ architecture notes; this section is the short, checkable version.
 
 > Newest at the top. Work bottom-up. One commit per task. Use `[x]` to check off.
 
-[ ] (blocked: awaiting wp.org review) **Publish ChatAdmin to WordPress.org.**
+[ ] (waiting on owner: merge the v0.8.0 fixes PR, upload `dist/chatadmin-v0.8.0-wporg.zip`
+    and reply on the review thread) **Publish ChatAdmin to WordPress.org.**
+    2026-10-15: the 2026-09-11 scan of v0.7.14 listed 4 blockers (B1–B4 in
+    `docs/wporg-review-plan.md`); all fixed in v0.8.0. Open decision: display name
+    (keep "ChatAdmin – AI chat admin" or shorten to "ChatAdmin for WooCommerce").
     SUBMITTED 2026-07-14 as **ChatAdmin – AI chat admin**, slug **`chatadmin`**
     (wp.org account `chatapp`, review email → tiptop_blocs_0t@icloud.com). Automated
     scan PASSED; wp.org Plugin Check (all categories) = 0 errors / 0 warnings. The

@@ -203,7 +203,7 @@ class Seo {
         $plugin = self::detect_seo_plugin()['id'];
         $keys   = self::meta_keys($plugin);
         if ($keys) {
-            update_post_meta($post_id, $keys[$field], $value);
+            update_post_meta($post_id, $keys[$field], sanitize_text_field($value));
             return ['ok' => true, 'plugin' => $plugin, 'field' => $field];
         }
         if ($plugin === 'aioseo') {
@@ -518,7 +518,7 @@ class SeoBackend implements ContentBackend {
                 update_option(Seo::AI_CRAWLERS_OPTION, $this->truthy($value));
                 return ['ok' => true, 'field' => $field, 'new' => $new, 'robots_url' => home_url('/robots.txt')];
             case 'llms_txt':
-                update_option(Seo::LLMS_OPTION, (string) $new);
+                update_option(Seo::LLMS_OPTION, sanitize_textarea_field((string) $new));
                 return ['ok' => true, 'field' => $field, 'url' => home_url('/llms.txt')];
             case 'site_title':
                 update_option('blogname', (string) $new);

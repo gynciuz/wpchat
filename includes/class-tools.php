@@ -1222,9 +1222,9 @@ class Tools {
         $post_id = wp_insert_post([
             'post_type'    => $post_type,
             'post_status'  => 'draft',
-            'post_title'   => $title,
+            'post_title'   => sanitize_text_field($title),
             'post_content' => $content,
-            'post_excerpt' => (string) ($args['excerpt'] ?? ''),
+            'post_excerpt' => sanitize_textarea_field((string) ($args['excerpt'] ?? '')),
         ], true);
 
         if (is_wp_error($post_id) || !$post_id) {
@@ -1332,14 +1332,17 @@ class Tools {
     /**
      * Build post_content from user/LLM content plus appended images. Plain
      * text / Markdown-ish input is wrapped into paragraph blocks; content that
-     * already contains HTML tags is kept verbatim. Images become image blocks.
+     * already contains HTML tags is kept as markup but passed through
+     * wp_kses_post() — even for users with unfiltered_html, because the text
+     * comes from a language model acting on chat input. Block-comment markers
+     * survive kses. Images become image blocks.
      */
     private static function build_post_content(string $content, array $image_ids): string {
         $content = trim($content);
         $body = '';
         if ($content !== '') {
             if (strpos($content, '<') !== false) {
-                $body = $content; // already HTML / block markup
+                $body = wp_kses_post($content); // already HTML / block markup
             } else {
                 foreach (preg_split('/\n{2,}/', $content) as $para) {
                     $para = trim($para);

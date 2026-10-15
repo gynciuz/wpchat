@@ -75,6 +75,32 @@ class UploadTest extends TestCase {
         $this->assertContains($response['status'], [401, 403], 'Subscribers must not reach the upload endpoint.');
     }
 
+    public function test_requires_upload_files_capability(): void {
+        // Can manage orders but not upload media → refused.
+        $user = $this->factory()->user->create(['role' => 'subscriber']);
+        $u = new \WP_User($user);
+        $u->add_cap('manage_woocommerce');
+        $u->add_cap('edit_shop_orders');
+        \wp_set_current_user($user);
+        $this->assertFalse(\current_user_can('upload_files'));
+
+        $tmp = $this->writeTmpJpeg(5, 5);
+        $response = $this->dispatchUpload($tmp, 'photo.jpg', 'image/jpeg');
+
+        $this->assertSame(403, $response['status'], 'A user without upload_files must not reach the upload endpoint.');
+    }
+
+    public function test_content_editor_can_upload(): void {
+        // An author (edit_posts + upload_files, no order caps) attaches images
+        // to the drafts they create through chat.
+        \wp_set_current_user($this->factory()->user->create(['role' => 'author']));
+
+        $tmp = $this->writeTmpJpeg(5, 5);
+        $response = $this->dispatchUpload($tmp, 'photo.jpg', 'image/jpeg');
+
+        $this->assertSame(201, $response['status'], wp_json_encode($response));
+    }
+
     public function test_missing_file_returns_400(): void {
         $request = new \WP_REST_Request('POST', '/chatadmin/v1/upload');
         $response = \rest_get_server()->dispatch($request);

@@ -4,6 +4,20 @@ Full release history for ChatAdmin. readme.txt carries only the most
 recent releases, because WordPress.org truncates that section at 5000
 characters.
 
+= 0.8.0 =
+Changes from the WordPress.org review. No change to what the assistant can do.
+* **Chat-written content is always filtered.** Posts, pages, excerpts, custom fields, term descriptions and SEO fields written from chat now pass through WordPress's HTML sanitizer for every user, including administrators, so a script can never be stored.
+* **Image upload needs the media permission.** Uploading in chat now requires WordPress's "upload files" capability, and editors who can upload media can now attach images to the drafts they create.
+* **Assets load the WordPress way.** The /chatadmin page and the admin screens now load their scripts and styles through the WordPress enqueue system. The /chatadmin page also uses your site's language setting.
+* Readme rewritten to describe every feature.
+
+= 0.7.14 =
+Packaging and disclosure work for the WordPress.org submission. No change to how the plugin behaves once configured.
+* **Error reporting is now off until you turn it on.** Anonymous error reports previously defaulted to on for a fresh install. They now stay off until you tick the box in Settings → Privacy & diagnostics, so nothing leaves your site unless you ask for it.
+* **Every AI provider is now disclosed in readme.txt.** The new "External services" section lists Anthropic, OpenAI and Google Gemini with their endpoints, what data is sent and when, and links to each provider's terms and privacy policy.
+* **The React source ships with the plugin.** app/src/ and the build configuration now travel alongside the compiled bundle in build/assets/, with build instructions in readme.txt.
+* Changelog trimmed to the recent releases; the full history moved to changelog.txt. Dropped finfo_close(), deprecated in PHP 8.5.
+
 = 0.7.13 =
 * **Removed the built-in Git auto-commit (GitSync) integration.** Committing site files after a chat edit is a site-specific concern, not something the plugin should carry. A site whose custom content backend writes files and needs to commit them now does so from inside its own backend (registered via the `chatadmin_content_backends` filter), rather than through a plugin-provided helper. This has no effect on a standard install — GitSync was an optional, off-by-default power-user feature that no default content backend used.
 

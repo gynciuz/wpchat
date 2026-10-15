@@ -49,6 +49,32 @@ class WPContentBackendTest extends TestCase {
         $this->assertSame('After', get_post($post_id)->post_title);
     }
 
+    public function test_apply_filters_scripts_from_every_field(): void {
+        // Runs as an administrator (unfiltered_html) — chat writes are filtered anyway.
+        $post_id = $this->factory()->post->create(['post_title' => 'Before', 'post_content' => 'Before']);
+        $term_id = $this->factory()->term->create(['taxonomy' => 'category', 'name' => 'Cat']);
+        $backend = new WPContentBackend();
+        $evil    = "<p>Kept</p><script>alert('x')</script>";
+
+        $backend->apply(['kind' => 'wp_post', 'id' => $post_id], 'content', $evil, 'yes');
+        $backend->apply(['kind' => 'wp_post', 'id' => $post_id], 'title', $evil, 'yes');
+        $backend->apply(['kind' => 'wp_post', 'id' => $post_id], 'excerpt', $evil, 'yes');
+        $backend->apply(['kind' => 'wp_post_meta', 'post_id' => $post_id, 'key' => 'chatadmin_test_key'], 'value', $evil, 'yes');
+        $backend->apply(['kind' => 'wp_term', 'term_id' => $term_id, 'taxonomy' => 'category'], 'description', $evil, 'yes');
+
+        $post = get_post($post_id);
+        $this->assertStringContainsString('<p>Kept</p>', $post->post_content);
+        foreach ([
+            'content'     => $post->post_content,
+            'title'       => $post->post_title,
+            'excerpt'     => $post->post_excerpt,
+            'meta'        => get_post_meta($post_id, 'chatadmin_test_key', true),
+            'description' => get_term($term_id, 'category')->description,
+        ] as $field => $stored) {
+            $this->assertStringNotContainsString('<script', $stored, "{$field} must not store a script tag.");
+        }
+    }
+
     public function test_wp_page_slug_resolves_to_post_id(): void {
         $page_id = $this->factory()->post->create([
             'post_type'   => 'page',
