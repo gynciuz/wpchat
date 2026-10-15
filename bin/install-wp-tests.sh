@@ -20,6 +20,20 @@ DB_PASS=${3-root}
 DB_HOST=${4-localhost}
 WP_VERSION=${5-latest}
 
+# "latest" has no matching tag in the develop SVN repo, so the scaffold
+# would fall back to trunk, whose test helpers can need classes the
+# released core doesn't have yet (e.g. WP_Secrets_Store). Resolve it to the
+# current release number so core and scaffold always match.
+if [ "$WP_VERSION" = "latest" ]; then
+    WP_VERSION=$(curl -fsSL https://api.wordpress.org/core/version-check/1.7/ \
+        | grep -o '"version":"[^"]*"' | head -1 | sed 's/.*:"\(.*\)"/\1/')
+    if [ -z "$WP_VERSION" ]; then
+        echo "Could not resolve the latest WordPress version." >&2
+        exit 1
+    fi
+    echo "Resolved WordPress 'latest' to $WP_VERSION"
+fi
+
 WP_TESTS_DIR=${WP_TESTS_DIR-/tmp/wordpress-tests-lib}
 WP_CORE_DIR=${WP_CORE_DIR-/tmp/wordpress/}
 
