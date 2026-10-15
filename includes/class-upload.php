@@ -38,8 +38,17 @@ class Upload {
         ]);
     }
 
+    /**
+     * Creating a media attachment needs WordPress's own media capability, on
+     * top of chat access (the same order-or-content gate as Rest).
+     */
     public function check_permission(): bool {
-        return current_user_can('manage_woocommerce') || current_user_can('edit_shop_orders');
+        if (!current_user_can('upload_files')) {
+            return false;
+        }
+        return current_user_can('manage_woocommerce')
+            || current_user_can('edit_shop_orders')
+            || current_user_can('edit_posts');
     }
 
     public function handle_upload(\WP_REST_Request $request): \WP_REST_Response {
@@ -85,7 +94,6 @@ class Upload {
         // and an "overrides" array that turns off the form-action check.
         require_once ABSPATH . 'wp-admin/includes/file.php';
         require_once ABSPATH . 'wp-admin/includes/image.php';
-        require_once ABSPATH . 'wp-admin/includes/media.php';
 
         $overrides = [
             'test_form'                => false,

@@ -4,27 +4,50 @@ Tags: woocommerce, chat, ai, claude, orders
 Requires at least: 6.5
 Tested up to: 7.1
 Requires PHP: 8.1
-Stable tag: 0.7.14
+Stable tag: 0.8.0
 License: MIT
 License URI: https://opensource.org/licenses/MIT
 
-Chat-based admin for WooCommerce orders, powered by Anthropic Claude.
+Run your WooCommerce store and WordPress site by chatting: orders, content, SEO and traffic, in any language.
 
 == Description ==
 
-Type "mark order 2833 used, customer spent 30€ of 100€" in the WP admin
-sidebar — the ChatAdmin assistant calls the right WC functions and renders
-rich UI inline.
+ChatAdmin adds a chat assistant for shop owners and editors. Type a request
+in plain language — "mark order 2833 completed and add a note that the
+customer spent 30€ of 100€" — and the assistant calls the matching
+WooCommerce or WordPress function and shows the result inline. It opens at
+yoursite.com/chatadmin (full screen) and under ChatAdmin in wp-admin.
 
-Phase 1 (MVP):
+What it can do:
 
-* List orders with status / search / date filters
-* Get full order detail
-* Update order status (with optional note in one round-trip)
-* Add order notes (private or customer-visible)
-* Find orders by customer email or name
+* **Orders (WooCommerce)** — list and filter orders, open an order, change
+  its status, add private or customer-visible notes, find a customer's
+  orders, and run WooCommerce order actions such as resending an email.
+* **Content** — create posts and pages as drafts (with categories, tags,
+  featured and inline images), publish them on your confirmation, and edit
+  titles, text, excerpts, custom fields and category or tag descriptions.
+  Every edit is shown as a preview first and applied only after you confirm.
+* **SEO** — audit the site's search and AI-answer-engine readiness, and set
+  per-page SEO titles and meta descriptions through Yoast SEO, Rank Math or
+  SEOPress.
+* **Traffic** — summarise visits from an analytics plugin you already use
+  (Jetpack Stats, WP Statistics, Koko Analytics).
+* **Images** — upload a JPEG, PNG or WebP image in the chat and use it in a
+  post.
+* **Everything else** — when no tool fits, the assistant gives you a direct
+  link to the right wp-admin screen instead of refusing.
 
-Bring your own Anthropic API key.
+What it will not do: bulk or delete operations. Every change touches one
+order or one item at a time, and nothing is deleted from chat, by design.
+
+What a user can do follows their WordPress role. ChatAdmin never grants
+capabilities: an editor without order access can edit content but cannot
+see orders. Text the assistant writes into your site is filtered with
+WordPress's own HTML sanitizer, so scripts are never stored, whatever the
+user's role.
+
+You bring your own API key from Anthropic (Claude), OpenAI or Google
+Gemini, and pay that provider directly for usage.
 
 == External services ==
 
@@ -73,14 +96,14 @@ policy. See PRIVACY.md for full details.
 
 1. Upload the plugin ZIP via Plugins → Add New → Upload.
 2. Activate.
-3. ChatAdmin → Settings → paste your Anthropic API key.
+3. Follow the first-run setup, or go to ChatAdmin → Settings, and paste an API key from Anthropic, OpenAI or Google Gemini.
 4. ChatAdmin → Chat → type.
 
 == Frequently Asked Questions ==
 
 = Do I need an account or subscription? =
-No. ChatAdmin is free and open-source. You bring your own Anthropic API key
-and pay Anthropic directly for usage. There is no ChatAdmin subscription
+No. ChatAdmin is free and open-source. You bring your own API key
+(Anthropic, OpenAI or Google Gemini) and pay that provider directly for usage. There is no ChatAdmin subscription
 today (a hosted "ChatAdmin Cloud" tier is on a waitlist).
 
 = How do I get an Anthropic API key? =
@@ -130,6 +153,13 @@ and "Report a problem" sends the details to the developer.
 
 == Changelog ==
 
+= 0.8.0 =
+Changes from the WordPress.org review. No change to what the assistant can do.
+* **Chat-written content is always filtered.** Posts, pages, excerpts, custom fields, term descriptions and SEO fields written from chat now pass through WordPress's HTML sanitizer for every user, including administrators, so a script can never be stored.
+* **Image upload needs the media permission.** Uploading in chat now requires WordPress's "upload files" capability, and editors who can upload media can now attach images to the drafts they create.
+* **Assets load the WordPress way.** The /chatadmin page and the admin screens now load their scripts and styles through the WordPress enqueue system. The /chatadmin page also uses your site's language setting.
+* Readme rewritten to describe every feature.
+
 = 0.7.14 =
 Packaging and disclosure work for the WordPress.org submission. No change to how the plugin behaves once configured.
 * **Error reporting is now off until you turn it on.** Anonymous error reports previously defaulted to on for a fresh install. They now stay off until you tick the box in Settings → Privacy & diagnostics, so nothing leaves your site unless you ask for it.
@@ -146,14 +176,6 @@ Packaging and disclosure work for the WordPress.org submission. No change to how
 
 = 0.7.11 =
 * **Fix: "critical error" after updating on some sites.** Sites that carried the plugin through its earlier folder rename (wpchat → chat-admin) could end up with two copies in the plugins directory; when both loaded, WordPress fataled with "Cannot redeclare class" and showed "There has been a critical error on this website" right after an update. The plugin now detects a second copy and bails harmlessly so the site stays up. To fully resolve it, delete the stale duplicate plugin folder under wp-content/plugins/ (typically a leftover "wpchat" folder alongside "chat-admin"), keeping only the active one.
-
-= 0.7.10 =
-* Internal housekeeping: removed a bundled example and tidied internal references. No functional change.
-
-= 0.7.9 =
-Groundwork so ChatAdmin stays universal and grows into whatever a site installs it on.
-* **`find_text` now covers custom content backends too.** A site plugin that registers its own content backend (via the `chatadmin_content_backends` filter) can implement an optional `search()` method, and its content becomes findable through `find_text` alongside posts, meta and terms — so the assistant catches it organically, with no change to ChatAdmin's core.
-* **No more phantom Confirm/Cancel bar.** The Confirm/Cancel buttons now appear only when a preview actually produced a change to confirm. Previously a *failed* preview (e.g. the assistant couldn't edit the item and handed you a wp-admin link instead) still showed the bar, offering to "confirm" a change it had already given up on.
 
 Older releases are listed in changelog.txt, shipped with the plugin, and at
 https://github.com/gynciuz/wpchat/releases

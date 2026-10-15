@@ -505,13 +505,19 @@ class WPContentBackend implements ContentBackend {
                 if (!in_array($field, ['title', 'content', 'excerpt', 'status'], true)) {
                     return ['error' => "Unsupported field for wp_post: $field"];
                 }
+                // Values come from a language model acting on chat input, so they
+                // are filtered even when the user holds unfiltered_html.
                 $update = ['ID' => $resolved['id']];
                 $update[match ($field) {
                     'title'   => 'post_title',
                     'content' => 'post_content',
                     'excerpt' => 'post_excerpt',
                     'status'  => 'post_status',
-                }] = $value;
+                }] = match ($field) {
+                    'content' => wp_kses_post((string) $value),
+                    'excerpt' => sanitize_textarea_field((string) $value),
+                    default   => sanitize_text_field((string) $value),
+                };
                 $result = wp_update_post($update, true);
                 if (is_wp_error($result)) {
                     return ['error' => $result->get_error_message()];
@@ -519,14 +525,14 @@ class WPContentBackend implements ContentBackend {
                 return ['ok' => true, 'post_id' => $result, 'field' => $field];
 
             case 'wp_post_meta':
-                $result = update_post_meta($resolved['post_id'], $resolved['key'], $value);
+                $result = update_post_meta($resolved['post_id'], $resolved['key'], sanitize_text_field((string) $value));
                 return ['ok' => $result !== false, 'post_id' => $resolved['post_id'], 'key' => $resolved['key']];
 
             case 'wp_term':
                 if (!in_array($field, ['name', 'description'], true)) {
                     return ['error' => "Unsupported field for wp_term: $field"];
                 }
-                $update = [$field => $value];
+                $update = [$field => $field === 'description' ? wp_kses_post((string) $value) : sanitize_text_field((string) $value)];
                 $result = wp_update_term($resolved['term_id'], $resolved['taxonomy'], $update);
                 if (is_wp_error($result)) {
                     return ['error' => $result->get_error_message()];

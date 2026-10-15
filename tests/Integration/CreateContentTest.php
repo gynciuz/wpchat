@@ -45,6 +45,25 @@ class CreateContentTest extends TestCase {
         $this->assertContains('category:News', $res['applied']['created_terms']);
     }
 
+    public function test_html_content_is_filtered_even_for_administrators(): void {
+        // TestCase runs as an administrator, who holds unfiltered_html. Chat
+        // content is model-authored, so it is filtered regardless.
+        $res = Tools::create_content([
+            'title'   => 'Filtered <script>alert(1)</script>draft',
+            'content' => "<!-- wp:paragraph -->\n<p>Safe text</p>\n<!-- /wp:paragraph -->\n<script>alert('x')</script><p onclick=\"evil()\">Click</p>",
+            'excerpt' => 'Short <script>alert(2)</script>excerpt',
+        ]);
+
+        $this->assertTrue($res['ok'] ?? false, json_encode($res));
+        $post = get_post($res['post_id']);
+        $this->assertStringNotContainsString('<script', $post->post_content);
+        $this->assertStringNotContainsString('onclick', $post->post_content);
+        $this->assertStringContainsString('<!-- wp:paragraph -->', $post->post_content, 'Block markers must survive filtering.');
+        $this->assertStringContainsString('<p>Safe text</p>', $post->post_content);
+        $this->assertStringNotContainsString('<script', $post->post_title);
+        $this->assertStringNotContainsString('<script', $post->post_excerpt);
+    }
+
     public function test_featured_and_inline_images(): void {
         $featured = self::make_attachment();
         $inline   = self::make_attachment();
